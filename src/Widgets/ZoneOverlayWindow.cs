@@ -80,6 +80,10 @@ namespace MotionDesk.Widgets
 
         // Δίνει το απόλυτο ορθογώνιο (screen coords) της ζώνης που είναι αυτή τη στιγμή highlighted,
         // ή null αν ο δείκτης δεν είναι πάνω σε καμία ζώνη — αυτό είναι το σημείο "κουμπώματος".
+        // Ζητήθηκε για το occupancy tracking (ZoneOccupancy) — ώστε να καταγράφεται ΠΟΙΑ ζώνη (όχι
+        // μόνο τα pixel bounds της) κούμπωσε το παράθυρο, για το neighbor-resize feature.
+        public int HighlightedIndex => _highlightIndex;
+
         public Rectangle? GetHighlightedZoneBounds() =>
             _highlightIndex >= 0 && _highlightIndex < _layout.Zones.Count
                 ? _layout.Zones[_highlightIndex].ToAbsolute(_workingArea)

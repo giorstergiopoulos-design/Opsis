@@ -117,6 +117,7 @@
   "Common.Unlock": "Kilidi aç",
   "DeskZones.Intro": "FancyZones tarzı bölgeler (PowerToys): herhangi bir pencereyi sürüklerken Shift tuşunu basılı tutarak ekranın bölgelerini görün ve bir bölgenin içine bırakarak pencereyi otomatik olarak o boyuta oturtun.",
   "DeskZones.ShiftDragHint": "Shift olmadan pencere sürükleme tamamen normal çalışır — herhangi bir müdahale olmaz. Her ekranın düzeni tek tek bölge için değil, burada ayarlanır.",
+  "DeskZones.KeyboardAndNeighborHint": "Ctrl+Alt+Shift+ok, etkin pencereyi bir sonraki bölgeye taşır; Ctrl+Shift+ok (Alt olmadan) hiçbir pencereyi taşımadan yalnızca odağı taşır. Zaten yerleştirilmiş bir pencerenin kenarını sürükleyerek yeniden boyutlandırmak artık komşu yerleştirilmiş pencereyi de buna uygun şekilde yeniden boyutlandırır.",
   "DeskZones.SectionLayouts": "Düzenler",
   "DeskZones.SectionActions": "Eylemler",
   "DeskZones.SectionActiveZones": "Etkin bölgeler",

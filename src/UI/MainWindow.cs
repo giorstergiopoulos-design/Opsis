@@ -135,6 +135,12 @@ namespace MotionDesk.UI
             _hotkeys.RegisterCtrlAltShift(Keys.Right, () => ZoneSnapEngine.MoveForegroundWindowToZone(ZoneSnapEngine.ZoneDirection.Right));
             _hotkeys.RegisterCtrlAltShift(Keys.Up, () => ZoneSnapEngine.MoveForegroundWindowToZone(ZoneSnapEngine.ZoneDirection.Up));
             _hotkeys.RegisterCtrlAltShift(Keys.Down, () => ZoneSnapEngine.MoveForegroundWindowToZone(ZoneSnapEngine.ZoneDirection.Down));
+            // ΝΕΟ ("πλήρες σετ πληκτρολογίου FancyWM", task tracker t27): Ctrl+Shift+βελάκι (χωρίς
+            // Alt) μετακινεί μόνο την ΕΣΤΙΑΣΗ στη γειτονική ζώνη, χωρίς να μετακινήσει κανένα παράθυρο.
+            _hotkeys.RegisterCtrlShift(Keys.Left, () => ZoneSnapEngine.FocusAdjacentZone(ZoneSnapEngine.ZoneDirection.Left));
+            _hotkeys.RegisterCtrlShift(Keys.Right, () => ZoneSnapEngine.FocusAdjacentZone(ZoneSnapEngine.ZoneDirection.Right));
+            _hotkeys.RegisterCtrlShift(Keys.Up, () => ZoneSnapEngine.FocusAdjacentZone(ZoneSnapEngine.ZoneDirection.Up));
+            _hotkeys.RegisterCtrlShift(Keys.Down, () => ZoneSnapEngine.FocusAdjacentZone(ZoneSnapEngine.ZoneDirection.Down));
 
             ThemeManager.UiContext = System.Threading.SynchronizationContext.Current;
             AnimationsSettingChanged += UpdateAnimationTimers;
@@ -1081,6 +1087,7 @@ namespace MotionDesk.UI
             AddText(panel, LocalizationManager.T("DeskZones.Intro"));
             AddSection(panel, LocalizationManager.T("DeskZones.SectionLayouts"));
             AddText(panel, LocalizationManager.T("DeskZones.ShiftDragHint"));
+            AddText(panel, LocalizationManager.T("DeskZones.KeyboardAndNeighborHint"));
 
             foreach (var screen in Screen.AllScreens)
             {
@@ -1892,8 +1899,8 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             AddText(panel, LocalizationManager.T("Personalization.Intro"));
 
             // ---------- IconAtlas ----------
-            AddSection(panel, LocalizationManager.T("Personalization.SectionIconAtlas"));
-            AddText(panel, LocalizationManager.T("Personalization.IconAtlasIntro"));
+            var iconCard = AddCardSection(panel, LocalizationManager.T("Personalization.SectionIconAtlas"));
+            AddText(iconCard, LocalizationManager.T("Personalization.IconAtlasIntro"));
 
             Control BuildIconSlotRow(string labelKey, Func<string?> get, Action<string?> set)
             {
@@ -1938,20 +1945,20 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                 return row;
             }
 
-            panel.Controls.Add(BuildIconSlotRow("Personalization.ThisPcIcon", IconAtlasEngine.GetThisPcIcon, IconAtlasEngine.SetThisPcIcon));
-            panel.Controls.Add(BuildIconSlotRow("Personalization.RecycleBinEmpty", IconAtlasEngine.GetRecycleBinEmptyIcon, IconAtlasEngine.SetRecycleBinEmptyIcon));
-            panel.Controls.Add(BuildIconSlotRow("Personalization.RecycleBinFull", IconAtlasEngine.GetRecycleBinFullIcon, IconAtlasEngine.SetRecycleBinFullIcon));
+            iconCard.Controls.Add(BuildIconSlotRow("Personalization.ThisPcIcon", IconAtlasEngine.GetThisPcIcon, IconAtlasEngine.SetThisPcIcon));
+            iconCard.Controls.Add(BuildIconSlotRow("Personalization.RecycleBinEmpty", IconAtlasEngine.GetRecycleBinEmptyIcon, IconAtlasEngine.SetRecycleBinEmptyIcon));
+            iconCard.Controls.Add(BuildIconSlotRow("Personalization.RecycleBinFull", IconAtlasEngine.GetRecycleBinFullIcon, IconAtlasEngine.SetRecycleBinFullIcon));
             // Επέκταση κάλυψης (ζητήθηκε ρητά v1.5.0) — τα υπόλοιπα τυπικά εικονίδια επιφάνειας
             // εργασίας που υποστηρίζουν επίσημα custom icon μέσω registry.
-            panel.Controls.Add(BuildIconSlotRow("Personalization.NetworkIcon", IconAtlasEngine.GetNetworkIcon, IconAtlasEngine.SetNetworkIcon));
-            panel.Controls.Add(BuildIconSlotRow("Personalization.ControlPanelIcon", IconAtlasEngine.GetControlPanelIcon, IconAtlasEngine.SetControlPanelIcon));
-            panel.Controls.Add(BuildIconSlotRow("Personalization.UsersFilesIcon", IconAtlasEngine.GetUsersFilesIcon, IconAtlasEngine.SetUsersFilesIcon));
+            iconCard.Controls.Add(BuildIconSlotRow("Personalization.NetworkIcon", IconAtlasEngine.GetNetworkIcon, IconAtlasEngine.SetNetworkIcon));
+            iconCard.Controls.Add(BuildIconSlotRow("Personalization.ControlPanelIcon", IconAtlasEngine.GetControlPanelIcon, IconAtlasEngine.SetControlPanelIcon));
+            iconCard.Controls.Add(BuildIconSlotRow("Personalization.UsersFilesIcon", IconAtlasEngine.GetUsersFilesIcon, IconAtlasEngine.SetUsersFilesIcon));
 
             // "Εισαγωγή icon pack (depot)…" — σαρώνει έναν φάκελο για έτοιμα ζευγάρια εικονιδίων
             // Κάδου Ανακύκλωσης (σύμβαση "-empty"/"-full", π.χ. sdushantha/recycle-bin-themes στο
             // GitHub) και τα εφαρμόζει αυτόματα, αντί να χρειάζεται να επιλέξει ο χρήστης τα δύο
             // αρχεία ένα-ένα από τις παραπάνω γραμμές.
-            AddButtonGrid(panel, (LocalizationManager.T("Personalization.IconPackImport"), (_, _) =>
+            AddButtonGrid(iconCard, (LocalizationManager.T("Personalization.IconPackImport"), (_, _) =>
             {
                 using var folderDlg = new FolderBrowserDialog { Description = LocalizationManager.T("Personalization.IconPackFolderPrompt") };
                 if (folderDlg.ShowDialog() != DialogResult.OK) return;
@@ -1988,8 +1995,8 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             }));
 
             // ---------- DeskCursors ----------
-            AddSection(panel, LocalizationManager.T("Personalization.SectionDeskCursors"));
-            AddText(panel, LocalizationManager.T("Personalization.DeskCursorsIntro"));
+            var cursorCard = AddCardSection(panel, LocalizationManager.T("Personalization.SectionDeskCursors"));
+            AddText(cursorCard, LocalizationManager.T("Personalization.DeskCursorsIntro"));
 
             foreach (var (registryName, labelKey) in DeskCursorsEngine.Roles)
             {
@@ -2011,22 +2018,22 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                     }
                 };
                 row.Controls.Add(browseBtn);
-                panel.Controls.Add(row);
+                cursorCard.Controls.Add(row);
             }
 
-            AddButtonGrid(panel,
+            AddButtonGrid(cursorCard,
                 (LocalizationManager.T("Personalization.ApplyCursors"), (_, _) => { DeskCursorsEngine.ApplyNow(); _statusLabel.Text = LocalizationManager.T("Personalization.CursorsAppliedStatus"); }),
                 (LocalizationManager.T("Personalization.ResetCursors"), (_, _) => { DeskCursorsEngine.ResetAllToWindowsDefault(); if (_pageBuilders.TryGetValue("Personalization", out var rebuild)) rebuild(); }));
 
             // ---------- DeskStrip ----------
-            AddSection(panel, LocalizationManager.T("Personalization.SectionDeskStrip"));
-            AddText(panel, LocalizationManager.T("Personalization.DeskStripIntro"));
+            var deskStripCard = AddCardSection(panel, LocalizationManager.T("Personalization.SectionDeskStrip"));
+            AddText(deskStripCard, LocalizationManager.T("Personalization.DeskStripIntro"));
 
-            var deskStripToggle = new FlatCheckBox { Text = LocalizationManager.T("Personalization.EnableDeskStrip"), AutoSize = true, Checked = DeskStripHostEngine.Instance.IsEnabled, BackColor = UiTheme.Background, Margin = new Padding(0, 4, 0, 10) };
-            panel.Controls.Add(deskStripToggle);
+            var deskStripToggle = new FlatCheckBox { Text = LocalizationManager.T("Personalization.EnableDeskStrip"), AutoSize = true, Checked = DeskStripHostEngine.Instance.IsEnabled, BackColor = UiTheme.Surface, Margin = new Padding(0, 4, 0, 10) };
+            deskStripCard.Controls.Add(deskStripToggle);
 
             var pinnedList = new FlowLayoutPanel { AutoSize = true, FlowDirection = FlowDirection.TopDown, WrapContents = false };
-            panel.Controls.Add(pinnedList);
+            deskStripCard.Controls.Add(pinnedList);
 
             // Ίδια διόρθωση flicker με RefreshActiveList/RefreshActiveContainers: skip το rebuild
             // όταν η λίστα δεν άλλαξε — πέρα από το flicker, γλιτώνει και το άσκοπο save/restore
@@ -2076,7 +2083,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                 RefreshPinnedApps();
             };
 
-            AddButtonGrid(panel, (LocalizationManager.T("Personalization.PinApp"), (_, _) =>
+            AddButtonGrid(deskStripCard, (LocalizationManager.T("Personalization.PinApp"), (_, _) =>
             {
                 using var dlg = new OpenFileDialog { Filter = LocalizationManager.T("Filter.Apps"), Title = LocalizationManager.T("Personalization.PinApp") };
                 if (dlg.ShowDialog(this) == DialogResult.OK)
@@ -2094,8 +2101,8 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             panel.Disposed += (_, _) => deskStripRefreshTimer.Dispose();
 
             // ---------- DeskSounds ----------
-            AddSection(panel, LocalizationManager.T("Personalization.SectionDeskSounds"));
-            AddText(panel, LocalizationManager.T("Personalization.DeskSoundsIntro"));
+            var soundsCard = AddCardSection(panel, LocalizationManager.T("Personalization.SectionDeskSounds"), width: 816);
+            AddText(soundsCard, LocalizationManager.T("Personalization.DeskSoundsIntro"));
 
             foreach (var (eventLabel, labelKey) in DeskSoundsEngine.Events)
             {
@@ -2132,15 +2139,15 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                 clearBtn.Click += (_, _) => { DeskSoundsEngine.SetSound(capturedEvent, null); pathLabel.Text = LocalizationManager.T("Personalization.NotSet"); };
                 row.Controls.Add(clearBtn);
 
-                panel.Controls.Add(row);
+                soundsCard.Controls.Add(row);
             }
 
             // ---------- .theme Packages ----------
-            AddSection(panel, LocalizationManager.T("Personalization.SectionThemePackages"));
-            AddText(panel, LocalizationManager.T("Personalization.ThemePackagesIntro"));
+            var themeCard = AddCardSection(panel, LocalizationManager.T("Personalization.SectionThemePackages"));
+            AddText(themeCard, LocalizationManager.T("Personalization.ThemePackagesIntro"));
 
             var themeList = new FlowLayoutPanel { AutoSize = true, FlowDirection = FlowDirection.TopDown, WrapContents = false };
-            panel.Controls.Add(themeList);
+            themeCard.Controls.Add(themeList);
 
             void RefreshThemeList()
             {
@@ -2173,7 +2180,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             }
             RefreshThemeList();
 
-            AddButtonGrid(panel, (LocalizationManager.T("Personalization.SaveCurrentTheme"), (_, _) =>
+            AddButtonGrid(themeCard, (LocalizationManager.T("Personalization.SaveCurrentTheme"), (_, _) =>
             {
                 using var dialog = new Form { Text = LocalizationManager.T("Personalization.ThemeNamePrompt"), StartPosition = FormStartPosition.CenterParent, Size = new Size(420, 150), FormBorderStyle = FormBorderStyle.FixedDialog, MinimizeBox = false, MaximizeBox = false };
                 var box = new TextBox { Text = "Opsis Custom", Dock = DockStyle.Top, Margin = new Padding(12) };
@@ -2201,11 +2208,11 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             }));
 
             // ---------- Lock Screen Background ----------
-            AddSection(panel, LocalizationManager.T("Personalization.SectionLockScreen"));
-            AddText(panel, LocalizationManager.T("Personalization.LockScreenIntro"));
-            AddText(panel, string.Format(LocalizationManager.T("Personalization.LockScreenEditionNote"), LockScreenEngine.GetWindowsEdition()));
+            var lockScreenCard = AddCardSection(panel, LocalizationManager.T("Personalization.SectionLockScreen"));
+            AddText(lockScreenCard, LocalizationManager.T("Personalization.LockScreenIntro"));
+            AddText(lockScreenCard, string.Format(LocalizationManager.T("Personalization.LockScreenEditionNote"), LockScreenEngine.GetWindowsEdition()));
 
-            AddButtonGrid(panel,
+            AddButtonGrid(lockScreenCard,
             (LocalizationManager.T("Personalization.SetLockScreenImage"), async (_, _) =>
             {
                 string fileName;
@@ -2587,7 +2594,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
         // έπιασε ζωντανά ("το ιστορικό μένει στην 1.9.0"). Πρόσθεσε ΚΑΙ εδώ τη νέα έκδοση.
         private static readonly (string Version, string Date)[] VersionHistory =
         {
-            ("1.9.8", "2026-10"), ("1.9.7", "2026-10"), ("1.9.6", "2026-10"), ("1.9.5", "2026-10"), ("1.9.4", "2026-10"), ("1.9.3", "2026-10"), ("1.9.2", "2026-10"), ("1.9.1", "2026-10"), ("1.9.0", "2026-10"), ("1.8.9", "2026-10"), ("1.8.8", "2026-10"), ("1.8.7", "2026-10"), ("1.8.6", "2026-10"), ("1.8.5", "2026-10"), ("1.7.8", "2026-10"), ("1.7.6", "2026-10"), ("1.7.5", "2026-10"), ("1.6.8", "2026-10"), ("1.6.2", "2026-10"), ("1.6.1", "2026-10"), ("1.6.0", "2026-09"), ("1.5.0", "2026-09"), ("1.4.1", "2026-09"), ("1.4.0", "2026-09"), ("1.3.0", "2026-09"), ("1.2.9", "2026-09"), ("1.2.8", "2026-09"), ("1.2.7", "2026-09"), ("1.2.6", "2026-09"), ("1.2.5", "2026-09"), ("1.2.4", "2026-09"), ("1.2.3", "2026-09"), ("1.2.2", "2026-09"), ("1.2.1", "2026-09"), ("1.2.0", "2026-09"), ("1.1.2", "2026-09"), ("1.1.1", "2026-09"), ("1.1.0", "2026-09"), ("1.0.0", "2026-09")
+            ("1.9.9", "2026-10"), ("1.9.8", "2026-10"), ("1.9.7", "2026-10"), ("1.9.6", "2026-10"), ("1.9.5", "2026-10"), ("1.9.4", "2026-10"), ("1.9.3", "2026-10"), ("1.9.2", "2026-10"), ("1.9.1", "2026-10"), ("1.9.0", "2026-10"), ("1.8.9", "2026-10"), ("1.8.8", "2026-10"), ("1.8.7", "2026-10"), ("1.8.6", "2026-10"), ("1.8.5", "2026-10"), ("1.7.8", "2026-10"), ("1.7.6", "2026-10"), ("1.7.5", "2026-10"), ("1.6.8", "2026-10"), ("1.6.2", "2026-10"), ("1.6.1", "2026-10"), ("1.6.0", "2026-09"), ("1.5.0", "2026-09"), ("1.4.1", "2026-09"), ("1.4.0", "2026-09"), ("1.3.0", "2026-09"), ("1.2.9", "2026-09"), ("1.2.8", "2026-09"), ("1.2.7", "2026-09"), ("1.2.6", "2026-09"), ("1.2.5", "2026-09"), ("1.2.4", "2026-09"), ("1.2.3", "2026-09"), ("1.2.2", "2026-09"), ("1.2.1", "2026-09"), ("1.2.0", "2026-09"), ("1.1.2", "2026-09"), ("1.1.1", "2026-09"), ("1.1.0", "2026-09"), ("1.0.0", "2026-09")
         };
 
 
@@ -3238,6 +3245,32 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                 ForeColor = UiTheme.AccentCyan,
                 Margin = new Padding(0, 14, 0, 6)
             });
+        }
+
+        // Επανασχεδιασμός σελίδας Εξατομίκευση (task tracker t36, "εμπλούτισε/άλλαξε το περιεχόμενο
+        // της καρτέλας εξατομίκευση"): κάθε ενότητα μέσα σε δική της οπτικά ξεχωριστή "κάρτα"
+        // (φόντο + στρογγυλεμένες γωνίες), αντί για μια απλή επικεφαλίδα πάνω στο γυμνό φόντο της
+        // σελίδας — το μόνο που άλλαξε είναι το ΠΕΡΙΒΛΗΜΑ· η λογική κάθε γραμμής μένει ίδια.
+        // Επιστρέφει το ΕΣΩΤΕΡΙΚΟ panel όπου ο καλών προσθέτει τις δικές του γραμμές.
+        private static FlowLayoutPanel AddCardSection(Control parent, string title, int width = 760)
+        {
+            var inner = new FlowLayoutPanel { FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Width = width - 36 };
+            inner.Controls.Add(new Label
+            {
+                AutoSize = true,
+                Text = UiTheme.UpperNoAccents(title),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                ForeColor = UiTheme.AccentCyan,
+                Margin = new Padding(0, 0, 0, 10)
+            });
+
+            var card = new Panel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, BackColor = UiTheme.Surface, Padding = new Padding(18, 14, 18, 16), Margin = new Padding(0, 0, 0, 16) };
+            card.Controls.Add(inner);
+            // Το μέγεθος της κάρτας αλλάζει καθώς ο καλών προσθέτει γραμμές ΜΕΤΑ την επιστροφή αυτής
+            // της μεθόδου — η στρογγυλεμένη περιοχή πρέπει να ξανα-υπολογίζεται σε κάθε αλλαγή μεγέθους.
+            card.Resize += (_, _) => UiTheme.ApplyRoundedRegion(card, 12);
+            parent.Controls.Add(card);
+            return inner;
         }
 
         private static StatCard AddCard(Control parent, string title, string value, Action? onClick = null)

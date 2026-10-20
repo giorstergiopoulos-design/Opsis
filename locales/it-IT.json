@@ -117,6 +117,7 @@
   "Common.Unlock": "Sblocca",
   "DeskZones.Intro": "Zone in stile FancyZones (PowerToys): tieni premuto Maiusc mentre trascini una finestra per vedere le zone dello schermo e rilasciala in una per adattarla automaticamente a quella dimensione.",
   "DeskZones.ShiftDragHint": "Senza Maiusc, il trascinamento delle finestre funziona normalmente, senza interferenze. Il layout di ogni schermo si imposta qui, non per singola zona.",
+  "DeskZones.KeyboardAndNeighborHint": "Ctrl+Alt+Maiusc+freccia sposta la finestra attiva nella zona successiva; Ctrl+Maiusc+freccia (senza Alt) sposta solo il focus, senza spostare alcuna finestra. Ridimensionare una finestra già agganciata trascinando il suo bordo ora ridimensiona anche la finestra agganciata vicina di conseguenza.",
   "DeskZones.SectionLayouts": "Layout",
   "DeskZones.SectionActions": "Azioni",
   "DeskZones.SectionActiveZones": "Zone attive",

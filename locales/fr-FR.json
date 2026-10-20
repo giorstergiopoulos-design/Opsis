@@ -117,6 +117,7 @@
   "Common.Unlock": "Déverrouiller",
   "DeskZones.Intro": "Zones façon FancyZones (PowerToys) : maintenez Maj en faisant glisser une fenêtre pour voir les zones de l'écran, puis déposez-la dans l'une d'elles pour l'ajuster automatiquement à sa taille.",
   "DeskZones.ShiftDragHint": "Sans Maj, le déplacement des fenêtres fonctionne normalement — aucune interférence. La disposition de chaque écran se définit ici, pas zone par zone.",
+  "DeskZones.KeyboardAndNeighborHint": "Ctrl+Alt+Maj+flèche déplace la fenêtre active vers la zone suivante ; Ctrl+Maj+flèche (sans Alt) déplace uniquement le focus, sans déplacer de fenêtre. Redimensionner une fenêtre déjà ancrée en tirant son bord redimensionne désormais aussi la fenêtre ancrée voisine en conséquence.",
   "DeskZones.SectionLayouts": "Dispositions",
   "DeskZones.SectionActions": "Actions",
   "DeskZones.SectionActiveZones": "Zones actives",

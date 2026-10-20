@@ -117,6 +117,7 @@
   "Common.Unlock": "Desbloquear",
   "DeskZones.Intro": "Zonas al estilo FancyZones (PowerToys): mantenga Mayús mientras arrastra una ventana para ver las zonas de la pantalla y suéltela dentro de una para ajustarla automáticamente a ese tamaño.",
   "DeskZones.ShiftDragHint": "Sin Mayús, arrastrar ventanas funciona con normalidad, sin interferencias. El diseño de cada pantalla se define aquí, no por cada zona.",
+  "DeskZones.KeyboardAndNeighborHint": "Ctrl+Alt+Mayús+flecha mueve la ventana activa a la siguiente zona; Ctrl+Mayús+flecha (sin Alt) mueve solo el foco, sin mover ninguna ventana. Redimensionar una ventana ya acoplada arrastrando su borde ahora también redimensiona la ventana acoplada vecina a juego.",
   "DeskZones.SectionLayouts": "Diseños",
   "DeskZones.SectionActions": "Acciones",
   "DeskZones.SectionActiveZones": "Zonas activas",

@@ -117,6 +117,7 @@
   "Common.Unlock": "잠금 해제",
   "DeskZones.Intro": "FancyZones 스타일 영역(PowerToys): 창을 끌 때 Shift를 누르고 있으면 화면의 영역이 표시되며, 영역 안에 놓으면 해당 크기로 자동 맞춰집니다.",
   "DeskZones.ShiftDragHint": "Shift 없이 창을 끄는 것은 평소와 똑같이 동작하며 방해가 없습니다. 각 화면의 레이아웃은 개별 영역이 아니라 여기에서 설정합니다.",
+  "DeskZones.KeyboardAndNeighborHint": "Ctrl+Alt+Shift+화살표는 활성 창을 다음 영역으로 이동합니다. Ctrl+Shift+화살표(Alt 없이)는 창을 이동하지 않고 포커스만 이동합니다. 이미 스냅된 창의 가장자리를 드래그하여 크기를 조정하면 인접한 스냅된 창도 그에 맞게 크기가 조정됩니다.",
   "DeskZones.SectionLayouts": "레이아웃",
   "DeskZones.SectionActions": "작업",
   "DeskZones.SectionActiveZones": "활성 영역",

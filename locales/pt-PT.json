@@ -117,6 +117,7 @@
   "Common.Unlock": "Desbloquear",
   "DeskZones.Intro": "Zonas ao estilo FancyZones (PowerToys): mantenha Shift ao arrastar qualquer janela para ver as zonas do ecrã e largue-a dentro de uma para a ajustar automaticamente a esse tamanho.",
   "DeskZones.ShiftDragHint": "Sem Shift, arrastar janelas funciona normalmente, sem interferências. A disposição de cada ecrã é definida aqui, não por zona individual.",
+  "DeskZones.KeyboardAndNeighborHint": "Ctrl+Alt+Shift+seta move a janela ativa para a zona seguinte; Ctrl+Shift+seta (sem Alt) move apenas o foco, sem mover nenhuma janela. Redimensionar uma janela já encaixada arrastando o seu limite agora também redimensiona a janela encaixada vizinha em conformidade.",
   "DeskZones.SectionLayouts": "Disposições",
   "DeskZones.SectionActions": "Ações",
   "DeskZones.SectionActiveZones": "Zonas ativas",

@@ -59,6 +59,9 @@ namespace MotionDesk.Widgets
         private static WinEventProc? _callback;
         private static System.Windows.Forms.Timer? _pollTimer;
         private static IntPtr _draggedWindow = IntPtr.Zero;
+        // Θέση/μέγεθος του παραθύρου ΠΡΙΝ αρχίσει το move/resize — χρειάζεται για να ξέρουμε ΜΕΤΑ αν
+        // ήταν αλλαγή μεγέθους (όχι απλή μετακίνηση) και ΠΟΙΑ άκρη κινήθηκε, για το neighbor-resize.
+        private static Rectangle _dragStartRect;
         private static ZoneOverlayWindow? _overlay;
         private static Screen? _overlayScreen;
         private static bool _overlayIsMagnetic;
@@ -100,6 +103,7 @@ namespace MotionDesk.Widgets
                 {
                     if (!IsCandidateWindow(hwnd)) return;
                     _draggedWindow = hwnd;
+                    _dragStartRect = GetWindowRect(hwnd, out var startR) ? ToRectangle(startR) : Rectangle.Empty;
                     StartTracking();
                 }
                 else if (eventType == EVENT_SYSTEM_MOVESIZEEND && hwnd == _draggedWindow)
@@ -159,7 +163,18 @@ namespace MotionDesk.Widgets
                     {
                         var r = AdjustForInvisibleFrame(_draggedWindow, zoneBounds.Value);
                         SetWindowPos(_draggedWindow, IntPtr.Zero, r.X, r.Y, r.Width, r.Height, SWP_NOZORDER | SWP_NOACTIVATE);
+                        // Μόνο για πραγματικό πλέγμα DeskZones (όχι το ad-hoc μαγνητικό μισό/τέταρτο) —
+                        // έχει σταθερό, αποθηκευμένο index νόημα για το neighbor-resize παρακάτω.
+                        if (!_overlayIsMagnetic && _overlayScreen != null)
+                            ZoneOccupancy.Set(_overlayScreen.DeviceName, _overlay.HighlightedIndex, _draggedWindow);
                     }
+                }
+                else
+                {
+                    // Δεν κουμπώνει σε ΝΕΑ ζώνη — αν ήταν ήδη καταχωρημένο σε μία (από προηγούμενο
+                    // snap) και άλλαξε μέγεθος (όχι απλή μετακίνηση), σπρώξε το γειτονικό παράθυρο
+                    // να γεμίσει/αδειάσει μαζί του, AquaSnap-style.
+                    TryResizeNeighbors(_draggedWindow, _dragStartRect);
                 }
             }
             finally
@@ -168,6 +183,97 @@ namespace MotionDesk.Widgets
                 _draggedWindow = IntPtr.Zero;
             }
         }
+
+        // ΝΕΟ (task tracker t27, "neighbor-tile auto-resize"): όταν ένα ήδη-κουμπωμένο παράθυρο
+        // αλλάζει μέγεθος σέρνοντας την άκρη του (όχι ξανά-snap σε άλλη ζώνη), το γειτονικό παράθυρο
+        // που μοιράζεται ΑΚΡΙΒΩΣ αυτή την άκρη προσαρμόζεται μαζί του — καμία αλλαγή στο ΑΠΟΘΗΚΕΥΜΕΝΟ
+        // DeskZones layout (ZoneLayoutStore), μόνο στα ήδη-ανοιχτά παράθυρα, αυτή τη φορά.
+        private const int ResizeNoisePx = 3;
+        private const int AdjacencyTolerancePx = 4;
+        private const int MinNeighborSizePx = 120;
+
+        private enum Edge { Left, Right, Top, Bottom }
+
+        private static void TryResizeNeighbors(IntPtr hwnd, Rectangle startRect)
+        {
+            if (hwnd == IntPtr.Zero || startRect.IsEmpty) return;
+            if (!GetWindowRect(hwnd, out var endR)) return;
+            var endRect = ToRectangle(endR);
+
+            bool widthChanged = Math.Abs(endRect.Width - startRect.Width) > ResizeNoisePx;
+            bool heightChanged = Math.Abs(endRect.Height - startRect.Height) > ResizeNoisePx;
+            if (!widthChanged && !heightChanged) return; // απλή μετακίνηση, όχι αλλαγή μεγέθους
+
+            var found = ZoneOccupancy.Find(hwnd);
+            if (found == null) return;
+            var (screenKey, zoneIndex) = found.Value;
+            var screen = Array.Find(Screen.AllScreens, s => s.DeviceName == screenKey);
+            if (screen == null) return;
+            var layout = ZoneLayoutStore.GetLayout(screenKey);
+            if (zoneIndex < 0 || zoneIndex >= layout.Zones.Count) return;
+
+            int dLeft = endRect.Left - startRect.Left;
+            int dRight = endRect.Right - startRect.Right;
+            int dTop = endRect.Top - startRect.Top;
+            int dBottom = endRect.Bottom - startRect.Bottom;
+
+            if (Math.Abs(dRight) > ResizeNoisePx && Math.Abs(dLeft) <= ResizeNoisePx)
+                ResizeNeighborSharingEdge(layout, screenKey, screen.WorkingArea, zoneIndex, Edge.Right, endRect.Right);
+            if (Math.Abs(dLeft) > ResizeNoisePx && Math.Abs(dRight) <= ResizeNoisePx)
+                ResizeNeighborSharingEdge(layout, screenKey, screen.WorkingArea, zoneIndex, Edge.Left, endRect.Left);
+            if (Math.Abs(dBottom) > ResizeNoisePx && Math.Abs(dTop) <= ResizeNoisePx)
+                ResizeNeighborSharingEdge(layout, screenKey, screen.WorkingArea, zoneIndex, Edge.Bottom, endRect.Bottom);
+            if (Math.Abs(dTop) > ResizeNoisePx && Math.Abs(dBottom) <= ResizeNoisePx)
+                ResizeNeighborSharingEdge(layout, screenKey, screen.WorkingArea, zoneIndex, Edge.Top, endRect.Top);
+        }
+
+        private static void ResizeNeighborSharingEdge(ZoneLayoutData layout, string screenKey, Rectangle workingArea, int movedZoneIndex, Edge edge, int newAbsoluteEdgePx)
+        {
+            // Η τοπολογία (ποιος είναι "γείτονας" σε ποια άκρη) βγαίνει από το ΣΤΑΘΕΡΟ αποθηκευμένο
+            // πρότυπο ζωνών — όχι από τρέχουσες θέσεις παραθύρων, που μπορεί να έχουν ήδη
+            // μετατοπιστεί από προηγούμενο drag.
+            var movedTemplateAbs = layout.Zones[movedZoneIndex].ToAbsolute(workingArea);
+
+            for (int i = 0; i < layout.Zones.Count; i++)
+            {
+                if (i == movedZoneIndex) continue;
+                var candTemplateAbs = layout.Zones[i].ToAbsolute(workingArea);
+                bool shares = edge switch
+                {
+                    Edge.Right => Math.Abs(candTemplateAbs.Left - movedTemplateAbs.Right) <= AdjacencyTolerancePx && VerticalOverlap(candTemplateAbs, movedTemplateAbs),
+                    Edge.Left => Math.Abs(candTemplateAbs.Right - movedTemplateAbs.Left) <= AdjacencyTolerancePx && VerticalOverlap(candTemplateAbs, movedTemplateAbs),
+                    Edge.Bottom => Math.Abs(candTemplateAbs.Top - movedTemplateAbs.Bottom) <= AdjacencyTolerancePx && HorizontalOverlap(candTemplateAbs, movedTemplateAbs),
+                    Edge.Top => Math.Abs(candTemplateAbs.Bottom - movedTemplateAbs.Top) <= AdjacencyTolerancePx && HorizontalOverlap(candTemplateAbs, movedTemplateAbs),
+                    _ => false
+                };
+                if (!shares) continue;
+
+                var occupant = ZoneOccupancy.Get(screenKey, i);
+                if (occupant == null || !IsWindowVisible(occupant.Value) || !GetWindowRect(occupant.Value, out var curR)) continue;
+                var cur = ToRectangle(curR);
+
+                // Τέντωσε/μάζεψε τον γείτονα ΜΟΝΟ στην άκρη που συνορεύει με την κινούμενη, κρατώντας
+                // τις άλλες τρεις άκρες όπως είναι ΤΩΡΑ (όχι το αρχικό πρότυπο) — σωστό ακόμα κι αν ο
+                // γείτονας είχε ήδη αλλάξει χέρι-χέρι πριν.
+                Rectangle updated = edge switch
+                {
+                    Edge.Right => Rectangle.FromLTRB(newAbsoluteEdgePx, cur.Top, cur.Right, cur.Bottom),
+                    Edge.Left => Rectangle.FromLTRB(cur.Left, cur.Top, newAbsoluteEdgePx, cur.Bottom),
+                    Edge.Bottom => Rectangle.FromLTRB(cur.Left, newAbsoluteEdgePx, cur.Right, cur.Bottom),
+                    Edge.Top => Rectangle.FromLTRB(cur.Left, cur.Top, cur.Right, newAbsoluteEdgePx),
+                    _ => cur
+                };
+                if (updated.Width < MinNeighborSizePx || updated.Height < MinNeighborSizePx) continue; // ασφάλεια: μην συρρικνώσεις υπερβολικά
+
+                var adjusted = AdjustForInvisibleFrame(occupant.Value, updated);
+                SetWindowPos(occupant.Value, IntPtr.Zero, adjusted.X, adjusted.Y, adjusted.Width, adjusted.Height, SWP_NOZORDER | SWP_NOACTIVATE);
+            }
+        }
+
+        private static bool VerticalOverlap(Rectangle a, Rectangle b) => a.Top < b.Bottom - AdjacencyTolerancePx && b.Top < a.Bottom - AdjacencyTolerancePx;
+        private static bool HorizontalOverlap(Rectangle a, Rectangle b) => a.Left < b.Right - AdjacencyTolerancePx && b.Left < a.Right - AdjacencyTolerancePx;
+
+        private static Rectangle ToRectangle(RECT r) => new(r.Left, r.Top, r.Right - r.Left, r.Bottom - r.Top);
 
         // BUG FIX (v1.5.0 request): παράθυρα δεν "τέντωναν" μέχρι τα πραγματικά περιθώρια της
         // οθόνης όταν κουμπώνονταν σε ζώνη ακουμπισμένη στην άκρη — τα περισσότερα παράθυρα των
@@ -352,6 +458,73 @@ namespace MotionDesk.Widgets
                 if (IsZoomed(hwnd)) ShowWindow(hwnd, 9 /* SW_RESTORE */);
                 var target = AdjustForInvisibleFrame(hwnd, zones[bestIdx]);
                 SetWindowPos(hwnd, IntPtr.Zero, target.X, target.Y, target.Width, target.Height, SWP_NOZORDER | SWP_NOACTIVATE);
+                ZoneOccupancy.Set(screen.DeviceName, bestIdx, hwnd);
+            }
+            catch { /* hotkey handler — ποτέ εξαίρεση προς τα έξω */ }
+        }
+
+        // ΝΕΟ ("πλήρες σετ πληκτρολογίου FancyWM", task tracker t27): μετακίνηση της ΕΣΤΙΑΣΗΣ στη
+        // γειτονική ζώνη ΧΩΡΙΣ να μετακινηθεί κανένα παράθυρο — το αντίστοιχο FancyWM "focus
+        // left/right/up/down". Λειτουργεί ακόμα και για παράθυρα που δεν έχουν ΠΟΤΕ γίνει snap από
+        // το Opsis (ZoneOccupancy δεν τα ξέρει): fallback μέσω WindowFromPoint στο κέντρο της
+        // γειτονικής ζώνης, ανεβαίνοντας στο πραγματικό top-level παράθυρο με GetAncestor.
+        public static void FocusAdjacentZone(ZoneDirection direction)
+        {
+            try
+            {
+                IntPtr hwnd = GetForegroundWindow();
+                if (!IsCandidateWindow(hwnd) || !GetWindowRect(hwnd, out var wr)) return;
+
+                var center = new Point((wr.Left + wr.Right) / 2, (wr.Top + wr.Bottom) / 2);
+                var screen = Screen.FromPoint(center);
+                var layout = ZoneLayoutStore.GetLayout(screen.DeviceName);
+                if (layout.Zones.Count < 2) return;
+
+                var zones = layout.Zones.Select(z => z.ToAbsolute(screen.WorkingArea)).ToList();
+                int currentIndex = zones.FindIndex(r => r.Contains(center));
+                if (currentIndex < 0)
+                {
+                    currentIndex = 0;
+                    double best = double.MaxValue;
+                    for (int i = 0; i < zones.Count; i++)
+                    {
+                        double d = Distance(center, CenterOf(zones[i]));
+                        if (d < best) { best = d; currentIndex = i; }
+                    }
+                }
+                var fromCenter = CenterOf(zones[currentIndex]);
+
+                int bestIdx = -1; double bestScore = double.MaxValue;
+                for (int i = 0; i < zones.Count; i++)
+                {
+                    if (i == currentIndex) continue;
+                    var c = CenterOf(zones[i]);
+                    double dx = c.X - fromCenter.X, dy = c.Y - fromCenter.Y;
+                    bool matches = direction switch
+                    {
+                        ZoneDirection.Left => dx < -4,
+                        ZoneDirection.Right => dx > 4,
+                        ZoneDirection.Up => dy < -4,
+                        ZoneDirection.Down => dy > 4,
+                        _ => false
+                    };
+                    if (!matches) continue;
+                    bool horizontal = direction is ZoneDirection.Left or ZoneDirection.Right;
+                    double primary = Math.Abs(horizontal ? dx : dy);
+                    double perpendicular = Math.Abs(horizontal ? dy : dx);
+                    double score = primary + perpendicular * 0.5;
+                    if (score < bestScore) { bestScore = score; bestIdx = i; }
+                }
+                if (bestIdx < 0) return;
+
+                IntPtr target = ZoneOccupancy.Get(screen.DeviceName, bestIdx) ?? IntPtr.Zero;
+                if (target == IntPtr.Zero || !IsWindowVisible(target))
+                {
+                    var probe = CenterOf(zones[bestIdx]);
+                    IntPtr atPoint = WindowFromPoint(new POINT { X = probe.X, Y = probe.Y });
+                    target = atPoint == IntPtr.Zero ? IntPtr.Zero : GetAncestor(atPoint, GA_ROOT);
+                }
+                if (target != IntPtr.Zero && IsWindowVisible(target)) SetForegroundWindow(target);
             }
             catch { /* hotkey handler — ποτέ εξαίρεση προς τα έξω */ }
         }
@@ -398,6 +571,7 @@ namespace MotionDesk.Widgets
         }
 
         private const int DWMWA_EXTENDED_FRAME_BOUNDS = 9;
+        private const uint GA_ROOT = 2;
 
         [StructLayout(LayoutKind.Sequential)]
         private struct RECT { public int Left, Top, Right, Bottom; }
@@ -416,6 +590,9 @@ namespace MotionDesk.Widgets
         [DllImport("user32.dll")] private static extern bool GetCursorPos(out POINT lpPoint);
         [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hwnd);
         [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
+        [DllImport("user32.dll")] private static extern bool SetForegroundWindow(IntPtr hWnd);
+        [DllImport("user32.dll")] private static extern IntPtr WindowFromPoint(POINT point);
+        [DllImport("user32.dll")] private static extern IntPtr GetAncestor(IntPtr hwnd, uint gaFlags);
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr GetProp(IntPtr hWnd, string name);
         [DllImport("user32.dll", CharSet = CharSet.Auto)] private static extern int GetClassName(IntPtr hwnd, StringBuilder lpClassName, int nMaxCount);
         [DllImport("user32.dll")] private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int cx, int cy, uint uFlags);

@@ -49,6 +49,17 @@ namespace MotionDesk.Widgets
             RegisterHotKey(Handle, id, MOD_CONTROL | MOD_ALT | MOD_SHIFT, (uint)key);
         }
 
+        // Χωρίς Alt: χρησιμοποιείται για "μετακίνηση εστίασης" (ZoneSnapEngine.FocusAdjacentZone) —
+        // δεν συγκρούεται με το Ctrl+Alt+βελάκι των οδηγών γραφικών (βλ. σχόλιο παραπάνω) αφού δεν
+        // περιλαμβάνει καθόλου Alt, ούτε με το Ctrl+Alt+Shift+βελάκι ("μετακίνηση παραθύρου") αφού
+        // εδώ δεν πατιέται Alt.
+        public void RegisterCtrlShift(Keys key, Action onPressed)
+        {
+            int id = _nextId++;
+            _handlers[id] = onPressed;
+            RegisterHotKey(Handle, id, MOD_CONTROL | MOD_SHIFT, (uint)key);
+        }
+
         protected override void WndProc(ref Message m)
         {
             if (m.Msg == WM_HOTKEY && _handlers.TryGetValue(m.WParam.ToInt32(), out var handler))

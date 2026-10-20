@@ -117,6 +117,7 @@
   "Common.Unlock": "ロック解除",
   "DeskZones.Intro": "FancyZones 方式のゾーン (PowerToys): ウィンドウをドラッグするときに Shift を押し続けると画面のゾーンが表示され、ゾーン内にドロップするとそのサイズに自動でスナップします。",
   "DeskZones.ShiftDragHint": "Shift を押さない場合、ウィンドウのドラッグは通常どおり動作し、干渉しません。各画面のレイアウトは、ゾーンごとではなくここで設定します。",
+  "DeskZones.KeyboardAndNeighborHint": "Ctrl+Alt+Shift+矢印キーでアクティブウィンドウを次のゾーンへ移動します。Ctrl+Shift+矢印キー(Altなし)はウィンドウを動かさずフォーカスだけを移動します。すでにスナップ済みのウィンドウの端をドラッグしてサイズ変更すると、隣接するスナップ済みウィンドウもそれに合わせてサイズ変更されるようになりました。",
   "DeskZones.SectionLayouts": "レイアウト",
   "DeskZones.SectionActions": "操作",
   "DeskZones.SectionActiveZones": "アクティブなゾーン",

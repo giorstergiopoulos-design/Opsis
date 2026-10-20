@@ -117,6 +117,7 @@
   "Common.Unlock": "Entsperren",
   "DeskZones.Intro": "Zonen im FancyZones-Stil (PowerToys): Halten Sie beim Ziehen eines Fensters die Umschalttaste gedrückt, um die Zonen des Bildschirms zu sehen, und lassen Sie es in einer Zone los, damit es automatisch auf deren Größe einrastet.",
   "DeskZones.ShiftDragHint": "Ohne Umschalttaste funktioniert das Ziehen von Fenstern ganz normal – ohne Beeinträchtigung. Das Layout jedes Bildschirms wird hier festgelegt, nicht pro einzelner Zone.",
+  "DeskZones.KeyboardAndNeighborHint": "Strg+Alt+Umschalt+Pfeil verschiebt das aktive Fenster in die nächste Zone; Strg+Umschalt+Pfeil (ohne Alt) verschiebt nur den Fokus, ohne ein Fenster zu bewegen. Die Größenänderung eines bereits angedockten Fensters am Rand passt jetzt auch das angrenzende angedockte Fenster entsprechend an.",
   "DeskZones.SectionLayouts": "Layouts",
   "DeskZones.SectionActions": "Aktionen",
   "DeskZones.SectionActiveZones": "Aktive Zonen",

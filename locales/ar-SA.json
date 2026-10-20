@@ -117,6 +117,7 @@
   "Common.Unlock": "إلغاء القفل",
   "DeskZones.Intro": "مناطق بأسلوب FancyZones (PowerToys): اضغط مع الاستمرار على Shift أثناء سحب أي نافذة لرؤية مناطق الشاشة، ثم أفلتها داخل إحداها لتُضبط تلقائيًا على حجمها.",
   "DeskZones.ShiftDragHint": "من دون Shift يعمل سحب النوافذ كالمعتاد تمامًا دون أي تدخل. يُضبط تخطيط كل شاشة هنا وليس لكل منطقة على حدة.",
+  "DeskZones.KeyboardAndNeighborHint": "يؤدي Ctrl+Alt+Shift+سهم إلى نقل النافذة النشطة إلى المنطقة التالية؛ بينما Ctrl+Shift+سهم (بدون Alt) ينقل التركيز فقط دون تحريك أي نافذة. تغيير حجم نافذة مثبّتة مسبقًا بسحب حافتها يعدّل الآن أيضًا حجم النافذة المثبّتة المجاورة لتتوافق معها.",
   "DeskZones.SectionLayouts": "التخطيطات",
   "DeskZones.SectionActions": "الإجراءات",
   "DeskZones.SectionActiveZones": "المناطق النشطة",

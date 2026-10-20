@@ -117,6 +117,7 @@
   "Common.Unlock": "解锁",
   "DeskZones.Intro": "FancyZones 风格的区域（PowerToys）：拖动任意窗口时按住 Shift 即可显示屏幕区域，将窗口放入其中即可自动吸附为该区域大小。",
   "DeskZones.ShiftDragHint": "不按 Shift 时，拖动窗口与平常完全一样，不会受到任何干扰。每个屏幕的布局在此处设置，而不是按单个区域设置。",
+  "DeskZones.KeyboardAndNeighborHint": "Ctrl+Alt+Shift+方向键会将活动窗口移动到下一个区域；Ctrl+Shift+方向键（不按 Alt）只移动焦点，不会移动任何窗口。拖动已贴靠窗口的边缘调整大小时，现在也会相应调整相邻已贴靠窗口的大小。",
   "DeskZones.SectionLayouts": "布局",
   "DeskZones.SectionActions": "操作",
   "DeskZones.SectionActiveZones": "活动区域",
