@@ -141,6 +141,25 @@ namespace MotionDesk.Widgets
                 StopTracking();
                 return;
             }
+
+            // ΔΙΟΡΘΩΣΗ πραγματικής σύγκρουσης (βρέθηκε σε code review, πριν προλάβει να αναφερθεί ως
+            // bug): αν το μέγεθος του παραθύρου έχει ΗΔΗ αλλάξει αισθητά από την αρχή, αυτό είναι
+            // resize (σύρσιμο άκρης), όχι μετακίνηση — μην δείξεις ΚΑΝΕΝΑ overlay (ούτε μαγνητικό,
+            // ούτε πλέγμα ζωνών). Χωρίς αυτό το φρένο, το σύρσιμο της ΕΞΩΤΕΡΙΚΗΣ άκρης μιας ζώνης
+            // ακουμπισμένης στην άκρη της οθόνης (π.χ. η αριστερή άκρη της πρώτης στήλης) θα
+            // ενεργοποιούσε σιωπηλά το "πάντα ενεργό" μαγνητικό μισό-οθόνης snap — ο δείκτης είναι
+            // ήδη κοντά στην άκρη της οθόνης καθ' όλη τη διάρκεια ενός τέτοιου resize — και θα
+            // κούμπωνε σε μισή οθόνη αντί να ενεργοποιήσει το νέο neighbor-resize στο CommitOrCancel.
+            if (!_dragStartRect.IsEmpty && GetWindowRect(_draggedWindow, out var curR))
+            {
+                var cur = ToRectangle(curR);
+                if (Math.Abs(cur.Width - _dragStartRect.Width) > ResizeNoisePx || Math.Abs(cur.Height - _dragStartRect.Height) > ResizeNoisePx)
+                {
+                    HideOverlay();
+                    return;
+                }
+            }
+
             GetCursorPos(out var pt);
             var screenPt = new Point(pt.X, pt.Y);
             if (IsShiftDown()) UpdateZoneGridOverlay(screenPt);
