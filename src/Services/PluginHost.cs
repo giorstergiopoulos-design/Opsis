@@ -235,18 +235,51 @@ namespace MotionDesk.Services
         private sealed class PluginLoadContext : AssemblyLoadContext
         {
             private readonly AssemblyDependencyResolver _resolver;
+            private readonly string _resolverMainAssemblyPath;
 
             public PluginLoadContext(string pluginPath) : base(Path.GetFileNameWithoutExtension(pluginPath), isCollectible: false)
             {
-                _resolver = new AssemblyDependencyResolver(pluginPath);
+                _resolverMainAssemblyPath = Path.GetFullPath(pluginPath);
+                _resolver = new AssemblyDependencyResolver(_resolverMainAssemblyPath);
             }
 
             protected override Assembly? Load(AssemblyName name)
             {
-                // Το contract πρέπει να είναι ΤΟ ΙΔΙΟ assembly με του Opsis, αλλιώς τα casts αποτυγχάνουν.
-                if (name.Name == typeof(IOpsisNewsCrawlerPlugin).Assembly.GetName().Name) return null;
+                // Το contract πρέπει να είναι το ίδιο Assembly instance με του host.
+                // Το return null αφήνει την επίλυση στο default context και μπορεί να αποτύχει
+                // όταν το contract δεν βρίσκεται στο probing path της εφαρμογής.
+                var contractAssembly = typeof(IOpsisNewsCrawlerPlugin).Assembly;
+                if (string.Equals(name.Name, contractAssembly.GetName().Name, StringComparison.OrdinalIgnoreCase))
+                    return contractAssembly;
+
+                // Πρώτα χρησιμοποιούμε το .deps.json μέσω του AssemblyDependencyResolver.
                 var path = _resolver.ResolveAssemblyToPath(name);
-                return path != null ? LoadFromAssemblyPath(path) : null;
+                if (path != null && File.Exists(path))
+                    return LoadFromAssemblyPath(path);
+
+                // Fallback: αρκετά plugin distributions περιλαμβάνουν τις εξαρτήσεις δίπλα
+                // στο *Plugin.dll, αλλά το .deps.json μπορεί να μην τις καταγράφει σωστά.
+                var pluginDirectory = Path.GetDirectoryName(_resolverMainAssemblyPath);
+                if (!string.IsNullOrEmpty(pluginDirectory))
+                {
+                    var candidate = Path.Combine(pluginDirectory, name.Name + ".dll");
+                    if (File.Exists(candidate))
+                    {
+                        // Έλεγχος ταυτότητας ώστε να μη φορτωθεί DLL άλλης έκδοσης με το ίδιο όνομα.
+                        try
+                        {
+                            var candidateName = AssemblyName.GetAssemblyName(candidate);
+                            if (AssemblyName.ReferenceMatchesDefinition(name, candidateName))
+                                return LoadFromAssemblyPath(candidate);
+                        }
+                        catch (BadImageFormatException)
+                        {
+                            // Δεν είναι managed assembly· αφήνουμε το runtime να συνεχίσει την επίλυση.
+                        }
+                    }
+                }
+
+                return null;
             }
 
             protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
