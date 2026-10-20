@@ -41,6 +41,11 @@ namespace MotionDesk.Services
         // γενικό διακόπτη PluginsEnabled παραπάνω. Αποθηκεύει το Id όσων ο χρήστης έχει απενεργοποιήσει.
         public HashSet<string> DisabledPluginIds { get; set; } = new();
 
+        // Αφαίρεση plugin: ο φάκελός του δεν μπορεί να διαγραφεί όσο το Opsis τρέχει (το .dll του
+        // είναι ήδη φορτωμένο, Windows file lock), οπότε ο φάκελος μπαίνει εδώ και σαρώνεται/
+        // διαγράφεται στην ΕΠΟΜΕΝΗ εκκίνηση, πριν φορτωθεί κανένα plugin (βλ. PluginHost.StartAll).
+        public List<string> PendingPluginRemovals { get; set; } = new();
+
         // Φάκελος όπου αποθηκεύονται τα μετατρεπόμενα .wmv->.mp4 (κενό = προεπιλογή στο AppData).
         public string? WmvConversionOutputDir { get; set; }
 

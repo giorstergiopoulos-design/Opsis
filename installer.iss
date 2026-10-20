@@ -8,6 +8,12 @@
   #define CrawlerSetupUrl "https://github.com/giorstergiopoulos-design/OpsisNewsCrawler/releases/latest/download/OpsisNewsCrawler-Setup.exe"
 #endif
 
+; Κοινή σελίδα εξαρτήσεων (.NET 10 Desktop Runtime / WebView2 Runtime) με τον installer του News
+; Crawler — βλ. το header comment μέσα στο ίδιο το αρχείο για το πλήρες hook-up. Αντικαθιστά το
+; παλιό σιωπηλό bundled-redist μηχανισμό παρακάτω: δείχνει στον χρήστη τι χρειάζεται/υπάρχει ήδη,
+; κατεβάζει μόνο ό,τι λείπει (με επαλήθευση ψηφιακής υπογραφής Microsoft πριν την εκτέλεση).
+#include "installer\dependencies.iss"
+
 [Setup]
 ; Μοναδικό GUID για την εφαρμογή (μην το αλλάξεις σε μελλοντικές εκδόσεις)
 AppId={{A9E8F765-1234-4567-89AB-CDEF01234567}
@@ -274,13 +280,6 @@ Name: "installffmpeg"; Description: "{cm:FfmpegTask}"; GroupDescription: "{cm:Ex
 ; Κύρια αρχεία εφαρμογής (δημιουργούνται από: dotnet publish -c Release -r win-x64)
 Source: "bin\Release\net10.0-windows10.0.19041.0\win-x64\publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 
-; WebView2 Evergreen Bootstrapper (κατεβάζει το πλήρες runtime online αν χρειαστεί)
-Source: "redist\MicrosoftEdgeWebview2Setup.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall skipifsourcedoesntexist
-
-; Η εφαρμογή είναι framework-dependent (όχι self-contained) — χρειάζεται το .NET 8 Desktop
-; Runtime εγκατεστημένο στο μηχάνημα του χρήστη.
-Source: "redist\windowsdesktop-runtime-10.0.12-win-x64.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall skipifsourcedoesntexist
-
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
@@ -290,54 +289,17 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{#MyAppName}"; ValueData: """{app}\{#MyAppExeName}"""; Tasks: autostart; Flags: uninsdeletevalue
 
 [Run]
-; 1. Έλεγχος και εγκατάσταση WebView2 Runtime (εάν δεν υπάρχει).
-Filename: "{tmp}\MicrosoftEdgeWebview2Setup.exe"; Parameters: "/silent /install"; StatusMsg: "{cm:InstallingWebView2}"; Check: not IsWebView2Installed
-
-; 2. Έλεγχος και εγκατάσταση .NET 8.0 Desktop Runtime (εάν δεν υπάρχει).
-Filename: "{tmp}\windowsdesktop-runtime-10.0.12-win-x64.exe"; Parameters: "/quiet /norestart"; StatusMsg: "{cm:InstallingDotNet}"; Check: not IsDotNet10Installed
-
-; 3. Προαιρετική εγκατάσταση FFmpeg μέσω winget (μόνο αν ο χρήστης επέλεξε το tickbox παραπάνω).
+; 1. Προαιρετική εγκατάσταση FFmpeg μέσω winget (μόνο αν ο χρήστης επέλεξε το tickbox παραπάνω).
 ; "& exit 0" αποτρέπει το Inno Setup από το να δείξει σφάλμα αν το winget γυρίσει μη-μηδενικό
 ; exit code (π.χ. "no applicable update found" όταν είναι ήδη εγκατεστημένο).
+; (.NET 10 Desktop Runtime / WebView2 Runtime: πλέον μέσω της κοινής σελίδας dependencies.iss —
+; βλ. InitializeWizard/NextButtonClick/CurStepChanged παρακάτω.)
 Filename: "{cmd}"; Parameters: "/C winget install --id Gyan.FFmpeg -e --silent --accept-package-agreements --accept-source-agreements & exit 0"; StatusMsg: "{cm:InstallingFfmpeg}"; Flags: runhidden; Tasks: installffmpeg
 
-; 4. Εκκίνηση της εφαρμογής μετά το τέλος της εγκατάστασης
+; 2. Εκκίνηση της εφαρμογής μετά το τέλος της εγκατάστασης
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
 [Code]
-// Συνάρτηση ελέγχου για το WebView2 Runtime στη Registry
-function IsWebView2Installed: Boolean;
-begin
-  Result := RegKeyExists(HKLM, 'SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}') or
-            RegKeyExists(HKCU, 'Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}');
-end;
-
-// Ελέγχει αν υπάρχει εγκατεστημένη οποιαδήποτε έκδοση 10.0.x του .NET Desktop Runtime (x64),
-// σαρώνοντας τα subkeys αντί να κλειδώνουμε σε συγκεκριμένο patch version. (Πριν ήταν 8.0.x —
-// η εφαρμογή αναβαθμίστηκε σε .NET 10.)
-function HasDotNet10SubKey(RootKeyPath: String): Boolean;
-var
-  Names: TArrayOfString;
-  I: Integer;
-begin
-  Result := False;
-  if RegGetSubkeyNames(HKLM, RootKeyPath, Names) then
-  begin
-    for I := 0 to GetArrayLength(Names) - 1 do
-      if Pos('10.0.', Names[I]) = 1 then
-      begin
-        Result := True;
-        exit;
-      end;
-  end;
-end;
-
-function IsDotNet10Installed: Boolean;
-begin
-  Result := HasDotNet10SubKey('SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.WindowsDesktop.App') or
-            HasDotNet10SubKey('SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.WindowsDesktop.App');
-end;
-
 // Ελέγχει αν το winget (App Installer) υπάρχει στο σύστημα, ώστε το tickbox του FFmpeg να μην
 // εμφανίζεται καν σε μηχανήματα χωρίς winget (θα απέτυχε σιωπηλά χωρίς αυτό τον έλεγχο).
 function IsWingetAvailable: Boolean;
@@ -387,6 +349,8 @@ begin
   if sPrevVersion <> '' then
     WizardForm.WelcomeLabel2.Caption := FmtMessage(CustomMessage('UpdateDetected'), [sPrevVersion]);
   CrawlerDownload := CreateDownloadPage(CustomMessage('CrawlerDownloadTitle'), CustomMessage('CrawlerDownloadDesc'), nil);
+  // Σελίδα εξαρτήσεων (dependencies.iss) αμέσως μετά τη σελίδα επιλογής tasks.
+  DepsInit(wpSelectTasks);
 end;
 
 function CrawlerChecksumMatches: Boolean;
@@ -406,6 +370,8 @@ end;
 function NextButtonClick(CurPageID: Integer): Boolean;
 begin
   Result := True;
+  if CurPageID = wpReady then
+    Result := DepsDownloadSelected();
   if (CurPageID = wpReady) and WizardIsTaskSelected('installcrawler') then
   begin
     CrawlerDownloaded := False;
@@ -439,6 +405,7 @@ var
   ResultCode: Integer;
   SetupFile: String;
 begin
+  if CurStep = ssInstall then DepsInstallSelected();
   if (CurStep = ssPostInstall) and CrawlerDownloaded then
   begin
     SetupFile := ExpandConstant('{tmp}\OpsisNewsCrawler-Setup.exe');

@@ -2753,6 +2753,23 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                     enableToggle.CheckedChanged += (_, _) => Services.PluginHost.Instance.SetPluginEnabled(capturedId, enableToggle.Checked);
                     panel.Controls.Add(enableToggle);
 
+                    // Ζητήθηκε (σύγκριση με τον μηχανισμό plugin του Kombos): αφαίρεση plugin από
+                    // μέσα στο Opsis, όχι μόνο ενεργό/ανενεργό. Ο φάκελος διαγράφεται αμέσως αν
+                    // γίνεται (δεν θα γίνεται συνήθως — το .dll είναι ήδη φορτωμένο σε αυτή τη
+                    // διεργασία), αλλιώς προγραμματίζεται καθαρή διαγραφή στην επόμενη εκκίνηση.
+                    var uninstallBtn = NewHoverButton(LocalizationManager.T("About.PluginUninstall"), () =>
+                    {
+                        var choice = MessageBox.Show(
+                            string.Format(LocalizationManager.T("About.PluginUninstallConfirmBody"), captured.Name),
+                            LocalizationManager.T("About.PluginUninstallConfirmTitle"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                        if (choice != DialogResult.Yes) return;
+                        bool removedNow = Services.PluginHost.Instance.UninstallPlugin(capturedId);
+                        _statusLabel.Text = LocalizationManager.T(removedNow ? "About.PluginUninstalledNow" : "About.PluginUninstallQueued");
+                        ShowAbout();
+                    });
+                    uninstallBtn.Margin = new Padding(0, 0, 0, 6);
+                    panel.Controls.Add(uninstallBtn);
+
                     var row = new FlowLayoutPanel { AutoSize = true, WrapContents = true, MaximumSize = new Size(740, 0), Margin = new Padding(0, 0, 0, 12) };
                     foreach (var section in captured.Sections)
                     {

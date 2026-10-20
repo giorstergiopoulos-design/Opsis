@@ -65,6 +65,37 @@ namespace MotionDesk.Services
             Changed?.Invoke();
         }
 
+        /// <summary>Σταματά και αφαιρεί ένα plugin από τη λίστα αμέσως (η σελίδα About/tray το χάνουν
+        /// στη στιγμή), και προγραμματίζει τη διαγραφή του φακέλου του. Μια πρώτη άμεση απόπειρα
+        /// γίνεται εδώ (συνήθως αποτυγχάνει όσο το .dll είναι ακόμη φορτωμένο σε αυτή τη διεργασία —
+        /// Windows file lock), αλλιώς ο φάκελος μένει σε ουρά και σαρώνεται καθαρά στην επόμενη
+        /// εκκίνηση, πριν προλάβει να φορτωθεί οτιδήποτε (βλ. StartAll). Δεν χρειάζεται collectible
+        /// AssemblyLoadContext για αυτό — πιο απλό και αξιόπιστο από το να βασιστούμε σε unload ενώ ο
+        /// host κρατάει ήδη μόνιμες αναφορές (π.χ. η συνδρομή στο NavigationRequested παρακάτω).</summary>
+        public bool UninstallPlugin(string id)
+        {
+            var p = _plugins.FirstOrDefault(x => x.Plugin.Id == id);
+            if (p == null) return false;
+
+            try { if (p.Started) p.Plugin.Stop(); }
+            catch (Exception ex) { Log($"Plugin '{p.Plugin.Name}' failed to stop before uninstall: {ex.Message}"); }
+
+            _plugins.Remove(p);
+            var settings = AppSettings.Load();
+            settings.DisabledPluginIds.Remove(id);
+
+            bool deletedNow = false;
+            try { Directory.Delete(p.Folder, recursive: true); deletedNow = true; }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                if (!settings.PendingPluginRemovals.Contains(p.Folder, StringComparer.OrdinalIgnoreCase))
+                    settings.PendingPluginRemovals.Add(p.Folder);
+            }
+            settings.Save();
+            Changed?.Invoke();
+            return deletedNow;
+        }
+
         /// <summary>Ένα plugin ζήτησε να εμφανιστεί μία από τις σελίδες του (π.χ. δεξί κλικ στη μπάρα ειδήσεων).</summary>
         public event Action<string>? NavigationRequested;
 
@@ -76,6 +107,7 @@ namespace MotionDesk.Services
         {
             if (_started) return;
             _started = true;
+            SweepPendingRemovals();
             if (!AppSettings.Load().PluginsEnabled) return;
 
             foreach (var folder in EnumerateCandidateFolders())
@@ -172,6 +204,23 @@ namespace MotionDesk.Services
                     t.TextPrimary.ToArgb(), t.TextMuted.ToArgb(), t.AccentCyan.ToArgb(), opacity);
             }
             catch (Exception ex) { Log($"Plugin '{plugin.Name}' SetTheme failed: {ex.Message}"); }
+        }
+
+        // Διαγράφει τους φακέλους plugin που σημειώθηκαν για αφαίρεση σε προηγούμενη συνεδρία, ΠΡΙΝ
+        // φορτωθεί οτιδήποτε άλλο σε αυτή — τώρα κανένα .dll τους δεν είναι ακόμη φορτωμένο, οπότε η
+        // διαγραφή πετυχαίνει αξιόπιστα.
+        private static void SweepPendingRemovals()
+        {
+            var settings = AppSettings.Load();
+            if (settings.PendingPluginRemovals.Count == 0) return;
+            var remaining = new List<string>();
+            foreach (var folder in settings.PendingPluginRemovals)
+            {
+                try { if (Directory.Exists(folder)) Directory.Delete(folder, recursive: true); }
+                catch (Exception ex) { Log($"Could not remove pending plugin folder '{folder}': {ex.Message}"); remaining.Add(folder); }
+            }
+            settings.PendingPluginRemovals = remaining;
+            settings.Save();
         }
 
         // ---- discovery & loading ---------------------------------------------------------------
