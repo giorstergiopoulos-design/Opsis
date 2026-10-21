@@ -488,10 +488,26 @@ namespace MotionDesk.Widgets
         public event Action? Revealed;      // raised when the window has been shown (the engine then retires the windows it replaces)
         private System.Windows.Forms.Timer? _revealTimeout;
 
+        // Σηκώνει ΜΑΖΙ, στο ίδιο tick, το Form (Show) ΚΑΙ το ίδιο το WebView2 control
+        // (Visible=true — είχε μείνει σκόπιμα false από το InitializeWebViewAsync). Ο στόχος είναι
+        // να μην υπάρχει καθόλου χρονικό παράθυρο όπου ο parent είναι ορατός αλλά το WebView2
+        // περιεχόμενο ακόμη όχι (αυτό ακριβώς παρατηρήθηκε ως μαύρο flash στην πρώτη εμφάνιση του
+        // animated wallpaper) — σε συνδυασμό με το ότι BackColor/DefaultBackgroundColor είναι πλέον
+        // ταυτόσημα με το πραγματικό CSS background της σελίδας (#05070d, όχι καθαρό μαύρο), ώστε
+        // ακόμη κι αν ένα frame του parent προλάβει να ζωγραφιστεί πριν «κολλήσει» το WebView2 από
+        // πάνω, να είναι οπτικά αδιάκριτο από το πραγματικό σκοτεινό σκηνικό αντί για έντονο μαύρο.
+        private void ShowRevealed()
+        {
+            if (_webView != null) _webView.Visible = true;
+            Show();
+            SendToBack();
+            Revealed?.Invoke();
+        }
+
         private void RevealWhenReady()
         {
             if (Visible) { BringToFront(); return; }
-            if (_contentReady) { Show(); SendToBack(); Revealed?.Invoke(); return; }
+            if (_contentReady) { ShowRevealed(); return; }
             _wantShow = true;
             if (_revealTimeout == null)
             {
@@ -499,7 +515,7 @@ namespace MotionDesk.Widgets
                 _revealTimeout.Tick += (_, _) =>
                 {
                     _revealTimeout?.Stop();
-                    if (_wantShow && !IsDisposed && !Visible) { _wantShow = false; Show(); SendToBack(); Revealed?.Invoke(); }
+                    if (_wantShow && !IsDisposed && !Visible) { _wantShow = false; ShowRevealed(); }
                 };
             }
             _revealTimeout.Stop(); _revealTimeout.Start();
@@ -508,7 +524,7 @@ namespace MotionDesk.Widgets
         private void MarkContentReady()
         {
             _contentReady = true;
-            if (_wantShow && !IsDisposed && !Visible) { _wantShow = false; _revealTimeout?.Stop(); Show(); SendToBack(); Revealed?.Invoke(); }
+            if (_wantShow && !IsDisposed && !Visible) { _wantShow = false; _revealTimeout?.Stop(); ShowRevealed(); }
         }
 
         public WallpaperWindow(Screen targetScreen)
@@ -518,7 +534,9 @@ namespace MotionDesk.Widgets
             StartPosition = FormStartPosition.Manual;
             ShowInTaskbar = false;
             Bounds = targetScreen.Bounds;
-            BackColor = Color.Black;
+            // Ταυτόσημο με το CSS background του index.html (#05070d), όχι καθαρό μαύρο — βλ. σχόλιο
+            // στο ShowRevealed.
+            BackColor = Color.FromArgb(5, 7, 13);
         }
 
         protected override CreateParams CreateParams
@@ -700,7 +718,11 @@ namespace MotionDesk.Widgets
             _initializing = true;
             try
             {
-                _webView = new WebView2 { Dock = DockStyle.Fill, DefaultBackgroundColor = Color.Black };
+                // Ίδιο χρώμα με το Form.BackColor (#05070d, βλ. constructor) αντί για καθαρό μαύρο —
+                // βλ. σχόλιο στο ShowRevealed. Visible=false: το ίδιο το WebView2 control μένει
+                // κρυφό μέχρι το ShowRevealed, ώστε να μην ξεκινήσει να compositάρει πριν προλάβει
+                // να ζωγραφιστεί το πρώτο πραγματικό frame (prepareFirstFrame στο index.html).
+                _webView = new WebView2 { Dock = DockStyle.Fill, DefaultBackgroundColor = BackColor, Visible = false };
                 Controls.Add(_webView);
                 await _webView.EnsureCoreWebView2Async(await WebView2Support.CreateEnvironmentAsync());
                 if (IsDisposed || _webView.CoreWebView2 == null) return;
