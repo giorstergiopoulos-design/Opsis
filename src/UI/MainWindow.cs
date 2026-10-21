@@ -2594,7 +2594,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
         // έπιασε ζωντανά ("το ιστορικό μένει στην 1.9.0"). Πρόσθεσε ΚΑΙ εδώ τη νέα έκδοση.
         private static readonly (string Version, string Date)[] VersionHistory =
         {
-            ("1.9.11", "2026-10"), ("1.9.10", "2026-10"), ("1.9.9", "2026-10"), ("1.9.8", "2026-10"), ("1.9.7", "2026-10"), ("1.9.6", "2026-10"), ("1.9.5", "2026-10"), ("1.9.4", "2026-10"), ("1.9.3", "2026-10"), ("1.9.2", "2026-10"), ("1.9.1", "2026-10"), ("1.9.0", "2026-10"), ("1.8.9", "2026-10"), ("1.8.8", "2026-10"), ("1.8.7", "2026-10"), ("1.8.6", "2026-10"), ("1.8.5", "2026-10"), ("1.7.8", "2026-10"), ("1.7.6", "2026-10"), ("1.7.5", "2026-10"), ("1.6.8", "2026-10"), ("1.6.2", "2026-10"), ("1.6.1", "2026-10"), ("1.6.0", "2026-09"), ("1.5.0", "2026-09"), ("1.4.1", "2026-09"), ("1.4.0", "2026-09"), ("1.3.0", "2026-09"), ("1.2.9", "2026-09"), ("1.2.8", "2026-09"), ("1.2.7", "2026-09"), ("1.2.6", "2026-09"), ("1.2.5", "2026-09"), ("1.2.4", "2026-09"), ("1.2.3", "2026-09"), ("1.2.2", "2026-09"), ("1.2.1", "2026-09"), ("1.2.0", "2026-09"), ("1.1.2", "2026-09"), ("1.1.1", "2026-09"), ("1.1.0", "2026-09"), ("1.0.0", "2026-09")
+            ("1.9.12", "2026-10"), ("1.9.11", "2026-10"), ("1.9.10", "2026-10"), ("1.9.9", "2026-10"), ("1.9.8", "2026-10"), ("1.9.7", "2026-10"), ("1.9.6", "2026-10"), ("1.9.5", "2026-10"), ("1.9.4", "2026-10"), ("1.9.3", "2026-10"), ("1.9.2", "2026-10"), ("1.9.1", "2026-10"), ("1.9.0", "2026-10"), ("1.8.9", "2026-10"), ("1.8.8", "2026-10"), ("1.8.7", "2026-10"), ("1.8.6", "2026-10"), ("1.8.5", "2026-10"), ("1.7.8", "2026-10"), ("1.7.6", "2026-10"), ("1.7.5", "2026-10"), ("1.6.8", "2026-10"), ("1.6.2", "2026-10"), ("1.6.1", "2026-10"), ("1.6.0", "2026-09"), ("1.5.0", "2026-09"), ("1.4.1", "2026-09"), ("1.4.0", "2026-09"), ("1.3.0", "2026-09"), ("1.2.9", "2026-09"), ("1.2.8", "2026-09"), ("1.2.7", "2026-09"), ("1.2.6", "2026-09"), ("1.2.5", "2026-09"), ("1.2.4", "2026-09"), ("1.2.3", "2026-09"), ("1.2.2", "2026-09"), ("1.2.1", "2026-09"), ("1.2.0", "2026-09"), ("1.1.2", "2026-09"), ("1.1.1", "2026-09"), ("1.1.0", "2026-09"), ("1.0.0", "2026-09")
         };
 
 
@@ -2941,9 +2941,17 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             dialog.HandleCreated += (_, _) => GlassBlur.ApplyWindowDropShadow(dialog.Handle);
 
             var header = new Panel { Dock = DockStyle.Top, Height = 64, BackColor = UiTheme.Surface, Padding = new Padding(20, 0, 20, 0) };
-            var headerIcon = new Label { Text = "⚖", Font = new Font("Segoe UI", 20f), ForeColor = UiTheme.AccentCyan, AutoSize = true, Location = new Point(20, 14) };
-            var headerTitle = new Label { Text = "MIT License", Font = new Font("Segoe UI Semibold", 13f, FontStyle.Bold), ForeColor = UiTheme.TextPrimary, AutoSize = true, Location = new Point(54, 10) };
-            var headerSub = new Label { Text = "Opsis — free, open-source, no warranty", Font = UiTheme.FontBody, ForeColor = UiTheme.TextSecondary, AutoSize = true, Location = new Point(54, 34) };
+            // ΔΙΟΡΘΩΣΗ "το εικονίδιο επικαλύπτει το MIT": το "⚖" (U+2696) δεν υπάρχει αξιόπιστα στη
+            // Segoe UI — ο χαρακτήρας πέφτει σε font fallback με απρόβλεπτο πλάτος μέτρησης, οπότε
+            // το AutoSize του Label (και άρα το σταθερό X=54 του τίτλου δίπλα του) υπολόγιζε λάθος
+            // πλάτος και ο τίτλος ξεκινούσε πάνω στο ίδιο το εικονίδιο (ίδια κατηγορία προβλήματος
+            // με τα εικονίδια σημαιών — βλ. FlagIcons.cs). Διόρθωση: σταθερό, γενναιόδωρο κουτί
+            // (TextAlign=MiddleCenter) αντί για AutoSize, ώστε όποιο κι αν είναι το πραγματικό
+            // μετρημένο πλάτος του glyph να μένει μέσα στο κουτί — ο τίτλος ξεκινάει πάντα στο ίδιο,
+            // σταθερό X.
+            var headerIcon = new Label { Text = "⚖", Font = new Font("Segoe UI Symbol", 16f), ForeColor = UiTheme.AccentCyan, TextAlign = ContentAlignment.MiddleCenter, Location = new Point(20, 10), Size = new Size(34, 44) };
+            var headerTitle = new Label { Text = "MIT License", Font = new Font("Segoe UI Semibold", 13f, FontStyle.Bold), ForeColor = UiTheme.TextPrimary, AutoSize = true, Location = new Point(64, 10) };
+            var headerSub = new Label { Text = "Opsis — free, open-source, no warranty", Font = UiTheme.FontBody, ForeColor = UiTheme.TextSecondary, AutoSize = true, Location = new Point(64, 34) };
             header.Controls.Add(headerIcon); header.Controls.Add(headerTitle); header.Controls.Add(headerSub);
 
             var rtb = new RichTextBox
@@ -2983,11 +2991,16 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             rtb.Clear();
             var headingFont = new Font("Segoe UI Semibold", 11f, FontStyle.Bold);
             var bodyFont = UiTheme.FontBody;
-            var legalFont = new Font("Consolas", 8.5f);
+            // ΔΙΟΡΘΩΣΗ "το κείμενο είναι σαν από το σημειωματάριο": η Consolas (μονοσπέικ) έκανε
+            // ακριβώς το μπλοκ που έπρεπε να φαίνεται λιγότερο σημαντικό να μοιάζει με απλό .txt σε
+            // Notepad αντί για μέρος ενός σχεδιασμένου dialog. Ίδια κανονική γραμματοσειρά με το
+            // υπόλοιπο κείμενο, μόνο μικρότερη + δευτερεύον χρώμα διατηρεί την ιεραρχία χωρίς την
+            // αισθητική του plaintext.
+            var legalFont = new Font(bodyFont.FontFamily, 8.5f);
             // Το ίδιο το LICENSE αρχείο χωρίζεται ήδη σε 4 ενότητες με γραμμές "----" — η πρώτη
             // (περίληψη/αποποίηση ευθύνης) μένει στη βασική γραμματοσειρά, η 2η (το ίδιο το νομικό
-            // κείμενο MIT) μικραίνει (μονοσπέικ, λιγότερο σημαντικό να διαβαστεί λέξη-λέξη), οι
-            // επόμενες (Third-Party Components, Weather data) ξαναγυρνούν στη βασική γραμματοσειρά.
+            // κείμενο MIT) μικραίνει (λιγότερο σημαντικό να διαβαστεί λέξη-λέξη), οι επόμενες
+            // (Third-Party Components, Weather data) ξαναγυρνούν στη βασική γραμματοσειρά.
             var sections = text.Replace("\r\n", "\n").Split(new[] { "----------------------------------------------------------------------" }, StringSplitOptions.None);
             for (int i = 0; i < sections.Length; i++)
             {

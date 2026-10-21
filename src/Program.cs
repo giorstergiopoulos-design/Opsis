@@ -28,6 +28,12 @@ namespace MotionDesk
             Application.ThreadException += (s, e) => ReportError(e.Exception);
             AppDomain.CurrentDomain.UnhandledException += (s, e) => ReportError(e.ExceptionObject as Exception);
 
+            // Το .NET 5+ δεν περιλαμβάνει πλέον τις legacy κωδικοσελίδες (π.χ. 737 για ελληνικά
+            // OEM/console) by default — χωρίς αυτή την εγγραφή, Encoding.GetEncoding(737) πετάει
+            // NotSupportedException. Χρειάζεται για σωστή ανάγνωση της εξόδου κονσόλας εργαλείων
+            // σαν το powercfg (SystemControlService.GetPowerPlans) σε μη-αγγλικά Windows.
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
             // Sync η Taskbar translucency (GlassBlur.SetTaskbarTranslucency) με την τρέχουσα τιμή του
             // Windows "Εφέ διαφάνειας" στην εκκίνηση — χωρίς αυτό, το blur της Taskbar θα εφαρμοζόταν
             // μόνο αφού ο χρήστης σβήσει/ξανατσεκάρει το checkbox στις Ρυθμίσεις μία φορά.

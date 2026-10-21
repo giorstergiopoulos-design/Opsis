@@ -23,9 +23,9 @@
          είχε κανένα πρακτικό αποτέλεσμα, μόνο θα πρόσθετε ~35+ άσχετα attributes σε custom controls.
          Βλ. https://aka.ms/winforms-warnings/wfo1000 -->
     <NoWarn>$(NoWarn);WFO1000</NoWarn>
-    <Version>1.9.11</Version>
-    <AssemblyVersion>1.9.11.0</AssemblyVersion>
-    <FileVersion>1.9.11.0</FileVersion>
+    <Version>1.9.12</Version>
+    <AssemblyVersion>1.9.12.0</AssemblyVersion>
+    <FileVersion>1.9.12.0</FileVersion>
     <Product>Opsis - Desktop Customization</Product>
     <!-- Ζητήθηκε ρητά "η εφαρμογή να μην περνά ως false positive". Πραγματική, εγγυημένη λύση
          είναι μόνο ένα πληρωμένο code-signing certificate (βλ. PROJECT_STATE.md — παραλείφθηκε

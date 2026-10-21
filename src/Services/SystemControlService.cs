@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Management;
+using System.Runtime.InteropServices;
 using NAudio.CoreAudioApi;
 
 namespace MotionDesk.Services
@@ -104,7 +105,19 @@ namespace MotionDesk.Services
             var plans = new List<PowerPlanInfo>();
             try
             {
-                var psi = new ProcessStartInfo("powercfg") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true };
+                // ΔΙΟΡΘΩΣΗ "κείμενο σαν αλαμπουρνέζικα" στα ελληνικά ονόματα σχεδίων ενέργειας
+                // ("Εξισορρόπηση" κ.λπ.): η κονσόλα των Windows (άρα και η έξοδος του powercfg)
+                // γράφει στη σελίδα κωδικών OEM του ΣΥΣΤΗΜΑΤΟΣ (π.χ. 737 για ελληνικά Windows), ΟΧΙ
+                // στην προεπιλεγμένη κωδικοποίηση που χρησιμοποιεί το .NET όταν δεν οριστεί ρητά
+                // StandardOutputEncoding. ΠΡΩΤΗ προσπάθεια διόρθωσης χρησιμοποιούσε
+                // `CultureInfo.CurrentCulture.TextInfo.OEMCodePage` — live-verified ΛΑΘΟΣ (ακόμα
+                // αλαμπουρνέζικα): το CurrentCulture ενός WinForms process δεν ταυτίζεται αξιόπιστα
+                // με το πραγματικό system locale/OEM codepage. Η πραγματική, σωστή πηγή είναι η ίδια
+                // η Win32 GetOEMCP() — επιβεβαιωμένο με χειροκίνητη δοκιμή: τα raw bytes της εξόδου
+                // του powercfg αποκωδικοποιούνται σωστά ΜΟΝΟ με codepage 737, που αυτό ακριβώς
+                // επιστρέφει η GetOEMCP() σε ελληνικά Windows, ανεξάρτητα από το .NET CurrentCulture.
+                var oemEncoding = System.Text.Encoding.GetEncoding(GetOEMCP());
+                var psi = new ProcessStartInfo("powercfg") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, StandardOutputEncoding = oemEncoding };
                 psi.ArgumentList.Add("/list");
                 using var proc = Process.Start(psi);
                 if (proc == null) return plans;
@@ -141,5 +154,8 @@ namespace MotionDesk.Services
             }
             catch (Exception) { }
         }
+
+        [DllImport("kernel32.dll")]
+        private static extern int GetOEMCP();
     }
 }
