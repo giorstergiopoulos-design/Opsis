@@ -62,10 +62,13 @@ namespace MotionDesk.Services
             var forced = GetOverride();
             if (forced.HasValue) return forced.Value;
 
-            long ramMb = GetTotalRamMb();
-            int cores = Environment.ProcessorCount;
-            bool dedicatedGpu = HasDedicatedGpu();
+            return Classify(GetTotalRamMb(), Environment.ProcessorCount, HasDedicatedGpu());
+        }
 
+        // Καθαρή συνάρτηση (χωρίς I/O) ώστε να δοκιμάζεται με προσομοιωμένα προφίλ υλικού, π.χ. ένα
+        // laptop 300-400€ (8GB RAM, 2-4 λογικοί πυρήνες, ενσωματωμένη GPU) -> Low.
+        internal static HardwareTier Classify(long ramMb, int cores, bool dedicatedGpu)
+        {
             int score = 0;
             if (ramMb >= 8000) score++;
             if (ramMb >= 16000) score++;
@@ -78,8 +81,11 @@ namespace MotionDesk.Services
             return HardwareTier.Balanced;
         }
 
+        // Hooks προσομοίωσης για δοκιμές σε "αδύναμο" μηχάνημα (scripts/LowEndSim.ps1): ΔΕΝ υπάρχουν
+        // στο κανονικό UI και δεν επηρεάζουν τίποτα αν οι μεταβλητές περιβάλλοντος δεν οριστούν.
         private static long GetTotalRamMb()
         {
+            if (long.TryParse(Environment.GetEnvironmentVariable("OPSIS_SIM_RAM_MB"), out long simulated) && simulated > 0) return simulated;
             try
             {
                 if (GetPhysicallyInstalledSystemMemory(out ulong kb)) return (long)(kb / 1024);
@@ -95,6 +101,9 @@ namespace MotionDesk.Services
         // πρώτη, απλή εκδοχή· η βαθμολογία ούτως ή άλλως δεν εξαρτάται μόνο από αυτό το ένα σημείο.
         private static bool HasDedicatedGpu()
         {
+            string? simGpu = Environment.GetEnvironmentVariable("OPSIS_SIM_DGPU");
+            if (simGpu == "0") return false;
+            if (simGpu == "1") return true;
             try
             {
                 using var searcher = new ManagementObjectSearcher("SELECT Name FROM Win32_VideoController");

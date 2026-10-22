@@ -17,6 +17,10 @@ namespace MotionDesk.Services
 
         private static readonly Lazy<string> _appDataFolder = new(() =>
         {
+            // Απομονωμένος φάκελος δεδομένων για αυτοματοποιημένες δοκιμές/προσομοιώσεις (δεν αγγίζει
+            // τις πραγματικές ρυθμίσεις του χρήστη).
+            string? isolated = Environment.GetEnvironmentVariable("OPSIS_APPDATA");
+            if (!string.IsNullOrWhiteSpace(isolated)) { Directory.CreateDirectory(isolated); return isolated; }
             string root = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             string current = Path.Combine(root, CurrentFolderName);
             string legacy = Path.Combine(root, LegacyFolderName);

@@ -12,7 +12,7 @@
 <p align="center">
   <img alt="Platform" src="https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6?logo=windows&logoColor=white" />
   <img alt=".NET" src="https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white" />
-  <img alt="Version" src="https://img.shields.io/badge/version-1.9.8-00B4D8" />
+  <img alt="Version" src="https://img.shields.io/badge/version-2.0.0-00B4D8" />
   <img alt="License" src="https://img.shields.io/badge/license-MIT-green" />
   <img alt="Languages" src="https://img.shields.io/badge/localized-14%20languages-blue" />
 </p>
@@ -39,21 +39,20 @@ runtime.
 | Σελίδα | Τι κάνει |
 |---|---|
 | 🏠 Πίνακας Ελέγχου | Ζωντανή σύνοψη συστήματος/επιφάνειας εργασίας/wallpaper, γρήγορη εκκίνηση, εναλλαγή προφίλ χώρου εργασίας |
-| 🧩 Widgets | Ρολόι, Δίκτυο, Ήχος, Καιρός, Δίσκοι, Παρακολούθηση Συστήματος, Γρήγορες Ρυθμίσεις (ένταση/φωτεινότητα/σχέδιο ενέργειας) — native, πάντα-από-πάνω, με δικό τους resize/θέμα |
+| 🧩 Widgets | Ρολόι, Δίκτυο, Ήχος, Καιρός, Δίσκοι, Παρακολούθηση Συστήματος, Γρήγορες Ρυθμίσεις (ένταση/φωτεινότητα/σχέδιο ενέργειας), Αναπαραγωγή (media), Ειδοποιήσεις, Ημερολόγιο, Bluetooth — native, πάντα-από-πάνω, με δικό τους resize/θέμα |
 | 🗂️ DeskZones | Στοίχιση παραθύρων τύπου FancyZones (πλέγμα, σειρές, στήλες, custom διατάξεις ανά οθόνη) + DeskContainers στυλ Fences για ομαδοποίηση εικονιδίων |
 | 🖼️ Wallpaper | Μηχανή ζωντανού wallpaper: procedural "Opsis Waves" (θέμα-aware, wind-reactive κύματα, πραγματική βροχή σε τζάμι) ή video/playlist (.mp4, αυτόματη μετατροπή .wmv μέσω FFmpeg), ζωντανό overlay καιρού, performance modes με αυτόματη εξοικονόμηση μπαταρίας |
 | ⚡ Απόδοση | CPU/RAM/GPU/δίκτυο/διεργασίες σε πραγματικό χρόνο, ειδοποιήσεις υψηλής χρήσης |
-| ⚙️ Ρυθμίσεις | Θέμα (ανοιχτό/σκούρο/ακολούθηση Windows), γλώσσα, στοίχιση σε πλέγμα, διαφάνεια παραθύρου, αυτόματη εκκίνηση |
+| ⚙️ Ρυθμίσεις | Θέμα (ανοιχτό/σκούρο/ακολούθηση Windows + Midnight/Forest/Dawn/High contrast), γλώσσα, στοίχιση σε πλέγμα, διαφάνεια παραθύρου, αυτόματη εκκίνηση |
 | 🧑‍🤝‍🧑 Προφίλ | Αποθήκευσε/φόρτωσε πλήρη workspace profiles (Work/Gaming/Focus): ζώνες, widgets και θέμα μαζί |
-| 🔁 Αυτοματισμοί | Κανόνες "όταν ξεκινήσει μια εφαρμογή → φόρτωσε ένα προφίλ", command palette (`Ctrl+K`) |
+| 🔁 Αυτοματισμοί | Κανόνες "όταν ξεκινήσει μια εφαρμογή → φόρτωσε ένα προφίλ", command palette και εκκινητής εφαρμογών (`Ctrl+K`) |
 | 🎨 Εξατομίκευση | Custom εικονίδια συστήματος (ΙconAtlas), πακέτα θέματος `.theme`, προσαρμοσμένοι δείκτες ποντικιού, ήχοι συστήματος, **οθόνη κλειδώματος που ταιριάζει ακριβώς με το ζωντανό wallpaper** (με αυτόματο re-sync και ανίχνευση αν τα Windows το επαναφέρουν) |
 | 🔊 Διαχείριση Ήχου | 5-band ζωντανός equalizer/visualizer με presets, προαιρετικό πραγματικό system-wide EQ μέσω Equalizer APO |
 | ℹ️ Σχετικά | Έκδοση, ιστορικό εκδόσεων σε 14 γλώσσες, κάρτες εγκατεστημένων plugins με δικό τους ενεργό/ανενεργό διακόπτη |
 
 Επίσης: πλήρης υποστήριξη 14 γλωσσών (Ελληνικά, Αγγλικά, Γερμανικά, Γαλλικά, Ισπανικά, Ιταλικά,
 Ρωσικά, Κινέζικα, Ιαπωνικά, Πορτογαλικά, Κορεατικά, Τουρκικά, Αραβικά, Χίντι), πραγματική taskbar
-διαφάνεια (τεχνική TranslucentTB, χωρίς DLL injection), αυτόματος μηνιαίος έλεγχος ενημερώσεων (ποτέ
-σιωπηλή λήψη/εγκατάσταση — πάντα ενημερώνει πρώτα), και σύστημα plugin επεκτάσιμο μέσω
+διαφάνεια (τεχνική TranslucentTB, χωρίς DLL injection), αυτόματη ενημέρωση από τα GitHub releases (έλεγχος σε κάθε εκκίνηση και ανά 12 ώρες, επαλήθευση SHA-256, και η εγκατάσταση γίνεται μόνο αφού το επιβεβαιώσεις), και σύστημα plugin επεκτάσιμο μέσω
 `AssemblyLoadContext` (το πρώτο, το **Opsis News Crawler**, προσθέτει μπάρα ειδήσεων/τιμών στην
 επιφάνεια εργασίας).
 
@@ -132,21 +131,20 @@ bundled in.
 | Page | What it does |
 |---|---|
 | 🏠 Dashboard | Live system/desktop/wallpaper summary, quick launch, workspace profile switching |
-| 🧩 Widgets | Clock, Network, Audio, Weather, Disk, System Monitor, Quick Settings (volume/brightness/power plan) — native, always-on-top, each with its own resize/theme |
+| 🧩 Widgets | Clock, Network, Audio, Weather, Disk, System Monitor, Quick Settings (volume/brightness/power plan), Now Playing, Notifications, Calendar, Bluetooth — native, always-on-top, each with its own resize/theme |
 | 🗂️ DeskZones | FancyZones-style window snapping (grid, rows, columns, per-monitor custom layouts) + Fences-style DeskContainers for icon grouping |
 | 🖼️ Wallpaper | Live wallpaper engine: procedural "Opsis Waves" (theme-aware, wind-reactive waves, real rain-on-glass) or video/playlist (`.mp4`, `.wmv` auto-converted via FFmpeg), live weather overlay, performance modes with automatic battery saving |
 | ⚡ Performance | Real-time CPU/RAM/GPU/network/process monitoring, high-usage alerts |
-| ⚙️ Settings | Theme (light/dark/follow Windows), language, grid snap, window opacity, startup with Windows |
+| ⚙️ Settings | Theme (light/dark/follow Windows + Midnight/Forest/Dawn/High contrast), language, grid snap, window opacity, startup with Windows |
 | 🧑‍🤝‍🧑 Profiles | Save/load full workspace profiles (Work/Gaming/Focus): zones, widgets and theme together |
-| 🔁 Automation | "When an app starts → load a profile" rules, command palette (`Ctrl+K`) |
+| 🔁 Automation | "When an app starts → load a profile" rules, command palette and app launcher (`Ctrl+K`) |
 | 🎨 Personalization | Custom system icons (IconAtlas), `.theme` package export, custom cursors, system sounds, **a lock screen that exactly matches the live wallpaper** (auto-resynced, with drift detection if Windows resets it) |
 | 🔊 Audio Enhancement | 5-band live equalizer/visualizer with presets, optional real system-wide EQ via Equalizer APO |
 | ℹ️ About | Version, version history in 14 languages, installed-plugin cards with their own enable/disable switch |
 
 Also: full support for 14 languages (English, Greek, German, French, Spanish, Italian, Russian,
 Chinese, Japanese, Portuguese, Korean, Turkish, Arabic, Hindi), real taskbar translucency
-(TranslucentTB technique, no DLL injection), an automatic monthly update check (never a silent
-download/install — it only notifies and opens the release page), and a plugin system built on
+(TranslucentTB technique, no DLL injection), self-update from GitHub releases (checked on every start and every 12 hours, SHA-256 verified, and installed only after you confirm), and a plugin system built on
 `AssemblyLoadContext` (the first one, **Opsis News Crawler**, adds a news/market ticker bar to the
 desktop).
 
