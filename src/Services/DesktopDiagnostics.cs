@@ -517,6 +517,100 @@ namespace MotionDesk.Services
             return results.Any(r => r.StartsWith("FAIL")) ? 1 : 0;
         }
 
+        [DllImport("user32.dll")] private static extern IntPtr SendMessage(IntPtr h, uint msg, IntPtr w, IntPtr l);
+        [DllImport("kernel32.dll")] private static extern IntPtr OpenProcess(uint access, bool inherit, uint pid);
+        [DllImport("kernel32.dll")] private static extern bool CloseHandle(IntPtr h);
+        [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
+        [DllImport("user32.dll")] private static extern void mouse_event(uint flags, uint dx, uint dy, uint data, UIntPtr extra);
+
+        /// <summary>`--test-iconhide`: διπλό κλικ σε κενό σημείο της επιφάνειας εργασίας (πραγματικά κλικ), με και χωρίς wallpaper, και έλεγχος αν κρύβονται/ξαναφαίνονται τα εικονίδια.</summary>
+        public static int TestIconHide(string mode)
+        {
+            dynamic? shell = null;
+            try { shell = Activator.CreateInstance(Type.GetTypeFromProgID("Shell.Application")!); shell!.ToggleDesktop(); } catch (Exception) { shell = null; }
+            void Pump(int ms) { var end = DateTime.UtcNow.AddMilliseconds(ms); while (DateTime.UtcNow < end) { Application.DoEvents(); System.Threading.Thread.Sleep(15); } }
+            GetCursorPos(out var old);
+            var results = new System.Collections.Generic.List<string>();
+            string state = Path.Combine(AppPaths.AppDataFolder, "desktopicons_hidden_state.json");
+            try
+            {
+                System.Threading.SynchronizationContext.SetSynchronizationContext(new WindowsFormsSynchronizationContext());
+                Pump(2500);
+                var sc = Screen.PrimaryScreen ?? Screen.AllScreens[0];
+                int x = sc.Bounds.X + sc.Bounds.Width * 55 / 100, y = sc.Bounds.Y + sc.Bounds.Height * 70 / 100;   // empty area (icons live at the left/right edges)
+                DesktopIconVisibilityEngine.Instance.Start();
+                void DoubleClick()
+                {
+                    SetCursorPos(x, y); Pump(150);
+                    for (int i = 0; i < 2; i++) { mouse_event(0x2, 0, 0, 0, UIntPtr.Zero); mouse_event(0x4, 0, 0, 0, UIntPtr.Zero); System.Threading.Thread.Sleep(60); }
+                    Pump(900);
+                }
+                string VisibleIcons()
+                {
+                    var bf = System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic;
+                    var t = typeof(DesktopIconVisibilityEngine);
+                    var list = (IntPtr)t.GetMethod("FindDesktopListView", bf)!.Invoke(null, null)!;
+                    GetWindowThreadProcessId(list, out uint pid);
+                    IntPtr hp = OpenProcess(0x0008 | 0x0010 | 0x0020, false, pid);
+                    var kept = new System.Collections.Generic.List<string>(); int total = 0;
+                    try
+                    {
+                        int count = (int)SendMessage(list, 0x1004 /*LVM_GETITEMCOUNT*/, IntPtr.Zero, IntPtr.Zero);
+                        for (int i = 0; i < count; i++)
+                        {
+                            total++;
+                            var pos = (Point)t.GetMethod("GetItemPositionRemote", bf)!.Invoke(null, new object[] { hp, list, i })!;
+                            string name = (string)t.GetMethod("GetItemTextRemote", bf)!.Invoke(null, new object[] { hp, list, i })!;
+                            if (pos.X > -5000 && pos.Y > -5000) kept.Add(name);
+                        }
+                    }
+                    finally { CloseHandle(hp); }
+                    try
+                    {
+                        var wl = (System.Collections.Generic.HashSet<string>)t.GetMethod("BuildWhitelist", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public)!.Invoke(null, new object?[] { null })!;
+                        File.WriteAllText(Path.Combine(Path.GetTempPath(), "opsis_iconhide_names.txt"), "WHITELIST:" + Environment.NewLine + string.Join(Environment.NewLine, wl) + Environment.NewLine + "VISIBLE:" + Environment.NewLine + string.Join(Environment.NewLine, kept), System.Text.Encoding.UTF8);
+                    }
+                    catch (Exception) { }
+                    return $"{kept.Count}/{total} visible: [{string.Join(" | ", kept)}]";
+                }
+                void Round(string label)
+                {
+                    DoubleClick(); bool hidden = File.Exists(state);
+                    results.Add($"{label}: 1st double-click -> icons hidden={hidden}; " + VisibleIcons());
+                    DoubleClick(); bool restored = !File.Exists(state);
+                    results.Add($"{label}: 2nd double-click -> icons restored={restored}");
+                    if (File.Exists(state)) DesktopIconVisibilityEngine.Instance.RestoreIfHidden();   // never leave the user's icons off-screen
+                }
+                Round("no wallpaper");
+                var ws = WallpaperSettings.Load(); ws.WeatherShowInfo = false; ws.Save();     // no clock/weather overlay: a visible window after Disable would then be a bug
+                var w = WallpaperHostEngine.Instance;
+                if (!string.IsNullOrEmpty(mode)) w.SetMode(mode);
+                w.Enable(); Pump(6000);
+                results.Add($"wallpaper enabled: IsRunning={w.IsRunning}");
+                Round("wallpaper " + (mode ?? "Waves"));
+                w.Disable(); Pump(1500);
+                results.Add($"after ONE Disable(): IsEnabled={w.IsEnabled} visibleWallpaperWindows={VisibleWallpaperWindows()}   (must be 0)");
+                // Race: Disable while the attach of a fresh window is still pending (what a quick Enable -> Disable does)
+                w.Enable(); Pump(120); w.Disable(); Pump(7000);
+                results.Add($"Enable then Disable 120 ms later, after 7 s: IsEnabled={w.IsEnabled} visibleWallpaperWindows={VisibleWallpaperWindows()}   (must be 0)");
+                // Race: Disable while the OLD windows are still retiring during a rebuild
+                w.Enable(); Pump(5000);
+                typeof(WallpaperHostEngine).GetMethod("RebuildWindows", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.Invoke(w, null);
+                Pump(300); w.Disable(); Pump(7000);
+                results.Add($"Disable during a rebuild, after 7 s: IsEnabled={w.IsEnabled} visibleWallpaperWindows={VisibleWallpaperWindows()}   (must be 0)");
+            }
+            finally
+            {
+                try { DesktopIconVisibilityEngine.Instance.Stop(); } catch (Exception) { }
+                SetCursorPos(old.X, old.Y);
+                if (shell != null) { try { shell.ToggleDesktop(); } catch (Exception) { } }
+            }
+            foreach (var r in results) Console.WriteLine(r);
+            return 0;
+        }
+
+        private static int VisibleWallpaperWindows() => Application.OpenForms.OfType<WallpaperWindow>().Count(f => !f.IsDisposed && f.Visible);
+
         private static string WeatherProbe()
         {
             var w = System.Diagnostics.Stopwatch.StartNew();

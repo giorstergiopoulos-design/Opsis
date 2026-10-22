@@ -1176,6 +1176,11 @@ namespace MotionDesk.UI
             // λειτουργικός αλλά ήταν πάντα ενεργός χωρίς καμία ρύθμιση ορατή στο χρήστη. Τώρα
             // μπορεί να απενεργοποιηθεί από εδώ (ενεργοποιείται/απενεργοποιείται ζωντανά, χωρίς
             // restart της εφαρμογής).
+            // Επιλογή εικονιδίων που ΜΕΝΟΥΝ όταν το διπλό κλικ κρύβει την επιφάνεια εργασίας.
+            string LdKeep(string el, string en) => LocalizationManager.CurrentLanguage == "el" ? el : en;
+            var keepIconsBtn = new HoverButton { Text = LdKeep("Εικονίδια που μένουν ορατά…", "Icons that stay visible…"), Width = 260, Height = 32, Margin = new Padding(0, 0, 0, 10), FlatStyle = FlatStyle.Flat, ForeColor = UiTheme.TextPrimary, BackColor = UiTheme.SurfaceHover, Cursor = Cursors.Hand };
+            keepIconsBtn.FlatAppearance.BorderSize = 0;
+            keepIconsBtn.Click += (_, _) => ShowKeepIconsDialog();
             var quickHideCheck = new FlatCheckBox { Text = LocalizationManager.T("DeskZones.QuickHideDoubleClick"), Checked = AppSettings.Load().QuickHideDoubleClickEnabled, AutoSize = true, BackColor = UiTheme.Background, Margin = new Padding(0, 0, 0, 10) };
             quickHideCheck.CheckedChanged += (_, _) =>
             {
@@ -1184,6 +1189,7 @@ namespace MotionDesk.UI
                 else MotionDesk.Widgets.DesktopIconVisibilityEngine.Instance.Stop();
             };
             panel.Controls.Add(quickHideCheck);
+            panel.Controls.Add(keepIconsBtn);
 
             AddIconButtonGrid(panel,
                 ("Container", LocalizationManager.T("DeskZones.NewContainerBtn"), (_, _) => DeskContainerHostEngine.Instance.SpawnContainer($"container{DateTime.Now.Ticks}", LocalizationManager.T("DeskZones.NewContainerDefaultTitle"), 360, 200, 360, 260)),
@@ -2735,7 +2741,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
         // έπιασε ζωντανά ("το ιστορικό μένει στην 1.9.0"). Πρόσθεσε ΚΑΙ εδώ τη νέα έκδοση.
         private static readonly (string Version, string Date)[] VersionHistory =
         {
-            ("2.1.1", "2026-10"), ("2.1.0", "2026-10"), ("2.0.0", "2026-10"), ("1.9.12", "2026-10"), ("1.9.11", "2026-10"), ("1.9.10", "2026-10"), ("1.9.9", "2026-10"), ("1.9.8", "2026-10"), ("1.9.7", "2026-10"), ("1.9.6", "2026-10"), ("1.9.5", "2026-10"), ("1.9.4", "2026-10"), ("1.9.3", "2026-10"), ("1.9.2", "2026-10"), ("1.9.1", "2026-10"), ("1.9.0", "2026-10"), ("1.8.9", "2026-10"), ("1.8.8", "2026-10"), ("1.8.7", "2026-10"), ("1.8.6", "2026-10"), ("1.8.5", "2026-10"), ("1.7.8", "2026-10"), ("1.7.6", "2026-10"), ("1.7.5", "2026-10"), ("1.6.8", "2026-10"), ("1.6.2", "2026-10"), ("1.6.1", "2026-10"), ("1.6.0", "2026-09"), ("1.5.0", "2026-09"), ("1.4.1", "2026-09"), ("1.4.0", "2026-09"), ("1.3.0", "2026-09"), ("1.2.9", "2026-09"), ("1.2.8", "2026-09"), ("1.2.7", "2026-09"), ("1.2.6", "2026-09"), ("1.2.5", "2026-09"), ("1.2.4", "2026-09"), ("1.2.3", "2026-09"), ("1.2.2", "2026-09"), ("1.2.1", "2026-09"), ("1.2.0", "2026-09"), ("1.1.2", "2026-09"), ("1.1.1", "2026-09"), ("1.1.0", "2026-09"), ("1.0.0", "2026-09")
+            ("2.1.2", "2026-10"), ("2.1.1", "2026-10"), ("2.1.0", "2026-10"), ("2.0.0", "2026-10"), ("1.9.12", "2026-10"), ("1.9.11", "2026-10"), ("1.9.10", "2026-10"), ("1.9.9", "2026-10"), ("1.9.8", "2026-10"), ("1.9.7", "2026-10"), ("1.9.6", "2026-10"), ("1.9.5", "2026-10"), ("1.9.4", "2026-10"), ("1.9.3", "2026-10"), ("1.9.2", "2026-10"), ("1.9.1", "2026-10"), ("1.9.0", "2026-10"), ("1.8.9", "2026-10"), ("1.8.8", "2026-10"), ("1.8.7", "2026-10"), ("1.8.6", "2026-10"), ("1.8.5", "2026-10"), ("1.7.8", "2026-10"), ("1.7.6", "2026-10"), ("1.7.5", "2026-10"), ("1.6.8", "2026-10"), ("1.6.2", "2026-10"), ("1.6.1", "2026-10"), ("1.6.0", "2026-09"), ("1.5.0", "2026-09"), ("1.4.1", "2026-09"), ("1.4.0", "2026-09"), ("1.3.0", "2026-09"), ("1.2.9", "2026-09"), ("1.2.8", "2026-09"), ("1.2.7", "2026-09"), ("1.2.6", "2026-09"), ("1.2.5", "2026-09"), ("1.2.4", "2026-09"), ("1.2.3", "2026-09"), ("1.2.2", "2026-09"), ("1.2.1", "2026-09"), ("1.2.0", "2026-09"), ("1.1.2", "2026-09"), ("1.1.1", "2026-09"), ("1.1.0", "2026-09"), ("1.0.0", "2026-09")
         };
 
 
@@ -2954,6 +2960,58 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             var cancel = new Button { Text = LocalizationManager.T("Common.Cancel"), Left = 277, Top = 72, Width = 75, DialogResult = DialogResult.Cancel };
             f.Controls.AddRange(new Control[] { l, t, ok, cancel }); f.AcceptButton = ok; f.CancelButton = cancel;
             return f.ShowDialog(this) == DialogResult.OK ? t.Text : null;
+        }
+
+
+        // Παράθυρο επιλογής: ποια εικονίδια ΜΕΝΟΥΝ όταν το διπλό κλικ κρύβει την επιφάνεια εργασίας.
+        private void ShowKeepIconsDialog()
+        {
+            string Ld(string el, string en) => LocalizationManager.CurrentLanguage == "el" ? el : en;
+            var settings = AppSettings.Load();
+            using var dialog = new Form
+            {
+                Text = Ld("Εικονίδια που μένουν ορατά", "Icons that stay visible"),
+                StartPosition = FormStartPosition.CenterParent, ClientSize = new Size(460, 470), FormBorderStyle = FormBorderStyle.FixedDialog,
+                MinimizeBox = false, MaximizeBox = false, BackColor = UiTheme.Surface, ForeColor = UiTheme.TextPrimary
+            };
+            var intro = new Label { Text = Ld("Τσέκαρε ό,τι θέλεις να ΜΕΝΕΙ ορατό όταν κάνεις διπλό κλικ σε κενό σημείο της επιφάνειας εργασίας. Τα υπόλοιπα κρύβονται (και ξαναφαίνονται με νέο διπλό κλικ).",
+                "Tick what should STAY visible when you double-click an empty spot of the desktop. Everything else is hidden (and comes back with another double-click)."),
+                Left = 12, Top = 10, Width = 436, Height = 52, ForeColor = UiTheme.TextSecondary };
+            var list = new CheckedListBox { Left = 12, Top = 66, Width = 436, Height = 340, CheckOnClick = true, BackColor = UiTheme.Background, ForeColor = UiTheme.TextPrimary, BorderStyle = BorderStyle.FixedSingle };
+
+            var special = new (string Label, Guid Id, Func<bool> Get, Action<bool> Set)[]
+            {
+                (Ld("Αυτός ο υπολογιστής", "This PC"), DesktopIconVisibilityEngine.ThisPcId, () => settings.QuickHideKeepThisPc, v => settings.QuickHideKeepThisPc = v),
+                (Ld("Φάκελος χρήστη", "User folder"), DesktopIconVisibilityEngine.ProfileId, () => settings.QuickHideKeepUserFolder, v => settings.QuickHideKeepUserFolder = v),
+                (Ld("Πίνακας Ελέγχου", "Control Panel"), DesktopIconVisibilityEngine.ControlPanelId, () => settings.QuickHideKeepControlPanel, v => settings.QuickHideKeepControlPanel = v),
+                (Ld("Κάδος Ανακύκλωσης", "Recycle Bin"), DesktopIconVisibilityEngine.RecycleBinId, () => settings.QuickHideKeepRecycleBin, v => settings.QuickHideKeepRecycleBin = v),
+            };
+            var specialNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var sp in special)
+            {
+                string shown = DesktopIconVisibilityEngine.DisplayNameOf(sp.Id) ?? sp.Label;
+                specialNames.Add(shown); specialNames.Add(sp.Label);
+                list.Items.Add(shown + "   ★", sp.Get());
+            }
+            foreach (var extra in DesktopIconVisibilityEngine.ListDesktopItemNames())
+            {
+                if (specialNames.Contains(extra) || DesktopIconVisibilityEngine.ThisPcFallback.Contains(extra, StringComparer.OrdinalIgnoreCase)
+                    || DesktopIconVisibilityEngine.ControlPanelFallback.Contains(extra, StringComparer.OrdinalIgnoreCase)
+                    || DesktopIconVisibilityEngine.RecycleBinFallback.Contains(extra, StringComparer.OrdinalIgnoreCase) || string.Equals(extra, Environment.UserName, StringComparison.OrdinalIgnoreCase)) continue;
+                list.Items.Add(extra, settings.QuickHideExtraKept.Contains(extra, StringComparer.OrdinalIgnoreCase));
+            }
+            var ok = new Button { Text = "OK", DialogResult = DialogResult.OK, Left = 262, Top = 424, Width = 90, Height = 32 };
+            var cancel = new Button { Text = LocalizationManager.T("Common.Cancel"), DialogResult = DialogResult.Cancel, Left = 358, Top = 424, Width = 90, Height = 32 };
+            dialog.Controls.AddRange(new Control[] { intro, list, ok, cancel });
+            dialog.AcceptButton = ok; dialog.CancelButton = cancel;
+            dialog.HandleCreated += (_, _) => GlassBlur.ApplyWindowDropShadow(dialog.Handle);
+            if (dialog.ShowDialog(this) != DialogResult.OK) return;
+
+            for (int i = 0; i < special.Length; i++) special[i].Set(list.GetItemChecked(i));
+            var extras = new List<string>();
+            for (int i = special.Length; i < list.Items.Count; i++) if (list.GetItemChecked(i)) extras.Add(list.Items[i]?.ToString() ?? "");
+            settings.QuickHideExtraKept = extras.Where(x => x.Length > 0).ToList();
+            settings.Save();
         }
 
         private void ShowAbout()

@@ -28,13 +28,126 @@ namespace MotionDesk.Widgets
         private static DesktopIconVisibilityEngine? _instance;
         public static DesktopIconVisibilityEngine Instance => _instance ??= new DesktopIconVisibilityEngine();
 
-        private static readonly HashSet<string> Whitelist = new(StringComparer.OrdinalIgnoreCase)
+        // Μένουν ορατά (με επιλογή του χρήστη, βλ. AppSettings.QuickHideKeep*): Ο Υπολογιστής μου / Αυτός ο υπολογιστής, ο φάκελος του
+        // χρήστη, ο Πίνακας Ελέγχου και ο Κάδος Ανακύκλωσης — + όποια άλλα εικονίδια διαλέξει ο χρήστης.
+        // ΔΙΟΡΘΩΣΗ: τα ονόματα ΔΕΝ μπορούν να είναι hardcoded — στα ελληνικά Windows 11 το εικονίδιο λέγεται «Αυτός ο υπολογιστής»
+        // (δεν ήταν στη λίστα), και ο φάκελος χρήστη δείχνει το ΠΛΗΡΕΣ όνομα (π.χ. «Giorgos Stergiopoulos») και όχι το login
+        // (Environment.UserName), οπότε έκρυβε το εικονίδιο του χρήστη. Τα ονόματα ζητούνται από το ίδιο το κέλυφος των Windows
+        // (display name των ειδικών φακέλων, στη γλώσσα του συστήματος) + στατικά ονόματα εφεδρικά.
+        internal static readonly Guid ThisPcId = new("0AC0837C-BBF8-452A-850D-79D08E667CA7");
+        internal static readonly Guid ProfileId = new("5E6C858F-0E22-4760-9AFE-EA3317B67173");
+        internal static readonly Guid ControlPanelId = new("82A74AEB-AEB4-465C-A014-D097EE346D63");
+        internal static readonly Guid RecycleBinId = new("B7534046-3ECB-4C18-BE4E-64CD4CB7D6AC");
+
+        internal static readonly string[] ThisPcFallback = { "This PC", "Αυτός ο υπολογιστής", "Ο Υπολογιστής μου", "Υπολογιστής μου", "Υπολογιστής", "My Computer", "Computer" };
+        internal static readonly string[] ControlPanelFallback = { "Control Panel", "Πίνακας Ελέγχου" };
+        internal static readonly string[] RecycleBinFallback = { "Recycle Bin", "Κάδος Ανακύκλωσης" };
+
+        /// <summary>Τα ονόματα που μένουν ορατά ΤΩΡΑ, σύμφωνα με τις ρυθμίσεις του χρήστη. Υπολογίζεται μία φορά ανά απόκρυψη/επαναφορά.</summary>
+        internal static HashSet<string> BuildWhitelist(Services.AppSettings? settings = null)
         {
-            "This PC", "Ο Υπολογιστής μου", "Υπολογιστής μου", "Υπολογιστής",
-            "Control Panel", "Πίνακας Ελέγχου",
-            "Recycle Bin", "Κάδος Ανακύκλωσης",
-            Environment.UserName,
-        };
+            var a = settings ?? Services.AppSettings.Load();
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            void Keep(bool on, Guid id, params string[] fallback)
+            {
+                if (!on) return;
+                var name = ShellDisplayName(id);
+                if (!string.IsNullOrWhiteSpace(name)) set.Add(name);
+                foreach (var f in fallback) set.Add(f);
+            }
+            Keep(a.QuickHideKeepThisPc, ThisPcId, ThisPcFallback);
+            Keep(a.QuickHideKeepUserFolder, ProfileId, Environment.UserName);
+            if (a.QuickHideKeepUserFolder)
+            {
+                // Το εικονίδιο "Αρχεία χρήστη" της επιφάνειας εργασίας δείχνει το ΠΛΗΡΕΣ όνομα του λογαριασμού (π.χ. "Giorgos Stergiopoulos"),
+                // όχι το όνομα του φακέλου (π.χ. "Log9"): ζητείται από το κέλυφος (CLSID User's Files) και από το GetUserNameEx(NameDisplay).
+                var full = ShellDisplayNameByParsing("::{59031a47-3f72-44a7-89c5-5595fe6b30ee}");
+                if (!string.IsNullOrWhiteSpace(full)) set.Add(full);
+                var display = AccountDisplayName();
+                if (!string.IsNullOrWhiteSpace(display)) set.Add(display);
+            }
+            Keep(a.QuickHideKeepControlPanel, ControlPanelId, ControlPanelFallback);
+            Keep(a.QuickHideKeepRecycleBin, RecycleBinId, RecycleBinFallback);
+            foreach (var extra in a.QuickHideExtraKept) if (!string.IsNullOrWhiteSpace(extra)) set.Add(extra);
+            return set;
+        }
+
+        /// <summary>Όνομα εμφάνισης (στη γλώσσα του συστήματος) ενός ειδικού φακέλου — για το παράθυρο επιλογής.</summary>
+        internal static string? DisplayNameOf(Guid knownFolder) => ShellDisplayName(knownFolder);
+
+        /// <summary>Τα ονόματα των εικονιδίων που υπάρχουν τώρα στην επιφάνεια εργασίας (για το παράθυρο επιλογής). Όταν είναι κρυμμένα, από το αποθηκευμένο state.</summary>
+        public static List<string> ListDesktopItemNames()
+        {
+            var names = new List<string>();
+            try
+            {
+                if (File.Exists(StateFilePath)) { foreach (var sv in LoadState()) names.Add(sv.Name); return names.Distinct(StringComparer.OrdinalIgnoreCase).ToList(); }
+                IntPtr list = FindDesktopListView();
+                if (list == IntPtr.Zero) return names;
+                GetWindowThreadProcessId(list, out uint pid);
+                IntPtr hProcess = OpenProcess(PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE, false, pid);
+                if (hProcess == IntPtr.Zero) return names;
+                try
+                {
+                    int count = SendMessage(list, LVM_GETITEMCOUNT, IntPtr.Zero, IntPtr.Zero).ToInt32();
+                    for (int i = 0; i < count; i++) { string n = GetItemTextRemote(hProcess, list, i); if (n.Length > 0) names.Add(n); }
+                }
+                finally { CloseHandle(hProcess); }
+            }
+            catch (Exception) { }
+            return names.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        }
+
+        private static string? ShellDisplayName(Guid knownFolder)
+        {
+            IntPtr pidl = IntPtr.Zero;
+            try
+            {
+                if (SHGetKnownFolderIDList(ref knownFolder, 0, IntPtr.Zero, out pidl) != 0 || pidl == IntPtr.Zero) return null;
+                var info = new SHFILEINFOW();
+                SHGetFileInfoW(pidl, 0, ref info, (uint)Marshal.SizeOf<SHFILEINFOW>(), 0x000000008 /*SHGFI_PIDL*/ | 0x000000200 /*SHGFI_DISPLAYNAME*/);
+                return string.IsNullOrWhiteSpace(info.szDisplayName) ? null : info.szDisplayName;
+            }
+            catch (Exception) { return null; }
+            finally { if (pidl != IntPtr.Zero) Marshal.FreeCoTaskMem(pidl); }
+        }
+
+        private static string? ShellDisplayNameByParsing(string parsingName)
+        {
+            IntPtr pidl = IntPtr.Zero;
+            try
+            {
+                if (SHParseDisplayName(parsingName, IntPtr.Zero, out pidl, 0, out _) != 0 || pidl == IntPtr.Zero) return null;
+                var info = new SHFILEINFOW();
+                SHGetFileInfoW(pidl, 0, ref info, (uint)Marshal.SizeOf<SHFILEINFOW>(), 0x000000008 | 0x000000200);
+                return string.IsNullOrWhiteSpace(info.szDisplayName) ? null : info.szDisplayName;
+            }
+            catch (Exception) { return null; }
+            finally { if (pidl != IntPtr.Zero) Marshal.FreeCoTaskMem(pidl); }
+        }
+
+        private static string? AccountDisplayName()
+        {
+            try
+            {
+                var sb = new StringBuilder(256); uint n = (uint)sb.Capacity;
+                return GetUserNameEx(3 /*NameDisplay*/, sb, ref n) ? sb.ToString() : null;
+            }
+            catch (Exception) { return null; }
+        }
+
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode)] private static extern int SHParseDisplayName(string name, IntPtr bind, out IntPtr pidl, uint sfgaoIn, out uint sfgaoOut);
+        [DllImport("secur32.dll", CharSet = CharSet.Unicode)] private static extern bool GetUserNameEx(int format, StringBuilder name, ref uint size);
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct SHFILEINFOW
+        {
+            public IntPtr hIcon; public int iIcon; public uint dwAttributes;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)] public string szDisplayName;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 80)] public string szTypeName;
+        }
+        [DllImport("shell32.dll")] private static extern int SHGetKnownFolderIDList(ref Guid rfid, uint flags, IntPtr token, out IntPtr ppidl);
+        [DllImport("shell32.dll", EntryPoint = "SHGetFileInfoW", CharSet = CharSet.Unicode)] private static extern IntPtr SHGetFileInfoW(IntPtr pidl, uint attrs, ref SHFILEINFOW info, uint cb, uint flags);
 
         private IntPtr _hookHandle = IntPtr.Zero;
         private LowLevelMouseProc? _hookProc;
@@ -103,6 +216,7 @@ namespace MotionDesk.Widgets
         // τοποθετούσε λάθος εικονίδια σε λάθος θέσεις.
         private static void RestorePositions(IntPtr hProcess, IntPtr hwndList)
         {
+            var keep = BuildWhitelist();
             var byName = new Dictionary<string, SavedIconPos>(StringComparer.OrdinalIgnoreCase);
             foreach (var sv in LoadState()) byName.TryAdd(sv.Name, sv);
 
@@ -110,7 +224,7 @@ namespace MotionDesk.Widgets
             for (int i = 0; i < count; i++)
             {
                 string name = GetItemTextRemote(hProcess, hwndList, i);
-                if (Whitelist.Contains(name)) continue;
+                if (keep.Contains(name) && !byName.ContainsKey(name)) continue;       // ένα εικονίδιο που δεν κρύφτηκε ποτέ
                 if (byName.TryGetValue(name, out var sv)) SetItemPositionRemote(hwndList, i, sv.X, sv.Y);
             }
             try { File.Delete(StateFilePath); } catch { }
@@ -188,13 +302,14 @@ namespace MotionDesk.Widgets
             {
                 if (!_hidden)
                 {
+                    var keep = BuildWhitelist();
                     var saved = new List<SavedIconPos>();
                     for (int i = 0; i < count; i++)
                     {
                         string name = GetItemTextRemote(hProcess, hwndList, i);
                         var pos = GetItemPositionRemote(hProcess, hwndList, i);
                         saved.Add(new SavedIconPos { Index = i, Name = name, X = pos.X, Y = pos.Y });
-                        if (!Whitelist.Contains(name))
+                        if (!keep.Contains(name))
                             SetItemPositionRemote(hwndList, i, -10000, -10000);
                     }
                     SaveState(saved);

@@ -504,8 +504,22 @@ namespace MotionDesk.Widgets
             Revealed?.Invoke();
         }
 
+        /// <summary>Όσο είναι false (wallpaper ΑΠΕΝΕΡΓΟΠΟΙΗΜΕΝΟ) το παράθυρο ΔΕΝ εμφανίζεται ποτέ, ακόμη κι αν ένα attach που ήταν σε εξέλιξη τελειώσει αργότερα.</summary>
+        public bool AllowReveal { get; set; } = true;
+
+        /// <summary>Άμεση απόκρυψη + ακύρωση εκκρεμούς εμφάνισης/επανάληψης attach (Disable).</summary>
+        public void HideAndCancelReveal()
+        {
+            AllowReveal = false;
+            _wantShow = false;
+            _revealTimeout?.Stop();
+            _reattachTimer?.Stop();
+            if (!IsDisposed && Visible) Hide();
+        }
+
         private void RevealWhenReady()
         {
+            if (!AllowReveal) { _wantShow = false; return; }
             if (Visible) { BringToFront(); return; }
             if (_contentReady) { ShowRevealed(); return; }
             _wantShow = true;
@@ -526,7 +540,7 @@ namespace MotionDesk.Widgets
                             _revealTimeout?.Stop(); _revealTimeout?.Start();
                             return;
                         }
-                        _wantShow = false; ShowRevealed();
+                        _wantShow = false; if (AllowReveal) ShowRevealed();
                     }
                 };
             }
@@ -536,6 +550,7 @@ namespace MotionDesk.Widgets
         private void MarkContentReady()
         {
             _contentReady = true;
+            if (!AllowReveal) { _wantShow = false; return; }
             if (_wantShow && !IsDisposed && !Visible) { _wantShow = false; _revealTimeout?.Stop(); ShowRevealed(); }
         }
 
@@ -816,6 +831,7 @@ namespace MotionDesk.Widgets
         public static WallpaperHostEngine Instance => _instance ??= new WallpaperHostEngine();
 
         private readonly List<WallpaperWindow> _windows = new();
+        private List<WallpaperWindow> _retiringWindows = new();     // παλιά παράθυρα που περιμένουν να εμφανιστεί το αντικαταστάτης τους (rebuild)
         private bool _enabled;
         // "Overlay-only": the animated wallpaper is OFF but the clock/date/temperature overlay is ON -> the windows run in "Desktop" mode
         // (the normal Windows wallpaper + the overlay). IsEnabled stays false: the user still sees the wallpaper as switched off.
@@ -929,6 +945,7 @@ namespace MotionDesk.Widgets
             bool wasOverlayOnly = _overlayOnly;
             _overlayOnly = false;
             _enabled = true;
+            foreach (var w in _windows) w.AllowReveal = true;
             bool freshlyBuilt = _windows.Count == 0;
             if (freshlyBuilt)
             {
@@ -967,6 +984,7 @@ namespace MotionDesk.Widgets
             _overlayOnly = want;
             if (want)
             {
+                foreach (var w in _windows) w.AllowReveal = true;
                 if (_windows.Count == 0) RebuildWindows();
                 else foreach (var w in _windows) { if (w.IsAttached) { if (!w.Visible) w.Show(); _ = w.SetPausedAsync(_pausedForFullscreen); } }
                 EnsureFullscreenWatcher();
@@ -974,16 +992,20 @@ namespace MotionDesk.Widgets
             }
             else if (!_enabled)
             {
-                foreach (var w in _windows) { w.Hide(); _ = w.SetPausedAsync(true); }
+                foreach (var w in _windows) { w.HideAndCancelReveal(); _ = w.SetPausedAsync(true); }
             }
         }
 
         public void Disable()
         {
             _enabled = false;
+            // ΔΙΟΡΘΩΣΗ "το disable θέλει 2-3 φορές": (1) τα παλιά παράθυρα ενός rebuild που ΑΚΟΜΑ περίμεναν τον αντικαταστάτη τους δεν
+            // κρύβονταν ποτέ από εδώ, (2) ένα παράθυρο με attach σε εξέλιξη εμφανιζόταν ΜΟΝΟ ΤΟΥ όταν τελείωνε το attach, αφού είχε γίνει Disable.
+            foreach (var old in _retiringWindows.ToList()) { try { if (!old.IsDisposed) old.Dispose(); } catch (Exception) { } }
+            _retiringWindows.Clear();
             // Ρητή παύση ΠΡΙΝ το Hide — ένα κρυμμένο WebView2 συνεχίζει αλλιώς να αποκωδικοποιεί
             // video/τρέχει canvas σε χαμηλότερο ρυθμό, καταναλώνοντας CPU/GPU για κάτι αόρατο.
-            foreach (var w in _windows) { w.Hide(); _ = w.SetPausedAsync(true); }
+            foreach (var w in _windows) { w.HideAndCancelReveal(); _ = w.SetPausedAsync(true); }
             _fullscreenCheckTimer?.Stop();
             _pausedForFullscreen = false;
             UpdateOverlayOnly();   // the overlay keeps running over the normal Windows wallpaper when it is switched on
@@ -998,6 +1020,7 @@ namespace MotionDesk.Widgets
             // The old windows stay on screen until a new one is actually visible (or 10 s pass): disposing them first left the plain
             // desktop wallpaper showing for a moment while the new WebView2 started — a visible flicker on every rebuild.
             var retiring = _windows.ToList();
+            _retiringWindows = retiring;
             _windows.Clear();
             void RetireOld(string? deviceName = null)      // null = all (safety timeout)
             {

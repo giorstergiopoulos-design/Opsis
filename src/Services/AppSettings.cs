@@ -89,6 +89,13 @@ namespace MotionDesk.Services
         // ενεργός χωρίς καμία ρύθμιση ορατή στο χρήστη· προεπιλογή true ώστε η υπάρχουσα
         // συμπεριφορά να ΜΗΝ αλλάζει για όσους το χρησιμοποιούσαν ήδη χωρίς να το ξέρουν.
         public bool QuickHideDoubleClickEnabled { get; set; } = true;
+        // Ποια εικονίδια ΜΕΝΟΥΝ ορατά όταν το διπλό κλικ κρύβει την επιφάνεια εργασίας. Προεπιλογή: Ο Υπολογιστής μου, ο φάκελος του χρήστη,
+        // ο Πίνακας Ελέγχου και ο Κάδος Ανακύκλωσης· μπορείς να τα αλλάξεις/να προσθέσεις ό,τι θέλεις (QuickHideExtraKept = ονόματα εικονιδίων).
+        public bool QuickHideKeepThisPc { get; set; } = true;
+        public bool QuickHideKeepUserFolder { get; set; } = true;
+        public bool QuickHideKeepControlPanel { get; set; } = true;
+        public bool QuickHideKeepRecycleBin { get; set; } = true;
+        public List<string> QuickHideExtraKept { get; set; } = new();
 
         private static string ConfigPath => Path.Combine(AppPaths.AppDataFolder, "settings.json");
         public static AppSettings Load()
