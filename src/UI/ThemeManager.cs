@@ -61,6 +61,43 @@ namespace MotionDesk.UI
                 a.B + (int)((b.B - a.B) * t));
         }
 
+        // v2.0.0: νέα ονομασμένα θέματα (ζητήθηκε ρητά "νέα θέματα στην εφαρμογή"). Κάθε ένα είναι
+        // πλήρης παλέτα (όχι tint πάνω στο Dark) με δικό του accent· επιστρέφει null για άγνωστο όνομα.
+        public static readonly string[] NamedThemes = { "Midnight", "Forest", "Dawn", "Contrast" };
+
+        public static UiPalette? Named(string name) => name switch
+        {
+            "Midnight" => new UiPalette
+            {
+                Background = Color.FromArgb(11, 16, 32), Sidebar = Color.FromArgb(15, 22, 42), Surface = Color.FromArgb(22, 31, 58),
+                SurfaceHover = Color.FromArgb(32, 44, 78), Border = Color.FromArgb(45, 58, 96),
+                TextPrimary = Color.FromArgb(232, 238, 255), TextSecondary = Color.FromArgb(180, 192, 224), TextMuted = Color.FromArgb(120, 134, 170),
+                AccentCyan = Color.FromArgb(110, 168, 255), AccentBlue = Color.FromArgb(120, 90, 235), IsDark = true
+            },
+            "Forest" => new UiPalette
+            {
+                Background = Color.FromArgb(13, 20, 16), Sidebar = Color.FromArgb(17, 27, 21), Surface = Color.FromArgb(24, 38, 30),
+                SurfaceHover = Color.FromArgb(34, 53, 42), Border = Color.FromArgb(48, 72, 58),
+                TextPrimary = Color.FromArgb(232, 245, 236), TextSecondary = Color.FromArgb(178, 202, 188), TextMuted = Color.FromArgb(122, 148, 132),
+                AccentCyan = Color.FromArgb(72, 214, 140), AccentBlue = Color.FromArgb(40, 150, 110), IsDark = true
+            },
+            "Dawn" => new UiPalette
+            {
+                Background = Color.FromArgb(251, 246, 240), Sidebar = Color.FromArgb(255, 251, 246), Surface = Color.FromArgb(245, 236, 226),
+                SurfaceHover = Color.FromArgb(236, 223, 209), Border = Color.FromArgb(224, 208, 190),
+                TextPrimary = Color.FromArgb(44, 32, 24), TextSecondary = Color.FromArgb(104, 84, 68), TextMuted = Color.FromArgb(146, 124, 106),
+                AccentCyan = Color.FromArgb(214, 96, 40), AccentBlue = Color.FromArgb(176, 60, 90), IsDark = false
+            },
+            "Contrast" => new UiPalette
+            {
+                Background = Color.Black, Sidebar = Color.Black, Surface = Color.FromArgb(14, 14, 14),
+                SurfaceHover = Color.FromArgb(38, 38, 38), Border = Color.White,
+                TextPrimary = Color.White, TextSecondary = Color.FromArgb(235, 235, 235), TextMuted = Color.FromArgb(200, 200, 200),
+                AccentCyan = Color.FromArgb(255, 221, 0), AccentBlue = Color.FromArgb(0, 232, 255), IsDark = true
+            },
+            _ => null
+        };
+
         public static UiPalette Light() => new()
         {
             Background = Color.FromArgb(246, 247, 249),
@@ -114,7 +151,7 @@ namespace MotionDesk.UI
         private static UiPalette Resolve(string mode)
         {
             var settings = AppSettings.Load();
-            var p = mode switch
+            var p = UiPalette.Named(mode) ?? mode switch
             {
                 "Light" => UiPalette.Light(),
                 "Dark" => UiPalette.Dark(settings.DarkIntensity),

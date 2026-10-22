@@ -19,6 +19,24 @@ namespace MotionDesk
                 return;
             }
 
+            // Ίδιο ελάχιστο elevated helper branch, για την αντίστροφη ενέργεια: διαγραφή των τιμών
+            // ώστε τα Windows να ξαναδείχνουν την προεπιλεγμένη/δική τους επιλεγμένη οθόνη
+            // κλειδώματος αντί αυτή που όρισε το Opsis (βλ. LockScreenEngine.TryResetLockScreenElevated).
+            if (args.Length == 1 && args[0] == "--reset-lockscreen")
+            {
+                try { LockScreenEngine.ClearLockScreenRegistry(); } catch (Exception) { }
+                return;
+            }
+
+            // Headless self-test (v2.0 handoff, Φάση 1/9) — ΔΕΝ περνάει από το single-instance Mutex
+            // ούτε αρχικοποιεί UI/tray, ώστε να μπορεί να τρέξει από ένα build script ακόμα κι αν
+            // μια κανονική εκτέλεση του Opsis είναι ήδη ανοιχτή.
+            if (args.Length == 1 && args[0] == "--run-selftest")
+            {
+                Environment.Exit(Services.SelfTestRunner.Run());
+                return;
+            }
+
             // Single-instance: δύο ταυτόχρονες εκτελέσεις θα πάλευαν για τα ίδια global hotkeys,
             // θα έφτιαχναν διπλά wallpaper windows/tray icons και θα έγραφαν τα ίδια config αρχεία.
             using var singleInstance = new System.Threading.Mutex(true, @"Local\Opsis.SingleInstance", out bool isFirst);
@@ -27,6 +45,13 @@ namespace MotionDesk
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
             Application.ThreadException += (s, e) => ReportError(e.Exception);
             AppDomain.CurrentDomain.UnhandledException += (s, e) => ReportError(e.ExceptionObject as Exception);
+            Services.RotatingLogger.HookUnobservedTaskExceptions();
+
+            // Safe mode (v2.0 handoff, Φάση 1 §S) — πρέπει να αξιολογηθεί ΟΣΟ ΤΟ ΔΥΝΑΤΟΝ
+            // νωρίτερα, πριν αρχικοποιηθεί οτιδήποτε βαρύ (wallpaper, plugins). Το
+            // TrayApplicationContext διαβάζει το Services.SafeModeService.IsSafeMode παρακάτω.
+            Services.SafeModeService.EvaluateAtStartup();
+            Services.RotatingLogger.Write($"Startup: SafeMode={Services.SafeModeService.IsSafeMode} (shift={Services.SafeModeService.TriggeredByShift}, failedStartups={Services.SafeModeService.ConsecutiveFailedStartups})");
 
             // Το .NET 5+ δεν περιλαμβάνει πλέον τις legacy κωδικοσελίδες (π.χ. 737 για ελληνικά
             // OEM/console) by default — χωρίς αυτή την εγγραφή, Encoding.GetEncoding(737) πετάει
@@ -55,6 +80,7 @@ namespace MotionDesk
                 System.IO.File.AppendAllText(logPath, $"[{DateTime.Now:O}] {ex}\n\n");
             }
             catch (Exception) { }
+            Services.RotatingLogger.WriteException("UnhandledException", ex);
 
             // Ένα exception μέσα σε timer tick επαναλαμβάνεται κάθε tick — χωρίς όριο, ο χρήστης έβλεπε
             // ατέλειωτη αλληλουχία modal διαλόγων. Ένας διάλογος ανά 30s αρκεί (όλα καταγράφονται στο crash.log).

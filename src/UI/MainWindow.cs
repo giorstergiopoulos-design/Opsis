@@ -175,7 +175,9 @@ namespace MotionDesk.UI
 
             ShowDashboard();
             var saved = AppSettings.Load();
-            if (saved.RestoreLastSession && WorkspaceProfileService.ListProfiles().Contains("Last Session", StringComparer.OrdinalIgnoreCase))
+            // Safe mode (v2.0 handoff, Φάση 1 §S): η "Last Session" περιέχει ακριβώς τα widgets/
+            // DeskContainers/wallpaper που ίσως προκάλεσαν τα διαδοχικά crashes — δεν επαναφέρεται.
+            if (!SafeModeService.IsSafeMode && saved.RestoreLastSession && WorkspaceProfileService.ListProfiles().Contains("Last Session", StringComparer.OrdinalIgnoreCase))
             {
                 try { WorkspaceProfileService.Load("Last Session"); } catch { }
             }
@@ -508,6 +510,16 @@ namespace MotionDesk.UI
             int useDark = UiTheme.Background.GetBrightness() < 0.5f ? 1 : 0;
             try { if (IsHandleCreated) DwmSetWindowAttribute(Handle, DWMWA_USE_IMMERSIVE_DARK_MODE, ref useDark, sizeof(int)); }
             catch (DllNotFoundException) { }
+
+            // Handoff Φάση 8: Mica backdrop + στρογγυλεμένες γωνίες στο κύριο παράθυρο — σιωπηλό
+            // no-op σε Win10/παλαιότερο Win11 (βλ. σχόλιο στο UiTheme.ApplyMicaBackdrop). Fallback σε
+            // Low-End ικανότητα: καθόλου Mica (μένει το συμπαγές UiTheme.Background από πάνω, ήδη
+            // εφαρμοσμένο) — ζητήθηκε ρητά "fallback σε συμπαγές χρώμα σε Low-End".
+            if (IsHandleCreated)
+            {
+                GlassBlur.ApplyMicaBackdrop(Handle, enabled: Services.HardwareProfileService.CurrentTier != Services.HardwareTier.Low);
+                GlassBlur.ApplyRoundedCorners(Handle);
+            }
 
             Invalidate(true);
         }
@@ -1020,7 +1032,34 @@ namespace MotionDesk.UI
                 ("AudioVisualizer", LocalizationManager.T("Widgets.AudioVisualizer"), (_, _) => WidgetHostEngine.Instance.SpawnWidget("audio", 450, 350, ww, wh)),
                 ("Weather", LocalizationManager.T("Widgets.Weather"), (_, _) => WidgetHostEngine.Instance.SpawnWidget("weather", 800, 100, ww, wh)),
                 ("Disk", LocalizationManager.T("Widgets.Disk"), (_, _) => WidgetHostEngine.Instance.SpawnWidget("disk", 800, 350, ww, wh)),
-                ("Settings", LocalizationManager.T("Widgets.QuickSettings"), (_, _) => WidgetHostEngine.Instance.SpawnWidget("quicksettings", 1100, 100, ww, wh)));
+                ("Settings", LocalizationManager.T("Widgets.QuickSettings"), (_, _) => WidgetHostEngine.Instance.SpawnWidget("quicksettings", 1100, 100, ww, wh)),
+                // SeelenUI-inspired richer widget set (ζητήθηκε ρητά) - τα υπόλοιπα 4: quick-settings
+                // (ήδη πάνω, "Settings"), notifications, media/now-playing, calendar, Bluetooth.
+                ("Media", LocalizationManager.T("Widgets.Media"), (_, _) => WidgetHostEngine.Instance.SpawnWidget("media", 1100, 350, ww, wh)),
+                ("Notifications", LocalizationManager.T("Widgets.Notifications"), (_, _) => WidgetHostEngine.Instance.SpawnWidget("notifications", 100, 600, ww, wh)),
+                ("Calendar", LocalizationManager.T("Widgets.Calendar"), (_, _) => WidgetHostEngine.Instance.SpawnWidget("calendar", 450, 600, ww, wh)),
+                ("Bluetooth", LocalizationManager.T("Widgets.Bluetooth"), (_, _) => WidgetHostEngine.Instance.SpawnWidget("bluetooth", 800, 600, ww, wh)));
+
+            // Μετακινήθηκε εδώ από τις γενικές Ρυθμίσεις (ζητήθηκε ρητά "διάσπαρτες ρυθμίσεις που
+            // μπορούν να μπουν στις αντίστοιχες καρτέλες") - το θέμα widgets/containers και το
+            // προεπιλεγμένο μέγεθος νέων widgets αφορούν ΑΠΟΚΛΕΙΣΤΙΚΑ αυτή τη σελίδα.
+            AddSection(panel, LocalizationManager.T("Settings.SectionWidgetsContainers"));
+            panel.Controls.Add(SettingsView.Checkbox(LocalizationManager.T("Settings.ShowSystemMonitorWidget"),
+                AppSettings.Load().ShowSystemMonitor || WidgetHostEngine.Instance.GetActiveWidgets().Any(w => w.WidgetId == "sysmon"),
+                v =>
+                {
+                    if (v) WidgetHostEngine.Instance.SpawnWidget("sysmon", 100, 100, ww, wh);
+                    else WidgetHostEngine.Instance.GetActiveWidgets().FirstOrDefault(w => w.WidgetId == "sysmon")?.Close();
+                    var a = AppSettings.Load(); a.ShowSystemMonitor = v; a.Save();
+                }));
+            panel.Controls.Add(SettingsView.BuildWidgetsThemeRow());
+            var sizeRow = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 2, 0, 10) };
+            sizeRow.Controls.Add(SettingsView.NumericRow(LocalizationManager.T("Settings.WidgetDefaultWidthLabel"), AppSettings.Load().WidgetDefaultWidth, 160, 800,
+                v => { var a = AppSettings.Load(); a.WidgetDefaultWidth = v; a.Save(); }));
+            sizeRow.Controls.Add(SettingsView.NumericRow(LocalizationManager.T("Settings.HeightLabel"), AppSettings.Load().WidgetDefaultHeight, 100, 800,
+                v => { var a = AppSettings.Load(); a.WidgetDefaultHeight = v; a.Save(); }, marginLeft: 24));
+            panel.Controls.Add(sizeRow);
+
             AddSection(panel, LocalizationManager.T("Widgets.SectionWorkspaceActions"));
             AddIconButtonGrid(panel,
                 ("Save", LocalizationManager.T("Widgets.SaveLayout"), (_, _) => { WorkspaceProfileService.Save("Last Session"); _statusLabel.Text = LocalizationManager.T("Widgets.LayoutSavedStatus"); }),
@@ -1477,6 +1516,15 @@ namespace MotionDesk.UI
                 ("Low Power", (_, _) => { WallpaperHostEngine.Instance.SetPerformanceMode("Low Power"); RefreshStatus(); MarkActive(perfButtons!, "Low Power"); }),
                 ("Battery", (_, _) => { WallpaperHostEngine.Instance.SetPerformanceMode("Battery"); RefreshStatus(); MarkActive(perfButtons!, "Battery"); }));
             MarkActive(perfButtons, settings.PerformanceMode);
+
+            // Μετακινήθηκε εδώ από τις γενικές Ρυθμίσεις (ζητήθηκε ρητά "διάσπαρτες ρυθμίσεις που
+            // μπορούν να μπουν στις αντίστοιχες καρτέλες") - αφορούν ΑΠΟΚΛΕΙΣΤΙΚΑ το wallpaper.
+            panel.Controls.Add(SettingsView.Checkbox(LocalizationManager.T("Settings.AutoPerformanceMode"), AppSettings.Load().AutoPerformanceMode,
+                v => { var a = AppSettings.Load(); a.AutoPerformanceMode = v; a.Save(); }));
+            panel.Controls.Add(SettingsView.BuildHardwareProfileRow());
+            panel.Controls.Add(SettingsView.Checkbox(LocalizationManager.T("Settings.StartWallpaperWithApp"), AppSettings.Load().StartWallpaperWithWindows,
+                v => { var a = AppSettings.Load(); a.StartWallpaperWithWindows = v; a.Save(); }));
+            panel.Controls.Add(SettingsView.BuildWmvOutputRow());
 
             SetPage("Page.Wallpaper.Title", panel);
         }
@@ -2101,7 +2149,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             panel.Disposed += (_, _) => deskStripRefreshTimer.Dispose();
 
             // ---------- DeskSounds ----------
-            var soundsCard = AddCardSection(panel, LocalizationManager.T("Personalization.SectionDeskSounds"), width: 816);
+            var soundsCard = AddCardSection(panel, LocalizationManager.T("Personalization.SectionDeskSounds"));
             AddText(soundsCard, LocalizationManager.T("Personalization.DeskSoundsIntro"));
 
             foreach (var (eventLabel, labelKey) in DeskSoundsEngine.Events)
@@ -2265,6 +2313,20 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                 }
                 else if (error == "cancelled") _statusLabel.Text = LocalizationManager.T("Personalization.LockScreenCancelled");
                 else _statusLabel.Text = LocalizationManager.T("Personalization.LockScreenFailed");
+            }),
+            // ΔΙΟΡΘΩΣΗ "έβαλα άλλη οθόνη κλειδώματος και δεν μπορώ να επαναφέρω την προεπιλεγμένη":
+            // δεν υπήρχε καμία λειτουργία επαναφοράς - βλ. LockScreenEngine.ClearLockScreenRegistry.
+            (LocalizationManager.T("Personalization.ResetLockScreenImage"), async (_, _) =>
+            {
+                string error = string.Empty;
+                bool ok = await Task.Run(() => LockScreenEngine.TryResetLockScreenElevated(out error));
+                if (IsDisposed) return;
+                var settings = AppSettings.Load();
+                settings.LockScreenFollowsWallpaper = false;
+                settings.Save();
+                if (ok) _statusLabel.Text = LocalizationManager.T("Personalization.LockScreenResetSuccess");
+                else if (error == "cancelled") _statusLabel.Text = LocalizationManager.T("Personalization.LockScreenCancelled");
+                else _statusLabel.Text = LocalizationManager.T("Personalization.LockScreenFailed");
             }));
 
             SetPage("Page.Personalization.Title", panel);
@@ -2273,7 +2335,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
         private void ShowSettings()
         {
             _currentPageKey = "Settings";
-            var settings = new SettingsView(() => NavigateTo("Wallpaper"));
+            var settings = new SettingsView();
             SetPage("Page.Settings.Title", settings);
         }
 
@@ -2352,6 +2414,27 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             var commandList = commandDefs.ToList();
             foreach (var pluginPage in Services.PluginHost.Instance.GetNavigationItems())
                 commandList.Add(("plugin:" + pluginPage.Key, Services.PluginHost.TitleOf(pluginPage)));
+            // v2.0.0 (t35, "Start Menu replacement" σε ασφαλή μορφή): το Ctrl+K γίνεται και app
+            // launcher — ΧΩΡΙΣ να πειράζει το πραγματικό Start. Πρώτα οι καρφιτσωμένες της taskbar,
+            // μετά οι συντομεύσεις του Start Menu· Enter τις εκκινεί (όπως ένα διπλό-κλικ σε .lnk).
+            var appByLabel = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                var roots = new[]
+                {
+                    Environment.GetFolderPath(Environment.SpecialFolder.Programs),
+                    Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms)
+                };
+                var lnks = TaskbarPinsReader.GetPinnedAppPaths().Concat(roots.Where(Directory.Exists).SelectMany(r => Directory.EnumerateFiles(r, "*.lnk", SearchOption.AllDirectories)));
+                foreach (var lnk in lnks)
+                {
+                    string name = Path.GetFileNameWithoutExtension(lnk);
+                    if (name.Contains("uninstall", StringComparison.OrdinalIgnoreCase) || commandList.Any(c => c.Label.Equals(name, StringComparison.OrdinalIgnoreCase))) continue;
+                    appByLabel.TryAdd(name, lnk);
+                }
+            }
+            catch (Exception) { }
+            foreach (var appLabel in appByLabel.Keys) commandList.Add(("app:" + appLabel, appLabel));
             var idByLabel = commandList.GroupBy(c => c.Label, StringComparer.OrdinalIgnoreCase).ToDictionary(g => g.Key, g => g.First().Id, StringComparer.OrdinalIgnoreCase);
             var allLabels = commandList.Select(c => c.Label).ToArray();
             list.Items.AddRange(allLabels);
@@ -2368,6 +2451,10 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                     case "About": NavigateTo("About"); break;
                     case "AudioEnhancement": NavigateTo("AudioEnhancement"); break;
                     case string pluginId when pluginId.StartsWith("plugin:", StringComparison.Ordinal): NavigateTo(pluginId); break;
+                    case string appId when appId.StartsWith("app:", StringComparison.Ordinal):
+                        if (appByLabel.TryGetValue(appId[4..], out var appPath))
+                            try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(appPath) { UseShellExecute = true }); } catch (Exception) { }
+                        break;
                     case "EnableWallpaper": WallpaperHostEngine.Instance.Enable(); break;
                     case "DisableWallpaper": WallpaperHostEngine.Instance.Disable(); break; case "WorkProfile": LoadProfileFromQuickButton("Work"); break;
                     case "GamingProfile": LoadProfileFromQuickButton("Gaming"); break; case "FocusProfile": LoadProfileFromQuickButton("Focus"); break;
@@ -2427,9 +2514,12 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             gpu.SetValue(0, LocalizationManager.T("Performance.GpuLoading"));
             bool gpuReady = false;
             _ = System.Threading.Tasks.Task.Run(() => { GpuMonitorService.Instance.GetSnapshot(); gpuReady = true; });
-            var net = new SparklineCard(LocalizationManager.T("Performance.NetworkLabel"), 2, 1024) { Width = 500, Height = 110, Margin = new Padding(0, 0, 0, 10) };
+            // ΔΙΟΡΘΩΣΗ "όλα τα πλαίσια εδώ να είναι ίδιου μήκους": το SparklineCard είχε Width=500
+            // ενώ τα CPU/Μνήμη/GPU (AddMeter) και η κάρτα Ενέργειας (AddCard) είναι όλα 760 -
+            // ίδιο πλάτος με τα υπόλοιπα, συνεπές με όλη τη σελίδα.
+            var net = new SparklineCard(LocalizationManager.T("Performance.NetworkLabel"), 2, 1024) { Width = 760, Height = 110, Margin = new Padding(0, 0, 0, 10) };
             panel.Controls.Add(net);
-            var procs = new SparklineCard(LocalizationManager.T("Performance.ProcessesLabel"), 1, 400) { Width = 500, Height = 110, Margin = new Padding(0, 0, 0, 10) };
+            var procs = new SparklineCard(LocalizationManager.T("Performance.ProcessesLabel"), 1, 400) { Width = 760, Height = 110, Margin = new Padding(0, 0, 0, 10) };
             panel.Controls.Add(procs);
             var powerCard = AddCard(panel, LocalizationManager.T("Performance.PowerLabel"), "");
 
@@ -2594,7 +2684,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
         // έπιασε ζωντανά ("το ιστορικό μένει στην 1.9.0"). Πρόσθεσε ΚΑΙ εδώ τη νέα έκδοση.
         private static readonly (string Version, string Date)[] VersionHistory =
         {
-            ("1.9.12", "2026-10"), ("1.9.11", "2026-10"), ("1.9.10", "2026-10"), ("1.9.9", "2026-10"), ("1.9.8", "2026-10"), ("1.9.7", "2026-10"), ("1.9.6", "2026-10"), ("1.9.5", "2026-10"), ("1.9.4", "2026-10"), ("1.9.3", "2026-10"), ("1.9.2", "2026-10"), ("1.9.1", "2026-10"), ("1.9.0", "2026-10"), ("1.8.9", "2026-10"), ("1.8.8", "2026-10"), ("1.8.7", "2026-10"), ("1.8.6", "2026-10"), ("1.8.5", "2026-10"), ("1.7.8", "2026-10"), ("1.7.6", "2026-10"), ("1.7.5", "2026-10"), ("1.6.8", "2026-10"), ("1.6.2", "2026-10"), ("1.6.1", "2026-10"), ("1.6.0", "2026-09"), ("1.5.0", "2026-09"), ("1.4.1", "2026-09"), ("1.4.0", "2026-09"), ("1.3.0", "2026-09"), ("1.2.9", "2026-09"), ("1.2.8", "2026-09"), ("1.2.7", "2026-09"), ("1.2.6", "2026-09"), ("1.2.5", "2026-09"), ("1.2.4", "2026-09"), ("1.2.3", "2026-09"), ("1.2.2", "2026-09"), ("1.2.1", "2026-09"), ("1.2.0", "2026-09"), ("1.1.2", "2026-09"), ("1.1.1", "2026-09"), ("1.1.0", "2026-09"), ("1.0.0", "2026-09")
+            ("2.0.0", "2026-10"), ("1.9.12", "2026-10"), ("1.9.11", "2026-10"), ("1.9.10", "2026-10"), ("1.9.9", "2026-10"), ("1.9.8", "2026-10"), ("1.9.7", "2026-10"), ("1.9.6", "2026-10"), ("1.9.5", "2026-10"), ("1.9.4", "2026-10"), ("1.9.3", "2026-10"), ("1.9.2", "2026-10"), ("1.9.1", "2026-10"), ("1.9.0", "2026-10"), ("1.8.9", "2026-10"), ("1.8.8", "2026-10"), ("1.8.7", "2026-10"), ("1.8.6", "2026-10"), ("1.8.5", "2026-10"), ("1.7.8", "2026-10"), ("1.7.6", "2026-10"), ("1.7.5", "2026-10"), ("1.6.8", "2026-10"), ("1.6.2", "2026-10"), ("1.6.1", "2026-10"), ("1.6.0", "2026-09"), ("1.5.0", "2026-09"), ("1.4.1", "2026-09"), ("1.4.0", "2026-09"), ("1.3.0", "2026-09"), ("1.2.9", "2026-09"), ("1.2.8", "2026-09"), ("1.2.7", "2026-09"), ("1.2.6", "2026-09"), ("1.2.5", "2026-09"), ("1.2.4", "2026-09"), ("1.2.3", "2026-09"), ("1.2.2", "2026-09"), ("1.2.1", "2026-09"), ("1.2.0", "2026-09"), ("1.1.2", "2026-09"), ("1.1.1", "2026-09"), ("1.1.0", "2026-09"), ("1.0.0", "2026-09")
         };
 
 
@@ -2788,31 +2878,84 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                 }
             }
 
-            // ---- updates (GitHub releases; nothing is downloaded automatically)
+            // ---- updates: self-update βάσει GearWin (ζητήθηκε ρητά· ήδη portαρισμένο/ζωντανά
+            // δοκιμασμένο στο OpsisNewsCrawler) — κατεβάζει+εγκαθιστά ΜΟΝΟ μετά από κλικ του χρήστη
+            // ΚΑΙ επιβεβαίωση, μόνο από τα releases αυτού του repo, επαληθευμένο με SHA-256.
             AddSection(panel, LocalizationManager.T("About.UpdateHeading"));
-            var updateStatus = new Label { Text = "", AutoSize = true, MaximumSize = new Size(740, 0), Font = UiTheme.FontBody, ForeColor = UiTheme.TextSecondary, Margin = new Padding(0, 0, 0, 6) };
+            var updateStatus = new Label { Text = string.Format(LocalizationManager.T("About.UpdateCurrentVersion"), UpdateCheckService.CurrentVersion.ToString(3)), AutoSize = true, MaximumSize = new Size(740, 0), Font = UiTheme.FontBody, ForeColor = UiTheme.TextSecondary, Margin = new Padding(0, 0, 0, 6) };
             var autoUpdate = new FlatCheckBox { Text = LocalizationManager.T("About.UpdateAuto"), AutoSize = true, Checked = AppSettings.Load().UpdateCheckEnabled, BackColor = UiTheme.Background, Margin = new Padding(0, 2, 0, 6) };
             autoUpdate.CheckedChanged += (_, _) => { var a = AppSettings.Load(); a.UpdateCheckEnabled = autoUpdate.Checked; a.Save(); };
             panel.Controls.Add(autoUpdate);
-            var updateRow = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 0, 0, 14) };
-            string? updateUrl = null;
-            var openUpdate = NewHoverButton(LocalizationManager.T("About.UpdateOpen"), () =>
+
+            var updateRow = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 0, 0, 6) };
+            UpdateCheckService.UpdateInfo? pendingUpdate = null;
+            bool installingUpdate = false;
+
+            var updateProgress = new ProgressBar { Width = 400, Height = 18, Minimum = 0, Maximum = 100, Visible = false, Margin = new Padding(0, 0, 0, 6) };
+
+            var whatsNew = NewHoverButton(LocalizationManager.T("About.UpdateOpen"), () =>
             {
-                if (updateUrl != null && updateUrl.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase))
-                    try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(updateUrl) { UseShellExecute = true }); } catch (Exception) { }
+                if (pendingUpdate != null)
+                    try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(pendingUpdate.PageUrl) { UseShellExecute = true }); } catch (Exception) { }
             });
-            openUpdate.Visible = false;
+            whatsNew.Visible = false;
+
+            HoverButton? installBtn = null;
+            installBtn = NewHoverButton(LocalizationManager.T("About.UpdateInstall"), async () =>
+            {
+                if (pendingUpdate is not { } u || installingUpdate) return;
+                if (!u.CanInstallAutomatically)
+                {
+                    // Τίποτα να επαληθευτεί απέναντι — δεν τρέχει τίποτα αυτόματα, ανοίγει η σελίδα της έκδοσης.
+                    updateStatus.Text = LocalizationManager.T("About.UpdateNoDigest");
+                    try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(u.PageUrl) { UseShellExecute = true }); } catch (Exception) { }
+                    return;
+                }
+                if (MessageBox.Show(this, string.Format(LocalizationManager.T("About.UpdateConfirm"), u.Version.ToString(3)),
+                        LocalizationManager.T("About.UpdateConfirmTitle"), MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+
+                installingUpdate = true;
+                installBtn!.Enabled = false;
+                updateProgress.Value = 0;
+                updateProgress.Visible = true;
+                try
+                {
+                    var progress = new Progress<double>(p =>
+                    {
+                        if (updateProgress.IsDisposed) return;
+                        updateProgress.Value = Math.Clamp((int)Math.Round(p * 100), 0, 100);
+                        updateStatus.Text = string.Format(LocalizationManager.T("About.UpdateDownloading"), updateProgress.Value);
+                    });
+                    var (path, sha256) = await UpdateInstallerService.DownloadAsync(u, progress);
+                    if (updateStatus.IsDisposed) return;
+                    updateStatus.Text = LocalizationManager.T("About.UpdateScheduled");
+                    UpdateInstallerService.LaunchAfterExit(path, sha256);
+                    MotionDesk.Widgets.TrayApplicationContext.RequestExit();
+                }
+                catch (InvalidDataException) { if (!updateStatus.IsDisposed) updateStatus.Text = LocalizationManager.T("About.UpdateVerifyFailed"); }
+                catch (InvalidOperationException) { if (!updateStatus.IsDisposed) updateStatus.Text = LocalizationManager.T("About.UpdateNoDigest"); }
+                catch (Exception) { if (!updateStatus.IsDisposed) updateStatus.Text = LocalizationManager.T("About.UpdateFailed"); }
+                finally
+                {
+                    installingUpdate = false;
+                    if (!installBtn!.IsDisposed) installBtn.Enabled = true;
+                }
+            });
+            installBtn.Visible = false;
+
             var checkNow = NewHoverButton(LocalizationManager.T("About.UpdateCheckNow"), async () =>
             {
                 updateStatus.Text = LocalizationManager.T("About.UpdateChecking");
+                installBtn!.Visible = false; whatsNew.Visible = false; pendingUpdate = null;
                 var result = await UpdateCheckService.CheckAsync();
                 if (updateStatus.IsDisposed) return;
                 if (!result.Succeeded) updateStatus.Text = LocalizationManager.T("About.UpdateFailed");
                 else if (result.Update != null)
                 {
-                    updateUrl = result.Update.Url;
-                    updateStatus.Text = string.Format(LocalizationManager.T("About.UpdateNewer"), result.Update.Latest.ToString(3));
-                    openUpdate.Visible = true;
+                    pendingUpdate = result.Update;
+                    updateStatus.Text = string.Format(LocalizationManager.T("About.UpdateNewer"), result.Update.Version.ToString(3));
+                    whatsNew.Visible = true;
+                    installBtn.Visible = true;
                 }
                 else updateStatus.Text = string.Format(LocalizationManager.T("About.UpdateUpToDate"), UpdateCheckService.CurrentVersion.ToString(3));
 
@@ -2824,8 +2967,10 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                     updateStatus.Text += "\n" + string.Format(LocalizationManager.T("About.UpdateDependenciesMissing"), string.Join(", ", missing));
             });
             updateRow.Controls.Add(checkNow);
-            updateRow.Controls.Add(openUpdate);
+            updateRow.Controls.Add(installBtn);
+            updateRow.Controls.Add(whatsNew);
             panel.Controls.Add(updateRow);
+            panel.Controls.Add(updateProgress);
             panel.Controls.Add(updateStatus);
 
             AddSection(panel, LocalizationManager.T("About.SectionInstructions"));
@@ -3265,9 +3410,38 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
         // (φόντο + στρογγυλεμένες γωνίες), αντί για μια απλή επικεφαλίδα πάνω στο γυμνό φόντο της
         // σελίδας — το μόνο που άλλαξε είναι το ΠΕΡΙΒΛΗΜΑ· η λογική κάθε γραμμής μένει ίδια.
         // Επιστρέφει το ΕΣΩΤΕΡΙΚΟ panel όπου ο καλών προσθέτει τις δικές του γραμμές.
+        // ΔΙΟΡΘΩΣΗ "τα πλαίσια των κατηγοριών να είναι στο ίδιο πλάτος": το Panel.MaximumSize δεν
+        // εμποδίζει αξιόπιστα το AutoSize να μεγαλώσει το πλάτος όταν το περιεχόμενο (π.χ. ένα
+        // button grid με WrapContents) ζητάει περισσότερο χώρο - γνωστή ιδιορρυθμία του WinForms.
+        // Η αξιόπιστη λύση είναι να παρακαμφθεί το ίδιο το GetPreferredSize ώστε το πλάτος να μένει
+        // πάντα σταθερό, ενώ το ύψος συνεχίζει να υπολογίζεται κανονικά από το περιεχόμενο.
+        private sealed class FixedWidthPanel : Panel
+        {
+            public int FixedWidth { get; set; }
+            public override Size GetPreferredSize(Size proposedSize)
+            {
+                var baseSize = base.GetPreferredSize(new Size(FixedWidth, proposedSize.Height));
+                return new Size(FixedWidth, baseSize.Height);
+            }
+        }
+
+        // Ίδιο ακριβώς πρόβλημα/διόρθωση με το FixedWidthPanel, αλλά για FlowLayoutPanel - εδώ το
+        // "inner" (η στήλη περιεχομένου μέσα στην κάρτα) έπαθε το ΙΔΙΟ: ένα button grid με
+        // WrapContents=true από μέσα του το μεγάλωνε αντί να τυλίγεται σε 2η γραμμή, αφού ΚΙ αυτό
+        // ήταν AutoSize+GrowAndShrink με απλή ιδιότητα Width (όχι πραγματικά "κλειδωμένο" πλάτος).
+        private sealed class FixedWidthFlowPanel : FlowLayoutPanel
+        {
+            public int FixedWidth { get; set; }
+            public override Size GetPreferredSize(Size proposedSize)
+            {
+                var baseSize = base.GetPreferredSize(new Size(FixedWidth, proposedSize.Height));
+                return new Size(FixedWidth, baseSize.Height);
+            }
+        }
+
         private static FlowLayoutPanel AddCardSection(Control parent, string title, int width = 760)
         {
-            var inner = new FlowLayoutPanel { FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Width = width - 36 };
+            var inner = new FixedWidthFlowPanel { FixedWidth = width - 36, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Width = width - 36 };
             inner.Controls.Add(new Label
             {
                 AutoSize = true,
@@ -3277,7 +3451,15 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                 Margin = new Padding(0, 0, 0, 10)
             });
 
-            var card = new Panel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, BackColor = UiTheme.Surface, Padding = new Padding(18, 14, 18, 16), Margin = new Padding(0, 0, 0, 16) };
+            var card = new FixedWidthPanel
+            {
+                FixedWidth = width,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                BackColor = UiTheme.Surface,
+                Padding = new Padding(18, 14, 18, 16),
+                Margin = new Padding(0, 0, 0, 16)
+            };
             card.Controls.Add(inner);
             // Το μέγεθος της κάρτας αλλάζει καθώς ο καλών προσθέτει γραμμές ΜΕΤΑ την επιστροφή αυτής
             // της μεθόδου — η στρογγυλεμένη περιοχή πρέπει να ξανα-υπολογίζεται σε κάθε αλλαγή μεγέθους.
@@ -3608,7 +3790,12 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                 var button = new HoverButton
                 {
                     Text = text,
-                    Width = 372,
+                    // ΔΙΟΡΘΩΣΗ "μέσα στα πλαίσια έχεις μεγάλο μέγεθος κουμπιών, δεν φαίνεται το 3ο
+                    // κουμπί": 372px x2 + περιθώριο ξεπερνούσε το (πλέον σταθερό, βλ. AddCardSection)
+                    // εσωτερικό πλάτος της κάρτας (724px) - δύο κουμπιά δίπλα-δίπλα ήδη δεν χωρούσαν
+                    // καθαρά, πόσο μάλλον τρία να τυλιχτούν σε 2η γραμμή. 350px x2 + 8px περιθώριο =
+                    // 708px, χωράει άνετα μέσα στο 724px.
+                    Width = 350,
                     Height = 40,
                     FlatStyle = FlatStyle.Flat,
                     ForeColor = UiTheme.TextPrimary,
@@ -3665,7 +3852,16 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             foreach (var (key, btn) in buttons)
             {
                 bool active = key == activeKey;
-                btn.BackColor = active ? UiTheme.AccentCyan : UiTheme.Surface;
+                // ΔΙΟΡΘΩΣΗ πραγματικού bug ("μόνο το τικ φαίνεται, όχι το μπλε χρώμα"): εδώ οριζόταν
+                // μόνο το BackColor απευθείας - το HoverButton.MouseLeave όμως το επαναφέρει πάντα σε
+                // BaseColor (βλ. σχόλιο στο HoverButton), που έμενε στο προεπιλεγμένο Surface αφού
+                // κανείς δεν το ενημέρωνε ποτέ εδώ. Αποτέλεσμα: το μπλε χρωμα του επιλεγμένου κουμπιού
+                // εξαφανιζόταν μόλις το ποντίκι έμπαινε και έβγαινε από πάνω του - έμενε μόνο το "✓".
+                // Τώρα ενημερώνονται ΚΑΙ το BaseColor/HoverBackColor, ώστε το επιλεγμένο κουμπί να
+                // παραμένει μπλε (με ελαφρώς πιο ανοιχτό μπλε στο hover αντί να πέφτει πίσω σε γκρι).
+                btn.BaseColor = active ? UiTheme.AccentCyan : UiTheme.Surface;
+                btn.HoverBackColor = active ? ControlPaint.Light(UiTheme.AccentCyan, 0.15f) : UiTheme.SurfaceHover;
+                btn.BackColor = btn.BaseColor;
                 btn.ForeColor = active ? Color.White : UiTheme.TextPrimary;
                 btn.FlatAppearance.BorderSize = 0;
                 btn.Text = active ? "✓  " + key : key;
@@ -3686,7 +3882,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             };
             foreach (var (iconKey, text, action) in items)
             {
-                var button = new IconButton(iconKey, text) { Width = 372, Height = 44, Margin = new Padding(0, 3, 8, 3) };
+                var button = new IconButton(iconKey, text) { Width = 350, Height = 44, Margin = new Padding(0, 3, 8, 3) };
                 button.Click += (_, _) => action(button, EventArgs.Empty);
                 grid.Controls.Add(button);
             }
@@ -3806,11 +4002,8 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
 
         private sealed class SettingsView : Panel
         {
-            private readonly Action _openWallpaperStudio;
-
-            public SettingsView(Action openWallpaperStudio)
+            public SettingsView()
             {
-                _openWallpaperStudio = openWallpaperStudio;
                 BackColor = UiTheme.Background;
                 AutoScroll = true;
                 GlassBlur.ApplyScrollbarTheme(this, UiTheme.Background.GetBrightness() < 0.5f);
@@ -3847,26 +4040,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                     v => { WidgetSnapEngine.GridSize = v; SaveAppSettings(); }, marginLeft: 24));
                 stack.Controls.Add(snapRow);
 
-                AddSection(stack, LocalizationManager.T("Settings.SectionWallpaper"));
-                var wallpaperCard = new Panel { Width = 700, Height = 64, BackColor = UiTheme.Surface, Padding = new Padding(16, 10, 14, 10), Margin = new Padding(0, 0, 0, 4) };
-                UiTheme.ApplyRoundedRegion(wallpaperCard, 10);
-                wallpaperCard.Controls.Add(new Label { Dock = DockStyle.Fill, Text = LocalizationManager.T("Settings.WallpaperNote"), ForeColor = UiTheme.TextSecondary, Font = UiTheme.FontBody, TextAlign = ContentAlignment.MiddleLeft });
-                stack.Controls.Add(wallpaperCard);
-                AddButton(stack, LocalizationManager.T("Settings.OpenWallpaperStudio"), (_, _) => _openWallpaperStudio());
-                stack.Controls.Add(Checkbox(LocalizationManager.T("Settings.AutoPerformanceMode"), AppSettings.Load().AutoPerformanceMode,
-                    v => { var a = AppSettings.Load(); a.AutoPerformanceMode = v; a.Save(); }));
-                stack.Controls.Add(Checkbox(LocalizationManager.T("Settings.StartWallpaperWithApp"), AppSettings.Load().StartWallpaperWithWindows,
-                    v => { var a = AppSettings.Load(); a.StartWallpaperWithWindows = v; a.Save(); }));
-
-                AddSection(stack, LocalizationManager.T("Settings.SectionWidgetsStartup"));
-                stack.Controls.Add(Checkbox(LocalizationManager.T("Settings.ShowSystemMonitorWidget"),
-                    AppSettings.Load().ShowSystemMonitor || WidgetHostEngine.Instance.GetActiveWidgets().Any(w => w.WidgetId == "sysmon"),
-                    v =>
-                    {
-                        if (v) WidgetHostEngine.Instance.SpawnWidget("sysmon", 100, 100, 300, 200);
-                        else WidgetHostEngine.Instance.GetActiveWidgets().FirstOrDefault(w => w.WidgetId == "sysmon")?.Close();
-                        var a = AppSettings.Load(); a.ShowSystemMonitor = v; a.Save();
-                    }));
+                AddSection(stack, LocalizationManager.T("Settings.SectionStartup"));
                 stack.Controls.Add(Checkbox(LocalizationManager.T("Settings.StartWithWindows"), StartupManager.IsStartupEnabled(), StartupManager.SetStartup));
                 stack.Controls.Add(Checkbox(LocalizationManager.T("Settings.RestoreLastSession"), AppSettings.Load().RestoreLastSession,
                     v => { var a = AppSettings.Load(); a.RestoreLastSession = v; a.Save(); }));
@@ -3890,19 +4064,6 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                         if (!WindowsSystemSettings.TrySetFastStartupEnabled(v))
                             MessageBox.Show(this, LocalizationManager.T("Settings.FastStartupAdminRequired"), LocalizationManager.T("Page.Settings.Title"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     }));
-
-                // Ζητήθηκε ρητά: ανεξάρτητο θέμα widgets/DeskContainers από αυτό της εφαρμογής,
-                // ενιαίο προεπιλεγμένο μέγεθος νέων widgets, και επιλέξιμος φάκελος αποθήκευσης
-                // για τα μετατρεπόμενα .wmv->.mp4.
-                AddSection(stack, LocalizationManager.T("Settings.SectionWidgetsContainers"));
-                stack.Controls.Add(BuildWidgetsThemeRow());
-                var sizeRow = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 2, 0, 10) };
-                sizeRow.Controls.Add(NumericRow(LocalizationManager.T("Settings.WidgetDefaultWidthLabel"), AppSettings.Load().WidgetDefaultWidth, 160, 800,
-                    v => { var a = AppSettings.Load(); a.WidgetDefaultWidth = v; a.Save(); }));
-                sizeRow.Controls.Add(NumericRow(LocalizationManager.T("Settings.HeightLabel"), AppSettings.Load().WidgetDefaultHeight, 100, 800,
-                    v => { var a = AppSettings.Load(); a.WidgetDefaultHeight = v; a.Save(); }, marginLeft: 24));
-                stack.Controls.Add(sizeRow);
-                stack.Controls.Add(BuildWmvOutputRow());
 
                 // Ζητήθηκε ρητά: ο installer εγκαθιστά ήδη το WebView2 Runtime/.NET 10 Runtime μία
                 // φορά, αλλά ο χρήστης πρέπει να μπορεί να δει/εγκαταστήσει ξανά τα εξωτερικά
@@ -3956,13 +4117,20 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                 return row;
             }
 
-            private static Panel BuildWidgetsThemeRow()
+            internal static Panel BuildWidgetsThemeRow()
             {
                 var row = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 2, 0, 10) };
                 row.Controls.Add(new Label { Text = LocalizationManager.T("Settings.WidgetsThemeLabel"), AutoSize = true, ForeColor = UiTheme.TextSecondary, Font = UiTheme.FontBody, Padding = new Padding(0, 6, 8, 0) });
                 var combo = new FlatComboBox { Width = 260 };
-                string[] modes = { "App", "Windows", "Dark", "Light" };
-                string[] labels = { LocalizationManager.T("Settings.WidgetsThemeFollowApp"), LocalizationManager.T("Settings.WidgetsThemeFollowWindows"), LocalizationManager.T("Settings.WidgetsThemeAlwaysDark"), LocalizationManager.T("Settings.WidgetsThemeAlwaysLight") };
+                // ΔΙΟΡΘΩΣΗ "δυσκολεύεσαι όταν ακολουθεί το θέμα των Windows να είναι full λευκό ή
+                // μαύρο": αντί να προσπαθεί να γίνει ΠΡΑΓΜΑΤΙΚΟ blur-through το περιεχόμενο (απαιτεί
+                // WS_EX_LAYERED σε κάθε widget control - μεγάλη αλλαγή αρχιτεκτονικής, μεγάλο ρίσκο),
+                // νέα ρητή επιλογή "Πλήρης διαφάνεια": απλά ΔΕΝ ζωγραφίζεται ΚΑΝΕΝΑ φόντο στο
+                // περιεχόμενο του widget - ό,τι ήδη δείχνει το glass-blur του ίδιου του παραθύρου
+                // (GlassBlur.Apply, το ίδιο μηχανισμό με το ήδη σωστό DeskStrip) μένει ορατό χωρίς
+                // κανένα συμπαγές μπλε/άσπρο/μαύρο πλαίσιο από πάνω.
+                string[] modes = { "App", "Windows", "Dark", "Light", "Transparent" };
+                string[] labels = { LocalizationManager.T("Settings.WidgetsThemeFollowApp"), LocalizationManager.T("Settings.WidgetsThemeFollowWindows"), LocalizationManager.T("Settings.WidgetsThemeAlwaysDark"), LocalizationManager.T("Settings.WidgetsThemeAlwaysLight"), LocalizationManager.T("Settings.WidgetsThemeTransparent") };
                 var current = AppSettings.Load().WidgetsThemeMode;
                 int idx = Array.IndexOf(modes, current); if (idx < 0) idx = 0;
                 combo.SetItems(labels, labels[idx]);
@@ -3975,7 +4143,35 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                 return row;
             }
 
-            private static Panel BuildWmvOutputRow()
+            // Χειροκίνητο override του HardwareProfileService (v2.0 handoff, Φάση 1 §Α) — "Αυτόματο"
+            // αφήνει την ανίχνευση RAM/πυρήνων/GPU να αποφασίσει, οι άλλες επιλογές το παρακάμπτουν
+            // μόνιμα (αποθηκεύεται, όχι μόνο για αυτή τη συνεδρία).
+            internal static Panel BuildHardwareProfileRow()
+            {
+                var row = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 2, 0, 10) };
+                row.Controls.Add(new Label { Text = LocalizationManager.T("Settings.HardwareProfileLabel"), AutoSize = true, ForeColor = UiTheme.TextSecondary, Font = UiTheme.FontBody, Padding = new Padding(0, 6, 8, 0) });
+                var combo = new FlatComboBox { Width = 260 };
+                string[] modes = { "Auto", "Low", "Balanced", "High" };
+                string[] labels =
+                {
+                    LocalizationManager.T("Settings.HardwareProfileAuto"),
+                    LocalizationManager.T("Settings.HardwareProfileLow"),
+                    LocalizationManager.T("Settings.HardwareProfileBalanced"),
+                    LocalizationManager.T("Settings.HardwareProfileHigh"),
+                };
+                var current = HardwareProfileService.GetOverride()?.ToString() ?? "Auto";
+                int idx = Array.IndexOf(modes, current); if (idx < 0) idx = 0;
+                combo.SetItems(labels, labels[idx]);
+                combo.SelectedIndexChanged += (_, _) =>
+                {
+                    var selected = modes[Math.Max(0, combo.SelectedIndex)];
+                    HardwareProfileService.SetOverride(selected == "Auto" ? null : Enum.Parse<HardwareTier>(selected));
+                };
+                row.Controls.Add(combo);
+                return row;
+            }
+
+            internal static Panel BuildWmvOutputRow()
             {
                 var row = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 2, 0, 10) };
                 row.Controls.Add(new Label { Text = LocalizationManager.T("Settings.WmvOutputLabel"), AutoSize = true, ForeColor = UiTheme.TextSecondary, Font = UiTheme.FontBody, Padding = new Padding(0, 6, 8, 0) });
@@ -4002,13 +4198,13 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                 row.Controls.Add(new Label { Text = LocalizationManager.T("Settings.Theme") + ":", AutoSize = true, ForeColor = UiTheme.TextSecondary, Font = UiTheme.FontBody, Padding = new Padding(0, 6, 8, 0) });
                 var combo = new FlatComboBox { Width = 200 };
                 var current = AppSettings.Load().ThemeMode;
-                combo.SetItems(new[] { LocalizationManager.T("Settings.ThemeFollow"), LocalizationManager.T("Settings.ThemeLight"), LocalizationManager.T("Settings.ThemeDark") },
-                    current switch { "Light" => LocalizationManager.T("Settings.ThemeLight"), "Dark" => LocalizationManager.T("Settings.ThemeDark"), _ => LocalizationManager.T("Settings.ThemeFollow") });
-                combo.SelectedIndexChanged += (_, _) =>
-                {
-                    var mode = combo.SelectedIndex switch { 1 => "Light", 2 => "Dark", _ => "Follow" };
-                    ThemeManager.SetMode(mode);
-                };
+                // v2.0.0: + 4 νέα ονομασμένα θέματα (Midnight/Forest/Dawn/Contrast, βλ. UiPalette.Named).
+                string[] modes = { "Follow", "Light", "Dark", "Midnight", "Forest", "Dawn", "Contrast" };
+                string[] labels = { LocalizationManager.T("Settings.ThemeFollow"), LocalizationManager.T("Settings.ThemeLight"), LocalizationManager.T("Settings.ThemeDark"),
+                    "Midnight", "Forest", "Dawn", "High contrast" };
+                int idx = Array.IndexOf(modes, current); if (idx < 0) idx = 0;
+                combo.SetItems(labels, labels[idx]);
+                combo.SelectedIndexChanged += (_, _) => ThemeManager.SetMode(modes[Math.Max(0, combo.SelectedIndex)]);
                 row.Controls.Add(combo);
                 return row;
             }
@@ -4044,7 +4240,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             // project) στα checkboxes/κουμπιά — FlatCheckBox (custom-σχεδιασμένο, στο ίδιο πνεύμα)
             // αντικαθιστά εδώ το προεπιλεγμένο CheckBox των Windows σε ΟΛΗ τη σελίδα Ρυθμίσεων με
             // μία αλλαγή, αφού κάθε checkbox της σελίδας περνάει από αυτό το ίδιο helper.
-            private static CheckBox Checkbox(string text, bool initial, Action<bool> onChange)
+            internal static CheckBox Checkbox(string text, bool initial, Action<bool> onChange)
             {
                 var box = new FlatCheckBox
                 {
@@ -4110,7 +4306,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                 return row;
             }
 
-            private static FlowLayoutPanel NumericRow(string label, int value, int min, int max, Action<int> onChange, int marginLeft = 0)
+            internal static FlowLayoutPanel NumericRow(string label, int value, int min, int max, Action<int> onChange, int marginLeft = 0)
             {
                 var row = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(marginLeft, 2, 0, 4) };
                 row.Controls.Add(new Label { Text = label + ":", AutoSize = true, ForeColor = UiTheme.TextSecondary, Font = UiTheme.FontBody, Padding = new Padding(0, 6, 8, 0) });

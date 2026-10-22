@@ -38,6 +38,37 @@ namespace MotionDesk.UI
         public static Color AccentBlue => Resolve().AccentBlue;
         public static Color AccentSoft => Color.FromArgb(40, AccentCyan.R, AccentCyan.G, AccentCyan.B);
 
+        // ΔΙΟΡΘΩΣΗ "μαύρο/λευκό εσωτερικό πλαίσιο στα widgets, να είναι όλο διαφάνεια": τα widgets
+        // έχουν ήδη πραγματικό glass-blur στο ίδιο το παράθυρο (βλ. WidgetWindow.ApplyGlassBlur) -
+        // το πρόβλημα ήταν ότι το δικό τους περιεχόμενο (SystemMonitorRowsControl/DiskRingControl/
+        // κ.λπ.) ζωγράφιζε από πάνω μια ΑΔΙΑΦΑΝΗ (alpha=255) ορθογώνια γέμιση με UiTheme.Surface σε
+        // ΟΛΟΚΛΗΡΟ το ClientRectangle, που σκέπαζε εντελώς το blur-behind της DWM με έναν συμπαγή
+        // μπλοκ χρώματος - σχεδόν αόρατο σε Dark θέμα (το Surface εκεί είναι ήδη σκούρο γκρι, μοιάζει
+        // τυχαία με θολωμένο σκοτεινό φόντο) αλλά εμφανώς λάθος σε Light θέμα (λευκό/ανοιχτό γκρι
+        // συμπαγές κουτί). Ίδιο μοτίβο με το ήδη σωστό DeskStrip, που ΔΕΝ ζωγραφίζει τέτοιο γέμισμα
+        // και αφήνει το glass-blur του παραθύρου να φαίνεται παντού εκτός από τα ίδια τα εικονίδια.
+        //
+        // Μια απλή ημι-διαφανή απόχρωση (όπως πριν, alpha~150) παραμένει εμφανώς "συμπαγής" -
+        // ζητήθηκε ρητά μια ρητή λειτουργία "Πλήρης διαφάνεια" όπου ΔΕΝ υπάρχει ΚΑΝΕΝΑ μαύρο/λευκό
+        // πλαίσιο.
+        //
+        // ΔΙΟΡΘΩΣΗ πραγματικού bug στην πρώτη προσπάθεια: alpha=0 σε ένα GDI+ FillRectangle ΔΕΝ
+        // παράγει πραγματική διαφάνεια εδώ - το WidgetWindow (βλ. constructor) δεν χρησιμοποιεί
+        // DWM alpha-compositing για το περιεχόμενό του, χρησιμοποιεί το παλιό, απλό Form.TransparencyKey
+        // = Color.Black: ο,τιδήποτε ζωγραφιστεί με ΑΚΡΙΒΩΣ αυτό το χρώμα (RGB 0,0,0, πλήρως αδιαφανές)
+        // γίνεται πραγματικά διαφανές/click-through από τα ίδια τα Windows σε επίπεδο color-key, ΟΧΙ
+        // με βάση το alpha channel. alpha=0 απλώς αφήνει ό,τι ήδη υπήρχε στο buffer πριν το fill -
+        // δεν είναι απαραίτητα το μαγικό χρώμα-κλειδί, οπότε έμενε αδιαφανές. Η σωστή τιμή είναι το
+        // ΙΔΙΟ, ακριβές Color.Black (όχι κάποια σκούρα απόχρωση κοντά σε αυτό).
+        // Δοκιμάστηκε πρώτα ένα ημι-διαφανές alpha (~150) για ΟΛΑ τα θέματα, με την ελπίδα ότι θα
+        // περάσει μέσα από το ήδη υπάρχον glass-blur του παραθύρου - αποδείχτηκε εμπειρικά ότι ΔΕΝ
+        // έχει κανένα ορατό αποτέλεσμα (βλ. σχόλιο IsFullyTransparent) σε αυτή την αρχιτεκτονική
+        // widget, άρα ήταν άσκοπο ρίσκο οπτικής ασυνέπειας χωρίς κανένα πραγματικό όφελος. Οι 4
+        // κανονικές λειτουργίες θέματος μένουν ΑΚΡΙΒΩΣ όπως πριν (αδιαφανές Surface) - μόνο η ρητή
+        // "Πλήρης διαφάνεια" αλλάζει συμπεριφορά.
+        public static bool IsFullyTransparent => AppSettings.Load().WidgetsThemeMode == "Transparent";
+        public static Color SurfaceGlass => IsFullyTransparent ? Color.Black : Surface;
+
         public static readonly Font FontHeading = UiTheme.FontHeading;
         public static readonly Font FontSubheading = UiTheme.FontSubheading;
         public static readonly Font FontBody = UiTheme.FontBody;

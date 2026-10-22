@@ -230,6 +230,19 @@ namespace MotionDesk.Widgets
             ApplyGlassBlur();
         }
 
+        // Handoff Φάση 5 ("WM_DPICHANGED σε overlays"): το DeskStrip υπολογίζει τη θέση/το μέγεθός
+        // του σε ωμά pixels (Screen.WorkingArea) — αν το μηχάνημα ή το monitor αλλάξει DPI ενώ
+        // τρέχει (π.χ. σύρσιμο σε άλλη οθόνη με διαφορετικό scaling, ή αλλαγή στις Ρυθμίσεις), το
+        // ξαναθέτει στη σωστή θέση/μέγεθος αντί να μείνει σε μια πλέον λάθος υπολογισμένη θέση.
+        private const int WM_DPICHANGED = 0x02E0;
+
+        protected override void WndProc(ref Message m)
+        {
+            base.WndProc(ref m);
+            if (m.Msg == WM_DPICHANGED && IsHandleCreated && !IsDisposed)
+                BeginInvoke(new Action(() => RepositionToBottomCenter(animate: false)));
+        }
+
         private void ApplyGlassBlur()
         {
             var accent = new ACCENT_POLICY { AccentState = 3, GradientColor = unchecked((int)0x99202020) };

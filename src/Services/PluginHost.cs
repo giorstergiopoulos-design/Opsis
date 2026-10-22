@@ -57,7 +57,7 @@ namespace MotionDesk.Services
             {
                 try
                 {
-                    if (enabled && !p.Started) { PushLanguage(p.Plugin); PushTheme(p.Plugin); p.Plugin.Start(); p.Started = true; }
+                    if (enabled && !p.Started) { PushLanguage(p.Plugin); PushTheme(p.Plugin); PushHardwareProfile(p.Plugin); p.Plugin.Start(); p.Started = true; }
                     else if (!enabled && p.Started) { p.Plugin.Stop(); p.Started = false; }
                 }
                 catch (Exception ex) { Log($"Plugin '{p.Plugin.Name}' failed to {(enabled ? "start" : "stop")} after toggle: {ex.Message}"); }
@@ -124,6 +124,7 @@ namespace MotionDesk.Services
                     p.Plugin.NavigationRequested += key => NavigationRequested?.Invoke(key);
                     PushLanguage(p.Plugin);
                     PushTheme(p.Plugin);
+                    PushHardwareProfile(p.Plugin);
                     if (!disabled.Contains(p.Plugin.Id)) { p.Plugin.Start(); p.Started = true; }
                 }
                 catch (Exception ex)
@@ -136,6 +137,7 @@ namespace MotionDesk.Services
             ThemeManager.Changed += () => { foreach (var p in _plugins.ToList()) PushTheme(p.Plugin); };
             // Η γλώσσα του Opsis ισχύει και για τα plugin: αλλάζει ΚΑΙ στα δύο ταυτόχρονα.
             LocalizationManager.Changed += () => { foreach (var p in _plugins.ToList()) PushLanguage(p.Plugin); };
+            HardwareProfileService.ProfileChanged += _ => { foreach (var p in _plugins.ToList()) PushHardwareProfile(p.Plugin); };
             Changed?.Invoke();
         }
 
@@ -192,6 +194,16 @@ namespace MotionDesk.Services
         {
             try { plugin.SetLanguage(LocalizationManager.CurrentLanguage); }
             catch (Exception ex) { Log($"Plugin '{plugin.Name}' SetLanguage failed: {ex.Message}"); }
+        }
+
+        // Handoff Φάση 6 (ελάχιστο): προαιρετική ικανότητα — καλείται ΜΟΝΟ αν το plugin υλοποιεί το
+        // νέο, προαιρετικό IPluginProfileAware (δεν αγγίζει καθόλου το υποχρεωτικό
+        // IOpsisNewsCrawlerPlugin contract, άρα κανένα υπάρχον plugin δεν σπάει).
+        private void PushHardwareProfile(IOpsisNewsCrawlerPlugin plugin)
+        {
+            if (plugin is not OpsisNewsCrawler.Plugin.Abstractions.IPluginProfileAware aware) return;
+            try { aware.SetHardwareProfile(HardwareProfileService.CurrentTier.ToString()); }
+            catch (Exception ex) { Log($"Plugin '{plugin.Name}' SetHardwareProfile failed: {ex.Message}"); }
         }
 
         private void PushTheme(IOpsisNewsCrawlerPlugin plugin)

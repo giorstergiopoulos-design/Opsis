@@ -51,6 +51,10 @@ namespace MotionDesk.UI
                 case "Container": DrawContainer(g, pen); break;
                 case "Rename": DrawRename(g, pen); break;
                 case "Personalization": DrawPalette(g, pen, brush); break;
+                case "Media": DrawMedia(g, pen, brush); break;
+                case "Notifications": DrawNotifications(g, pen); break;
+                case "Calendar": DrawCalendar(g, pen); break;
+                case "Bluetooth": DrawBluetooth(g, pen); break;
             }
 
             g.Restore(state);
@@ -189,6 +193,37 @@ namespace MotionDesk.UI
                 new PointF(2f, 11f), new PointF(6f, 11f), new PointF(8f, 5f),
                 new PointF(11f, 16f), new PointF(13f, 11f), new PointF(18f, 11f)
             });
+        }
+
+        private static void DrawMedia(Graphics g, Pen pen, Brush brush)
+        {
+            g.FillEllipse(brush, 3f, 13f, 5f, 4f);
+            g.DrawLine(pen, 7.8f, 15f, 7.8f, 3.5f);
+            g.DrawLine(pen, 7.8f, 3.5f, 15f, 5.5f);
+            g.DrawLine(pen, 15f, 5.5f, 15f, 10f);
+        }
+
+        private static void DrawNotifications(Graphics g, Pen pen)
+        {
+            g.DrawArc(pen, 5f, 2.5f, 10, 10, 180, 180);
+            g.DrawLine(pen, 5f, 7.5f, 3.5f, 15f);
+            g.DrawLine(pen, 15f, 7.5f, 16.5f, 15f);
+            g.DrawLine(pen, 3.5f, 15f, 16.5f, 15f);
+            g.DrawArc(pen, 8f, 15f, 4, 3, 0, 180);
+        }
+
+        private static void DrawCalendar(Graphics g, Pen pen)
+        {
+            DrawRounded(g, pen, 2.5f, 4f, 15, 13, 1.6f);
+            g.DrawLine(pen, 2.5f, 8f, 17.5f, 8f);
+            g.DrawLine(pen, 6f, 2.5f, 6f, 5.5f);
+            g.DrawLine(pen, 14f, 2.5f, 14f, 5.5f);
+        }
+
+        private static void DrawBluetooth(Graphics g, Pen pen)
+        {
+            g.DrawLines(pen, new[] { new PointF(10, 3), new PointF(14, 7), new PointF(6, 13), new PointF(10, 17) });
+            g.DrawLines(pen, new[] { new PointF(10, 3), new PointF(6, 7), new PointF(14, 13), new PointF(10, 17) });
         }
 
         private static void DrawSave(Graphics g, Pen pen)

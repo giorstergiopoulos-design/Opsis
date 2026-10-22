@@ -672,11 +672,19 @@ namespace MotionDesk.Widgets
         // αλλά literal screenshot του WebView2 μέσω της επίσημης CapturePreview API.
         public async Task<bool> CapturePngAsync(string filePath)
         {
-            if (_webView?.CoreWebView2 == null) return false;
+            var webView = _webView;
+            if (webView?.CoreWebView2 == null) return false;
             try
             {
+                // Η πραγματική οθόνη κλειδώματος των Windows δείχνει ήδη τη δική της ώρα/ημερομηνία —
+                // το ενσωματωμένο overlay ώρας/καιρού του wallpaper (#wxInfo) θα το διπλασίαζε στο
+                // στιγμιότυπο. Κρύβεται ΜΟΝΟ για τη λήψη και ξαναεμφανίζεται αμέσως μετά μέσω της
+                // ίδιας της λογικής της σελίδας (updateWeatherInfo), ώστε να μην αλλάξει τίποτα στο
+                // ζωντανό wallpaper που βλέπει ο χρήστης.
+                try { await webView.CoreWebView2.ExecuteScriptAsync("(function(){var e=document.getElementById('wxInfo'); if(e) e.style.display='none';})();"); } catch (Exception) { }
+
                 await using var stream = new MemoryStream();
-                await _webView.CoreWebView2.CapturePreviewAsync(Microsoft.Web.WebView2.Core.CoreWebView2CapturePreviewImageFormat.Png, stream);
+                await webView.CoreWebView2.CapturePreviewAsync(Microsoft.Web.WebView2.Core.CoreWebView2CapturePreviewImageFormat.Png, stream);
                 stream.Position = 0;
                 await using var file = File.Create(filePath);
                 await stream.CopyToAsync(file);
@@ -686,6 +694,10 @@ namespace MotionDesk.Widgets
             {
                 System.Diagnostics.Debug.WriteLine($"Wallpaper CapturePngAsync failed: {ex}");
                 return false;
+            }
+            finally
+            {
+                try { await webView.CoreWebView2.ExecuteScriptAsync("if (typeof updateWeatherInfo === 'function') updateWeatherInfo();"); } catch (Exception) { }
             }
         }
 

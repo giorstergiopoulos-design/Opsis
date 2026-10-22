@@ -9,6 +9,11 @@ using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Windows.Forms;
 using Microsoft.Web.WebView2.WinForms;
+using WinRTMediaControl = Windows.Media.Control;
+using WinRTNotifications = Windows.UI.Notifications;
+using WinRTNotificationsMgmt = Windows.UI.Notifications.Management;
+using WinRTDeviceEnum = Windows.Devices.Enumeration;
+using WinRTBluetooth = Windows.Devices.Bluetooth;
 using MotionDesk.Services;
 using MotionDesk.UI;
 // Ανακατευθύνει ΟΛΕΣ τις υπάρχουσες αναφορές "UiTheme.X" σε αυτό το αρχείο προς το WidgetTheme
@@ -291,6 +296,14 @@ namespace MotionDesk.Widgets
                 InitializeNativeDisk();
             else if (string.Equals(widgetId, "quicksettings", StringComparison.OrdinalIgnoreCase))
                 InitializeNativeQuickSettings();
+            else if (string.Equals(widgetId, "calendar", StringComparison.OrdinalIgnoreCase))
+                InitializeNativeCalendar();
+            else if (string.Equals(widgetId, "media", StringComparison.OrdinalIgnoreCase))
+                _ = InitializeNativeMediaAsync();
+            else if (string.Equals(widgetId, "notifications", StringComparison.OrdinalIgnoreCase))
+                _ = InitializeNativeNotificationsAsync();
+            else if (string.Equals(widgetId, "bluetooth", StringComparison.OrdinalIgnoreCase))
+                _ = InitializeNativeBluetoothAsync();
             else
                 _ = InitializeWebViewAsync();
         }
@@ -648,10 +661,14 @@ namespace MotionDesk.Widgets
         private Panel CreateNativePanel(string title, out Label values)
         {
             SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.ResizeRedraw, true);
-            BackColor = UiTheme.Background;
-            TransparencyKey = default;
+            // ΡΙΖΙΚΗ ΑΙΤΙΑ του "Πλήρης διαφάνεια" που δεν δούλευε: εδώ το TransparencyKey μηδενιζόταν
+            // πάντα (default) ακυρώνοντας το Color.Black του constructor, οπότε κανένα μαύρο pixel
+            // δεν γινόταν ποτέ διαφανές. Τώρα διατηρείται μόνο στη λειτουργία Πλήρης διαφάνεια.
+            bool fullyTransparent = UiTheme.IsFullyTransparent;
+            BackColor = fullyTransparent ? Color.Black : UiTheme.Background;
+            TransparencyKey = fullyTransparent ? Color.Black : default;
 
-            var panel = new Panel { Dock = DockStyle.Fill, BackColor = UiTheme.Surface, Padding = new Padding(14) };
+            var panel = new Panel { Dock = DockStyle.Fill, BackColor = UiTheme.SurfaceGlass, Padding = new Padding(14) };
             _themedPanel = panel;
             var titleBar = new Panel { Dock = DockStyle.Top, Height = 30, BackColor = Color.Transparent };
 
@@ -710,8 +727,9 @@ namespace MotionDesk.Widgets
             _themeHandler = () =>
             {
                 if (IsDisposed) return;
-                panel.BackColor = UiTheme.Surface;
-                BackColor = UiTheme.Background;
+                panel.BackColor = UiTheme.SurfaceGlass;
+                BackColor = UiTheme.IsFullyTransparent ? Color.Black : UiTheme.Background;
+                TransparencyKey = UiTheme.IsFullyTransparent ? Color.Black : default;
                 closeLabel.ForeColor = UiTheme.TextSecondary;
                 lockLabel.ForeColor = UiTheme.TextSecondary;
                 menuLabel.ForeColor = UiTheme.TextSecondary;
@@ -736,7 +754,16 @@ namespace MotionDesk.Widgets
             GlassBlur.DisableNativeBorderAccent(Handle);
         }
 
-        private void ApplyGlassBlur() => GlassBlur.Apply(Handle, UiTheme.AccentCyan, _backgroundOpacity);
+        // Το Form.TransparencyKey (color-key σε Color.Black) αποδείχτηκε αναξιόπιστο εδώ - ακόμα
+        // και με το blur-behind εντελώς απενεργοποιημένο, το περιεχόμενο έμενε συμπαγές μαύρο αντί
+        // για πραγματική τρύπα διαφάνειας. Το ήδη αποδεδειγμένα σωστό DWM blur-behind (ίδιο με το
+        // DeskStrip) παραμένει ενεργό και στην "Πλήρης διαφάνεια", απλά σε πολύ χαμηλή ένταση, ώστε
+        // να μην υπάρχει συμπαγές μαύρο/λευκό πλαίσιο αλλά ένα πολύ ελαφρύ, σχεδόν άχρωμο θόλωμα.
+        private void ApplyGlassBlur()
+        {
+            if (UiTheme.IsFullyTransparent) { GlassBlur.Disable(Handle); return; }
+            GlassBlur.Apply(Handle, UiTheme.AccentCyan, _backgroundOpacity);
+        }
 
         private void InitializeNativeClock()
         {
@@ -1155,6 +1182,283 @@ namespace MotionDesk.Widgets
             _nativeMonitorTimer.Start();
         }
 
+        // Νέο widget (SeelenUI-inspired richer widget set, ζητήθηκε ρητά): μήνας-σε-πλέγμα χωρίς
+        // εξάρτηση σε εξωτερική πηγή ραντεβού - η επίσημη Windows Appointments API απαιτεί
+        // δήλωση "appointments" capability σε packaged (MSIX) εφαρμογή, που το Opsis δεν είναι·
+        // ίδιο μοτίβο με πολλά desktop calendar widgets (π.χ. Rainmeter): δείχνει μήνα/ημέρες/
+        // σήμερα, όχι πραγματικά ραντεβού.
+        private void InitializeNativeCalendar()
+        {
+            var panel = CreateNativePanel(LocalizationManager.T("Widgets.Calendar"), out var values);
+            values.Visible = false;
+
+            var area = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
+            var navRow = new Panel { Dock = DockStyle.Top, Height = 26, BackColor = Color.Transparent };
+            var prevBtn = new Label { Text = "◀", Dock = DockStyle.Left, Width = 30, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextSecondary, Font = new Font("Segoe UI", 10), Cursor = Cursors.Hand };
+            var nextBtn = new Label { Text = "▶", Dock = DockStyle.Right, Width = 30, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextSecondary, Font = new Font("Segoe UI", 10), Cursor = Cursors.Hand };
+            var monthLabel = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextPrimary, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold) };
+            navRow.Controls.Add(monthLabel); navRow.Controls.Add(prevBtn); navRow.Controls.Add(nextBtn);
+            var grid = new CalendarGridControl { Dock = DockStyle.Fill };
+            area.Controls.Add(grid);
+            area.Controls.Add(navRow);
+            grid.BringToFront();
+            panel.Controls.Add(area);
+            area.BringToFront();
+
+            var shown = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+            void Render()
+            {
+                monthLabel.Text = shown.ToString("MMMM yyyy", CultureInfo.CurrentCulture);
+                grid.SetMonth(shown);
+            }
+            prevBtn.Click += (_, _) => { shown = shown.AddMonths(-1); Render(); };
+            nextBtn.Click += (_, _) => { shown = shown.AddMonths(1); Render(); };
+            prevBtn.MouseEnter += (_, _) => prevBtn.ForeColor = UiTheme.AccentCyan;
+            prevBtn.MouseLeave += (_, _) => prevBtn.ForeColor = UiTheme.TextSecondary;
+            nextBtn.MouseEnter += (_, _) => nextBtn.ForeColor = UiTheme.AccentCyan;
+            nextBtn.MouseLeave += (_, _) => nextBtn.ForeColor = UiTheme.TextSecondary;
+            Render();
+        }
+
+        // Νέο widget: τρέχον media session (Spotify/Edge/κ.λπ.) μέσω της επίσημης
+        // GlobalSystemMediaTransportControlsSessionManager WinRT API - δουλεύει από unpackaged
+        // Win32 εφαρμογή χωρίς ειδικό manifest capability (μόνο ανάγνωση + play/pause/next/prev,
+        // όχι album art - κρατήθηκε έξω επίτηδες: η μετατροπή thumbnail stream -> Image πρόσθετε
+        // ρίσκο χωρίς να μπορεί να δοκιμαστεί εκτενώς σε αυτό το πέρασμα).
+        private async System.Threading.Tasks.Task InitializeNativeMediaAsync()
+        {
+            var panel = CreateNativePanel(LocalizationManager.T("Widgets.Media"), out var values);
+            values.Visible = false;
+
+            var area = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
+            var statusLabel = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextMuted, Font = UiTheme.FontBody, Text = LocalizationManager.T("WidgetText.MediaNone") };
+            var titleLabel = new Label { Dock = DockStyle.Top, AutoEllipsis = true, Height = 26, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = UiTheme.TextPrimary };
+            var artistLabel = new Label { Dock = DockStyle.Top, AutoEllipsis = true, Height = 20, TextAlign = ContentAlignment.MiddleCenter, Font = UiTheme.FontBody, ForeColor = UiTheme.TextSecondary };
+            var controlsRow = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 36, FlowDirection = FlowDirection.LeftToRight, BackColor = Color.Transparent, Anchor = AnchorStyles.None };
+            var prevBtn = new Label { Text = "⏮", Width = 40, Height = 32, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextSecondary, Font = new Font("Segoe UI", 13), Cursor = Cursors.Hand };
+            var playPauseBtn = new Label { Text = "▶", Width = 40, Height = 32, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextPrimary, Font = new Font("Segoe UI", 13), Cursor = Cursors.Hand };
+            var nextBtn = new Label { Text = "⏭", Width = 40, Height = 32, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextSecondary, Font = new Font("Segoe UI", 13), Cursor = Cursors.Hand };
+            controlsRow.Controls.Add(prevBtn); controlsRow.Controls.Add(playPauseBtn); controlsRow.Controls.Add(nextBtn);
+            area.Controls.Add(statusLabel);
+            area.Controls.Add(controlsRow);
+            area.Controls.Add(artistLabel);
+            area.Controls.Add(titleLabel);
+            panel.Controls.Add(area);
+            area.BringToFront();
+
+            WinRTMediaControl.GlobalSystemMediaTransportControlsSession? session = null;
+
+            async System.Threading.Tasks.Task RefreshAsync()
+            {
+                try
+                {
+                    var mgr = await WinRTMediaControl.GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
+                    session = mgr.GetCurrentSession();
+                    if (IsDisposed) return;
+                    if (session == null)
+                    {
+                        statusLabel.Visible = true; titleLabel.Visible = false; artistLabel.Visible = false; controlsRow.Visible = false;
+                        return;
+                    }
+                    var props = await session.TryGetMediaPropertiesAsync();
+                    var playback = session.GetPlaybackInfo();
+                    if (IsDisposed) return;
+                    statusLabel.Visible = false; titleLabel.Visible = true; artistLabel.Visible = true; controlsRow.Visible = true;
+                    titleLabel.Text = props.Title ?? "";
+                    artistLabel.Text = props.Artist ?? "";
+                    playPauseBtn.Text = playback.PlaybackStatus == WinRTMediaControl.GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing ? "⏸" : "▶";
+                }
+                catch (Exception)
+                {
+                    if (IsDisposed) return;
+                    statusLabel.Visible = true; titleLabel.Visible = false; artistLabel.Visible = false; controlsRow.Visible = false;
+                    statusLabel.Text = LocalizationManager.T("WidgetText.MediaUnsupported");
+                }
+            }
+
+            prevBtn.Click += async (_, _) => { if (session != null) await session.TrySkipPreviousAsync(); await RefreshAsync(); };
+            nextBtn.Click += async (_, _) => { if (session != null) await session.TrySkipNextAsync(); await RefreshAsync(); };
+            playPauseBtn.Click += async (_, _) => { if (session != null) await session.TryTogglePlayPauseAsync(); await RefreshAsync(); };
+            foreach (var l in new[] { prevBtn, playPauseBtn, nextBtn })
+            {
+                l.MouseEnter += (_, _) => l.ForeColor = UiTheme.AccentCyan;
+                l.MouseLeave += (_, _) => l.ForeColor = (l == playPauseBtn) ? UiTheme.TextPrimary : UiTheme.TextSecondary;
+            }
+
+            await RefreshAsync();
+            if (IsDisposed) return;
+            _nativeMonitorTimer = new System.Windows.Forms.Timer { Interval = 1500 };
+            _nativeMonitorTimer.Tick += async (_, _) => { if (!AppActivity.IsFullscreenAppActive) await RefreshAsync(); };
+            _nativeMonitorTimer.Start();
+        }
+
+        // Νέο widget: πρόσφατες ειδοποιήσεις Windows μέσω UserNotificationListener - ζητάει μία
+        // φορά άδεια από τον χρήστη (πραγματικό system consent prompt, OS-level) την πρώτη φορά.
+        private async System.Threading.Tasks.Task InitializeNativeNotificationsAsync()
+        {
+            var panel = CreateNativePanel(LocalizationManager.T("Widgets.Notifications"), out var values);
+            values.Visible = false;
+
+            var list = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, BackColor = Color.Transparent };
+            var statusLabel = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextMuted, Font = UiTheme.FontBody, Text = LocalizationManager.T("WidgetText.NotificationsLoading") };
+            // Dock=Fill χρειάζεται εξωτερικό container + BringToFront (βλ. InitializeNativeDisk) - αλλιώς
+            // η λίστα ξεκινά κάτω από το title bar και κρύβεται πίσω του.
+            var area = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
+            area.Controls.Add(list);
+            area.Controls.Add(statusLabel);
+            panel.Controls.Add(area);
+            area.BringToFront();
+            statusLabel.BringToFront();
+            list.HandleCreated += (_, _) => GlassBlur.ApplyScrollbarTheme(list, true);
+
+            WinRTNotificationsMgmt.UserNotificationListener? listener;
+            try { listener = WinRTNotificationsMgmt.UserNotificationListener.Current; }
+            catch (Exception)
+            {
+                statusLabel.Text = LocalizationManager.T("WidgetText.NotificationsUnsupported");
+                return;
+            }
+
+            bool accessGranted = false;
+
+            async System.Threading.Tasks.Task RefreshAsync()
+            {
+                try
+                {
+                    if (!accessGranted)
+                    {
+                        var access = await listener.RequestAccessAsync();
+                        if (IsDisposed) return;
+                        accessGranted = access == WinRTNotificationsMgmt.UserNotificationListenerAccessStatus.Allowed;
+                        if (!accessGranted)
+                        {
+                            statusLabel.Text = LocalizationManager.T("WidgetText.NotificationsAccessDenied");
+                            statusLabel.Visible = true; list.Visible = false;
+                            return;
+                        }
+                    }
+                    var notifications = await listener.GetNotificationsAsync(WinRTNotifications.NotificationKinds.Toast);
+                    if (IsDisposed) return;
+                    if (notifications.Count == 0)
+                    {
+                        statusLabel.Text = LocalizationManager.T("WidgetText.NotificationsEmpty");
+                        statusLabel.Visible = true; list.Visible = false;
+                        return;
+                    }
+                    statusLabel.Visible = false; list.Visible = true;
+                    DisposeChildren(list);
+                    foreach (var n in notifications.OrderByDescending(x => x.CreationTime).Take(8))
+                    {
+                        string appName = n.AppInfo?.DisplayInfo?.DisplayName ?? "";
+                        string text = "";
+                        try
+                        {
+                            var binding = n.Notification.Visual.GetBinding(WinRTNotifications.KnownNotificationBindings.ToastGeneric);
+                            if (binding != null) text = string.Join(" — ", binding.GetTextElements().Select(t => t.Text).Where(t => !string.IsNullOrWhiteSpace(t)));
+                        }
+                        catch (Exception) { }
+
+                        int rowWidth = Math.Max(200, list.ClientSize.Width - 4);
+                        var row = new Panel { Width = rowWidth, Height = 54, BackColor = UiTheme.Surface, Margin = new Padding(0, 0, 0, 6) };
+                        UiTheme.ApplyRoundedRegion(row, 8);
+                        row.Controls.Add(new Label { Text = appName, Location = new Point(10, 6), AutoSize = true, Font = new Font(UiTheme.FontBody.FontFamily, 9f, FontStyle.Bold), ForeColor = UiTheme.TextPrimary });
+                        row.Controls.Add(new Label { Text = text, Location = new Point(10, 24), Size = new Size(rowWidth - 48, 26), AutoEllipsis = true, Font = UiTheme.FontBody, ForeColor = UiTheme.TextSecondary });
+                        var dismissBtn = new Label { Text = "✕", Location = new Point(rowWidth - 30, 6), Size = new Size(22, 22), TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextMuted, Cursor = Cursors.Hand, Anchor = AnchorStyles.Top | AnchorStyles.Right };
+                        uint nid = n.Id;
+                        dismissBtn.Click += (_, _) => { try { listener.RemoveNotification(nid); } catch (Exception) { } _ = RefreshAsync(); };
+                        row.Controls.Add(dismissBtn);
+                        list.Controls.Add(row);
+                    }
+                }
+                catch (Exception)
+                {
+                    if (IsDisposed) return;
+                    statusLabel.Text = LocalizationManager.T("WidgetText.NotificationsUnsupported");
+                    statusLabel.Visible = true; list.Visible = false;
+                }
+            }
+
+            await RefreshAsync();
+            if (IsDisposed) return;
+            _nativeMonitorTimer = new System.Windows.Forms.Timer { Interval = 5000 };
+            _nativeMonitorTimer.Tick += async (_, _) => { if (!AppActivity.IsFullscreenAppActive) await RefreshAsync(); };
+            _nativeMonitorTimer.Start();
+        }
+
+        // Νέο widget: ζευγμένες συσκευές Bluetooth + κατάσταση σύνδεσης (μόνο ανάγνωση - ζευγάρωμα/
+        // αποσύνδεση απαιτούν επιπλέον capabilities που δεν αξίζουν το ρίσκο σε αυτό το πέρασμα).
+        private async System.Threading.Tasks.Task InitializeNativeBluetoothAsync()
+        {
+            var panel = CreateNativePanel(LocalizationManager.T("Widgets.Bluetooth"), out var values);
+            values.Visible = false;
+
+            var list = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, BackColor = Color.Transparent };
+            var statusLabel = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextMuted, Font = UiTheme.FontBody, Text = LocalizationManager.T("WidgetText.BluetoothLoading") };
+            var area = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
+            area.Controls.Add(list);
+            area.Controls.Add(statusLabel);
+            panel.Controls.Add(area);
+            area.BringToFront();
+            statusLabel.BringToFront();
+
+            async System.Threading.Tasks.Task RefreshAsync()
+            {
+                try
+                {
+                    string selector = WinRTBluetooth.BluetoothDevice.GetDeviceSelector();
+                    var devices = await WinRTDeviceEnum.DeviceInformation.FindAllAsync(selector);
+                    if (IsDisposed) return;
+                    if (devices.Count == 0)
+                    {
+                        statusLabel.Text = LocalizationManager.T("WidgetText.BluetoothNoDevices");
+                        statusLabel.Visible = true; list.Visible = false;
+                        return;
+                    }
+                    statusLabel.Visible = false; list.Visible = true;
+                    DisposeChildren(list);
+                    foreach (var d in devices)
+                    {
+                        bool connected = false;
+                        try
+                        {
+                            using var bt = await WinRTBluetooth.BluetoothDevice.FromIdAsync(d.Id);
+                            connected = bt?.ConnectionStatus == WinRTBluetooth.BluetoothConnectionStatus.Connected;
+                        }
+                        catch (Exception) { }
+                        if (IsDisposed) return;
+
+                        int rowWidth = Math.Max(200, list.ClientSize.Width - 4);
+                        var row = new Panel { Width = rowWidth, Height = 40, BackColor = UiTheme.Surface, Margin = new Padding(0, 0, 0, 6) };
+                        UiTheme.ApplyRoundedRegion(row, 8);
+                        row.Controls.Add(new Label { Text = connected ? "🔵" : "⚪", Location = new Point(10, 9), AutoSize = true, Font = new Font("Segoe UI", 10) });
+                        row.Controls.Add(new Label { Text = d.Name, Location = new Point(36, 10), Size = new Size(rowWidth - 150, 20), AutoEllipsis = true, Font = UiTheme.FontBody, ForeColor = UiTheme.TextPrimary });
+                        row.Controls.Add(new Label { Text = connected ? LocalizationManager.T("WidgetText.BluetoothConnected") : LocalizationManager.T("WidgetText.BluetoothPaired"), Location = new Point(rowWidth - 106, 10), Size = new Size(100, 20), TextAlign = ContentAlignment.MiddleRight, Font = new Font(UiTheme.FontBody.FontFamily, 8f), ForeColor = connected ? UiTheme.AccentCyan : UiTheme.TextMuted, Anchor = AnchorStyles.Top | AnchorStyles.Right });
+                        list.Controls.Add(row);
+                    }
+                }
+                catch (Exception)
+                {
+                    if (IsDisposed) return;
+                    statusLabel.Text = LocalizationManager.T("WidgetText.BluetoothUnsupported");
+                    statusLabel.Visible = true; list.Visible = false;
+                }
+            }
+
+            await RefreshAsync();
+            if (IsDisposed) return;
+            _nativeMonitorTimer = new System.Windows.Forms.Timer { Interval = 8000 };
+            _nativeMonitorTimer.Tick += async (_, _) => { if (!AppActivity.IsFullscreenAppActive) await RefreshAsync(); };
+            _nativeMonitorTimer.Start();
+        }
+
+        // Ίδιο μοτίβο με το MainWindow.DisposeChildren (άλλη κλάση/αρχείο, όχι προσβάσιμο από εδώ) -
+        // Controls.Clear() μόνο αφαιρεί, δεν κάνει Dispose τα παιδιά (γνωστό leak σε αυτό το codebase).
+        private static void DisposeChildren(Control parent)
+        {
+            foreach (Control child in parent.Controls.Cast<Control>().ToList()) child.Dispose();
+            parent.Controls.Clear();
+        }
+
         [DllImport("user32.dll")] private static extern bool ReleaseCapture();
         [DllImport("user32.dll")] private static extern IntPtr SendMessage(IntPtr hWnd, int Msg, int wParam, int lParam);
     }
@@ -1176,7 +1480,7 @@ namespace MotionDesk.Widgets
         {
             var g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
-            using (var bg = new SolidBrush(UiTheme.Surface)) g.FillRectangle(bg, ClientRectangle);
+            using (var bg = new SolidBrush(UiTheme.SurfaceGlass)) g.FillRectangle(bg, ClientRectangle);
 
             int size = Math.Min(Width, Height) - 12;
             if (size < 20) return;
@@ -1265,7 +1569,7 @@ namespace MotionDesk.Widgets
         {
             var g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
-            using (var bg = new SolidBrush(UiTheme.Surface)) g.FillRectangle(bg, ClientRectangle);
+            using (var bg = new SolidBrush(UiTheme.SurfaceGlass)) g.FillRectangle(bg, ClientRectangle);
             if (_down.Count < 2) return;
 
             double scaleMax = Math.Max(64, Math.Max(_down.Max(), _up.Max()));
@@ -1326,7 +1630,7 @@ namespace MotionDesk.Widgets
         {
             var g = e.Graphics;
             g.SmoothingMode = SmoothingMode.None;
-            using (var bg = new SolidBrush(UiTheme.Surface)) g.FillRectangle(bg, ClientRectangle);
+            using (var bg = new SolidBrush(UiTheme.SurfaceGlass)) g.FillRectangle(bg, ClientRectangle);
             if (Width < 20 || Height < 20) return;
 
             float rowHeight = Height / 2f;
@@ -1412,7 +1716,7 @@ namespace MotionDesk.Widgets
 
             var g = e.Graphics;
             g.SmoothingMode = SmoothingMode.None;
-            using (var bg = new SolidBrush(UiTheme.Surface)) g.FillRectangle(bg, ClientRectangle);
+            using (var bg = new SolidBrush(UiTheme.SurfaceGlass)) g.FillRectangle(bg, ClientRectangle);
             if (_display.Length == 0) return;
 
             const int segments = 12;
@@ -1517,7 +1821,7 @@ namespace MotionDesk.Widgets
         {
             var g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
-            using (var bg = new SolidBrush(UiTheme.Surface)) g.FillRectangle(bg, ClientRectangle);
+            using (var bg = new SolidBrush(UiTheme.SurfaceGlass)) g.FillRectangle(bg, ClientRectangle);
 
             float cx = Width / 2f, cy = Height / 2f - 4;
             // Μεγαλύτερο κινούμενο εικονίδιο καιρού — ζητήθηκε ρητά (ήταν πολύ μικρό σε σχέση με
@@ -1629,7 +1933,7 @@ namespace MotionDesk.Widgets
         {
             var g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
-            using (var bg = new SolidBrush(UiTheme.Surface)) g.FillRectangle(bg, ClientRectangle);
+            using (var bg = new SolidBrush(UiTheme.SurfaceGlass)) g.FillRectangle(bg, ClientRectangle);
 
             float size = Math.Min(Width, Height) - 20;
             if (size < 30) return;
@@ -1736,19 +2040,36 @@ namespace MotionDesk.Widgets
         {
             var g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
-            using (var bg = new SolidBrush(UiTheme.Surface)) g.FillRectangle(bg, ClientRectangle);
+            using (var bg = new SolidBrush(UiTheme.SurfaceGlass)) g.FillRectangle(bg, ClientRectangle);
             if (Width < 40 || Height < 40) return;
 
             float cellW = Width / 2f, cellH = Height / 2f;
             double netLevel = _netPeak > 0 ? Math.Clamp(Math.Max(_netDown, _netUp) / _netPeak, 0, 1) : 0;
 
-            DrawRingCell(g, new RectangleF(0, 0, cellW, cellH), "CPU", $"{_cpuPct:0}%", _cpuPct / 100.0, MeterColor(_cpuPct));
-            DrawRingCell(g, new RectangleF(cellW, 0, cellW, cellH), "RAM", $"{_ramPct:0}%", _ramPct / 100.0, MeterColor(_ramPct));
-            DrawRingCell(g, new RectangleF(0, cellH, cellW, cellH), LocalizationManager.T("WidgetText.NetLabel"), $"↓{_netDown:0.0}\n↑{_netUp:0.0}", netLevel, UiTheme.AccentCyan);
-            DrawRingCell(g, new RectangleF(cellW, cellH, cellW, cellH), "GPU", _gpuPct.HasValue ? $"{_gpuPct:0}%" : "—", (_gpuPct ?? 0) / 100.0, MeterColor(_gpuPct ?? 0), _gpuSub);
+            // ΑΝΑΣΧΕΔΙΑΣΜΟΣ (ζητήθηκε ρητά "δεν είναι όμορφες ούτε ευδιάκριτες οι γραφικές
+            // απεικονίσεις, δες SeelenUI"): πριν, ΚΑΙ οι 4 δακτύλιοι χρωματίζονταν με το ΙΔΙΟ
+            // κόκκινο/κίτρινο/πράσινο "traffic light" σχήμα ανάλογα με το ποσοστό - σε συνηθισμένα
+            // επίπεδα χρήσης (π.χ. CPU 8%, RAM 40%) αυτό σήμαινε ότι όλοι οι δακτύλιοι έβγαιναν στο
+            // ΙΔΙΟ πράσινο, χωρίς καμία οπτική διαφοροποίηση ανάμεσα στις 4 μετρήσεις - δύσκολο να
+            // ξεχωρίσεις CPU από RAM με μια ματιά. Το SeelenUI (και τα περισσότερα σύγχρονα system
+            // monitors) δίνουν σε κάθε μέτρηση το ΔΙΚΟ της σταθερό χρώμα-ταυτότητα· το κόκκινο μένει
+            // ΜΟΝΟ ως προειδοποίηση υπερφόρτωσης (>90%), πάνω από το κανονικό χρώμα της μέτρησης.
+            // Κενό (0-4px) ανάμεσα στα 4 κελιά προστέθηκε επίσης - πριν ακουμπούσαν το ένα το άλλο.
+            const float gap = 3f;
+            var cpuRect = new RectangleF(0, 0, cellW - gap, cellH - gap);
+            var ramRect = new RectangleF(cellW + gap, 0, cellW - gap, cellH - gap);
+            var netRect = new RectangleF(0, cellH + gap, cellW - gap, cellH - gap);
+            var gpuRect = new RectangleF(cellW + gap, cellH + gap, cellW - gap, cellH - gap);
+
+            DrawRingCell(g, cpuRect, "CPU", $"{_cpuPct:0}%", _cpuPct / 100.0, MeterColor(_cpuPct, UiTheme.AccentCyan));
+            DrawRingCell(g, ramRect, "RAM", $"{_ramPct:0}%", _ramPct / 100.0, MeterColor(_ramPct, UiTheme.AccentBlue));
+            DrawRingCell(g, netRect, LocalizationManager.T("WidgetText.NetLabel"), $"↓{_netDown:0.0}\n↑{_netUp:0.0}", netLevel, MeterColor(netLevel * 100.0, Color.FromArgb(180, 120, 235)));
+            DrawRingCell(g, gpuRect, "GPU", _gpuPct.HasValue ? $"{_gpuPct:0}%" : "—", (_gpuPct ?? 0) / 100.0, MeterColor(_gpuPct ?? 0, Color.FromArgb(240, 150, 60)), _gpuSub);
         }
 
-        private static Color MeterColor(double pct) => pct > 85 ? Color.FromArgb(235, 76, 66) : pct > 65 ? Color.FromArgb(240, 200, 60) : Color.FromArgb(60, 210, 140);
+        // Σταθερό χρώμα-ταυτότητα ανά μέτρηση (identityColor) - γίνεται κόκκινο ΜΟΝΟ πάνω από 90%,
+        // ως σαφής προειδοποίηση υπερφόρτωσης, όχι ως το συνηθισμένο χρώμα σε κανονικά επίπεδα χρήσης.
+        private static Color MeterColor(double pct, Color identityColor) => pct > 90 ? Color.FromArgb(235, 76, 66) : identityColor;
 
         private void DrawRingCell(Graphics g, RectangleF cell, string label, string valueText, double level01, Color ringColor, string? footnote = null)
         {
@@ -1788,6 +2109,61 @@ namespace MotionDesk.Widgets
                 using var footFont = new Font("Segoe UI", Math.Max(6f, size * 0.10f));
                 using var footBrush = new SolidBrush(UiTheme.TextSecondary);
                 g.DrawString(footnote, footFont, footBrush, new RectangleF(ringRect.X, cy, ringRect.Width, ringRect.Height * 0.4f), centerFormat);
+            }
+        }
+    }
+
+    // Μηνιαίο πλέγμα ημερολογίου (χωρίς πραγματικά ραντεβού - βλ. σχόλιο στο InitializeNativeCalendar).
+    internal sealed class CalendarGridControl : Control
+    {
+        private DateTime _month = DateTime.Today;
+        public CalendarGridControl() => SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
+        public void SetMonth(DateTime month) { _month = month; Invalidate(); }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            var g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            using (var bg = new SolidBrush(UiTheme.SurfaceGlass)) g.FillRectangle(bg, ClientRectangle);
+            if (Width < 60 || Height < 60) return;
+
+            var culture = CultureInfo.CurrentCulture;
+            var dayNames = culture.DateTimeFormat.AbbreviatedDayNames;
+            int firstDow = (int)culture.DateTimeFormat.FirstDayOfWeek;
+            var first = new DateTime(_month.Year, _month.Month, 1);
+            int daysInMonth = DateTime.DaysInMonth(_month.Year, _month.Month);
+            int leadDays = ((int)first.DayOfWeek - firstDow + 7) % 7;
+
+            float headerH = 18f;
+            float cellW = Width / 7f;
+            int rows = (int)Math.Ceiling((leadDays + daysInMonth) / 7.0);
+            float cellH = Math.Max(1f, (Height - headerH) / Math.Max(rows, 1));
+
+            using var headFont = new Font("Segoe UI", 7.5f, FontStyle.Bold);
+            using var headBrush = new SolidBrush(UiTheme.TextMuted);
+            using var centerFormat = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+            for (int c = 0; c < 7; c++)
+            {
+                string name = dayNames[(firstDow + c) % 7];
+                string letter = name.Length > 0 ? char.ToUpper(name[0], culture).ToString() : "";
+                g.DrawString(letter, headFont, headBrush, new RectangleF(c * cellW, 0, cellW, headerH), centerFormat);
+            }
+
+            using var dayFont = new Font("Segoe UI", 8.5f);
+            using var dayBrush = new SolidBrush(UiTheme.TextPrimary);
+            using var todayBrush = new SolidBrush(UiTheme.AccentCyan);
+            for (int day = 1; day <= daysInMonth; day++)
+            {
+                int cellIndex = leadDays + day - 1;
+                int row = cellIndex / 7, col = cellIndex % 7;
+                var rect = new RectangleF(col * cellW, headerH + row * cellH, cellW, cellH);
+                bool isToday = _month.Year == DateTime.Today.Year && _month.Month == DateTime.Today.Month && day == DateTime.Today.Day;
+                if (isToday)
+                {
+                    float d = Math.Min(cellW, cellH) * 0.72f;
+                    g.FillEllipse(todayBrush, rect.X + (rect.Width - d) / 2, rect.Y + (rect.Height - d) / 2, d, d);
+                }
+                g.DrawString(day.ToString(culture), dayFont, isToday ? Brushes.White : dayBrush, rect, centerFormat);
             }
         }
     }

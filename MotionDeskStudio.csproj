@@ -23,9 +23,9 @@
          είχε κανένα πρακτικό αποτέλεσμα, μόνο θα πρόσθετε ~35+ άσχετα attributes σε custom controls.
          Βλ. https://aka.ms/winforms-warnings/wfo1000 -->
     <NoWarn>$(NoWarn);WFO1000</NoWarn>
-    <Version>1.9.12</Version>
-    <AssemblyVersion>1.9.12.0</AssemblyVersion>
-    <FileVersion>1.9.12.0</FileVersion>
+    <Version>2.0.0</Version>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <FileVersion>2.0.0.0</FileVersion>
     <Product>Opsis - Desktop Customization</Product>
     <!-- Ζητήθηκε ρητά "η εφαρμογή να μην περνά ως false positive". Πραγματική, εγγυημένη λύση
          είναι μόνο ένα πληρωμένο code-signing certificate (βλ. PROJECT_STATE.md — παραλείφθηκε
@@ -41,9 +41,18 @@
     <Description>Opsis - Desktop Customization — animated desktop wallpaper and workspace customization for Windows.</Description>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Επιτρέπει στο tests/Opsis.Tests να βλέπει internal classes όπως το AtomicFile χωρίς να τα κάνει public. -->
+    <InternalsVisibleTo Include="Opsis.Tests" />
+  </ItemGroup>
+
   <!-- Single native UI stack: WinForms. WPF was removed to reduce framework overhead and complexity. -->
   <ItemGroup>
     <Compile Remove="src\Core\**" />
+    <!-- tests\Opsis.Tests: δικό του ξεχωριστό project — χωρίς αυτό, το SDK-style implicit glob θα
+         το μάζευε ΚΑΙ εδώ (το tests\ είναι κάτω από τη ρίζα του repo, όπως και το src\), προσπαθώντας
+         να μεταγλωττίσει κώδικα xunit μέσα στο ίδιο το Opsis.exe. -->
+    <Compile Remove="tests\**" />
   </ItemGroup>
 
   <!-- Plugin contract (Opsis - Desktop Customization plugin mechanism). Plugins live in "plugins\<name>\" folders

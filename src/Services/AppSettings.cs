@@ -12,6 +12,11 @@ namespace MotionDesk.Services
         public int GridSize { get; set; } = 20;
         public bool AutoPerformanceMode { get; set; } = true;
         public string WallpaperPerformanceMode { get; set; } = "Balanced";
+        // Χειροκίνητο override της ανιχνευμένης ικανότητας υλικού (HardwareProfileService) — "" /
+        // null = Auto (ανίχνευση RAM/πυρήνων/GPU). Τιμές: "Low" | "Balanced" | "High" (HardwareTier).
+        // Ξεχωριστή έννοια από το WallpaperPerformanceMode παραπάνω: αυτό απαντά "πόσο δυνατό είναι
+        // αυτό το μηχάνημα", όχι "τι θέλει ο χρήστης να δει τώρα" — βλ. PerformanceModeManager.
+        public string? HardwareProfileOverride { get; set; }
         public bool ShowSystemMonitor { get; set; }
         public bool RestoreLastSession { get; set; } = true;
         public bool MinimizeToTray { get; set; } = true;
@@ -22,6 +27,9 @@ namespace MotionDesk.Services
         // Check GitHub for a newer release once a day / show the changelog once after an update
         public bool UpdateCheckEnabled { get; set; } = true;
         public DateTime LastUpdateCheckUtc { get; set; } = DateTime.MinValue;
+        // Update mechanism βάσει GearWin (ήδη portαρισμένο/δοκιμασμένο στο OpsisNewsCrawler): ένα
+        // tray balloon ανά ΈΚΔΟΣΗ, όχι ανά check — θυμόμαστε το tag που ειδοποιήθηκε τελευταία.
+        public string LastNotifiedUpdateTag { get; set; } = "";
         public string LastRunVersion { get; set; } = "";
         public bool StartWallpaperWithWindows { get; set; }
         public bool EnableAnimations { get; set; } = true;
@@ -103,7 +111,17 @@ namespace MotionDesk.Services
                 return "Battery";
             if (power.BatteryLifePercent >= 0 && power.BatteryLifePercent < 0.30f)
                 return "Low Power";
-            return "Balanced";
+
+            // Συνδυάζεται με το HardwareProfileService (ικανότητα μηχανήματος) αντί να μείνει ως
+            // δεύτερο, ασύνδετο σύστημα — ένα Low-End μηχάνημα μένει ελαφρύτερο ακόμα και στο
+            // ρεύμα, ένα High-End μπορεί να έχει το πλουσιότερο εφέ από προεπιλογή. Σε Balanced
+            // ικανότητα η συμπεριφορά μένει ακριβώς η ίδια με πριν ("Balanced").
+            return HardwareProfileService.CurrentTier switch
+            {
+                HardwareTier.Low => "Low Power",
+                HardwareTier.High => "High",
+                _ => "Balanced"
+            };
         }
     }
 }

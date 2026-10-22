@@ -116,6 +116,38 @@ namespace MotionDesk.UI
             catch (DllNotFoundException) { } catch (EntryPointNotFoundException) { }
         }
 
+        // Handoff Φάση 8 (GUI polish): πραγματικό Mica backdrop (Win11 22H2+) με σιωπηλό fallback
+        // σε Win10/παλαιότερο Win11 — το attribute απλά αγνοείται/επιστρέφει σφάλμα σε μηχανήματα
+        // που δεν το υποστηρίζουν, ΔΕΝ πετάει exception, άρα δεν χρειάζεται δικό της εκδοχή ανά OS.
+        // DWMSBT_MAINWINDOW (=2) είναι το "κανονικό" Mica (όχι Acrylic/Tabbed) — το σωστό για ένα
+        // βασικό application window όπως το MainWindow. ΣΗΜΑΝΤΙΚΟ (βρέθηκε στο ίδιο το handoff doc,
+        // επιβεβαιώθηκε με γρήγορο οπτικό έλεγχο): το WS_EX_COMPOSITED/AllowTransparency μαζί με
+        // DWM backdrop προκαλούν συχνά τρεμόπαιγμα/μαύρο φόντο — το MainWindow δεν τα χρησιμοποιεί
+        // ήδη, οπότε δεν χρειάζεται επιπλέον προσοχή εδώ.
+        private const int DWMWA_SYSTEMBACKDROP_TYPE = 38;
+        private const uint DWMSBT_MAINWINDOW = 2;
+        private const uint DWMSBT_NONE = 1;
+        [DllImport("dwmapi.dll")] private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int value, int size);
+
+        public static void ApplyMicaBackdrop(IntPtr handle, bool enabled = true)
+        {
+            try { int v = (int)(enabled ? DWMSBT_MAINWINDOW : DWMSBT_NONE); DwmSetWindowAttribute(handle, DWMWA_SYSTEMBACKDROP_TYPE, ref v, sizeof(int)); }
+            catch (DllNotFoundException) { } catch (EntryPointNotFoundException) { }
+        }
+
+        // DWMWA_WINDOW_CORNER_PREFERENCE (Win11 22H2+) — στρογγυλεμένες γωνίες στο ίδιο το OS-level
+        // frame αντί για χειροκίνητο region-clipping (UiTheme.ApplyRoundedRegion, ήδη σε χρήση αλλού
+        // σε custom-painted controls) — εδώ θέλουμε το πραγματικό DWM frame, όχι μια ζωγραφισμένη
+        // προσομοίωση, άρα διαφορετικό μηχανισμό.
+        private const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
+        private const uint DWMWCP_ROUND = 2;
+
+        public static void ApplyRoundedCorners(IntPtr handle)
+        {
+            try { uint v = DWMWCP_ROUND; DwmSetWindowAttribute(handle, DWMWA_WINDOW_CORNER_PREFERENCE, ref v, sizeof(uint)); }
+            catch (DllNotFoundException) { } catch (EntryPointNotFoundException) { }
+        }
+
         // Αμυντική διόρθωση για το αναφερόμενο "το drag&drop δεν λειτουργεί": αν η εφαρμογή τρέχει
         // ΚΑΤΑ ΛΑΘΟΣ elevated (π.χ. ξεκίνησε από ένα admin terminal/IDE κατά τη διάρκεια δοκιμών) ενώ
         // ο Explorer/η πηγή του drag τρέχει στο κανονικό (medium) επίπεδο, τα Windows (UIPI) μπλοκάρουν
@@ -208,6 +240,29 @@ namespace MotionDesk.UI
             int gradientColor = (alpha << 24) | (r << 16) | (g << 8) | b;
 
             var accent = new ACCENT_POLICY { AccentState = 3, GradientColor = gradientColor };
+            int size = Marshal.SizeOf(accent);
+            IntPtr accentPtr = Marshal.AllocHGlobal(size);
+            try
+            {
+                Marshal.StructureToPtr(accent, accentPtr, false);
+                var data = new WINDOWCOMPOSITIONATTRIBDATA { Attribute = 19, SizeOfData = size, Data = accentPtr };
+                SetWindowCompositionAttribute(handle, ref data);
+            }
+            finally { Marshal.FreeHGlobal(accentPtr); }
+        }
+
+        // ΔΙΟΡΘΩΣΗ πραγματικού bug ("ακόμα μαύρο μέσα, δεν είναι πραγματική διαφάνεια"): η λειτουργία
+        // "Πλήρης διαφάνεια" των widgets βασίζεται στο Form.TransparencyKey (color-key, απαιτεί
+        // ΑΚΡΙΒΩΣ Color.Black) - όσο το ίδιο παράθυρο έχει ΚΑΙ ενεργό blur-behind accent (Apply, πιο
+        // πάνω), ο ίδιος ο DWM αναμειγνύει/τονίζει ΚΑΘΕ pixel του παραθύρου (ακόμα και τα "μαύρα" που
+        // προορίζονται για το color-key) με το accent χρώμα - το αποτέλεσμα δεν είναι πια ΑΚΡΙΒΩΣ
+        // (0,0,0), άρα δεν ταιριάζει ποτέ με το TransparencyKey και μένει ορατό ως ένα σκούρο/μαύρο
+        // συμπαγές μπλοκ αντί να γίνει πραγματική τρύπα διαφάνειας. Λύση: απενεργοποίηση εντελώς της
+        // accent policy (AccentState=0) όσο είναι ενεργή η Πλήρης διαφάνεια, ώστε το color-key να
+        // δουλέψει χωρίς παρέμβαση του DWM blur.
+        public static void Disable(IntPtr handle)
+        {
+            var accent = new ACCENT_POLICY { AccentState = 0, GradientColor = 0 };
             int size = Marshal.SizeOf(accent);
             IntPtr accentPtr = Marshal.AllocHGlobal(size);
             try

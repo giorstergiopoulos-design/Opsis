@@ -49,6 +49,22 @@ namespace MotionDesk.Widgets
             key?.SetValue("LockScreenImageStatus", 1, RegistryValueKind.DWord);
         }
 
+        // ΔΙΟΡΘΩΣΗ "έβαλα άλλη οθόνη κλειδώματος και δεν μπορώ να επαναφέρω την προεπιλεγμένη": όσο
+        // αυτές οι 3 τιμές CSP υπάρχουν στο registry, τα Windows δείχνουν "Some settings are managed
+        // by your organization" στις Ρυθμίσεις > Εξατομίκευση > Οθόνη κλειδώματος και αγνοούν ό,τι
+        // επιλέξει εκεί ο χρήστης - δεν υπήρχε ΚΑΜΙΑ λειτουργία διαγραφής τους. Διαγράφει μόνο αυτές
+        // τις 3 τιμές (όχι ολόκληρο το κλειδί, σε περίπτωση που κάτι άλλο - π.χ. πολιτική MDM - έχει
+        // γράψει κι άλλα εκεί) ώστε τα Windows να ξαναδιαλέγουν μόνα τους.
+        public static void ClearLockScreenRegistry()
+        {
+            using var key = Registry.LocalMachine.OpenSubKey(PersonalizationCspKey, writable: true);
+            if (key == null) return;
+            foreach (var name in new[] { "LockScreenImagePath", "LockScreenImageUrl", "LockScreenImageStatus" })
+            {
+                try { key.DeleteValue(name, throwOnMissingValue: false); } catch (Exception) { }
+            }
+        }
+
         // "Auto-detect failure": όχι με Scheduled Task (μοιάζει με persistence mechanism που
         // χρησιμοποιεί και malware — ρητή απόφαση να ΜΗΝ το κάνουμε έτσι). Αντ' αυτού το ίδιο το
         // Opsis, στην κανονική του εκκίνηση με τα Windows, ελέγχει αν η τρέχουσα τιμή registry
@@ -92,6 +108,32 @@ namespace MotionDesk.Widgets
             }
 
             return string.Equals(GetCurrentLockScreenImagePath(), imagePath, StringComparison.OrdinalIgnoreCase);
+        }
+
+        // Ίδιο μοτίβο με το TrySetLockScreenImageElevated, για την αντίστροφη ενέργεια.
+        public static bool TryResetLockScreenElevated(out string errorMessage)
+        {
+            errorMessage = string.Empty;
+            try
+            {
+                string exePath = Environment.ProcessPath!;
+                var psi = new ProcessStartInfo(exePath) { UseShellExecute = true, Verb = "runas" };
+                psi.ArgumentList.Add("--reset-lockscreen");
+                using var proc = Process.Start(psi);
+                proc?.WaitForExit(15000);
+            }
+            catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
+            {
+                errorMessage = "cancelled";
+                return false;
+            }
+            catch (Exception ex)
+            {
+                errorMessage = ex.Message;
+                return false;
+            }
+
+            return GetCurrentLockScreenImagePath() == null;
         }
     }
 }

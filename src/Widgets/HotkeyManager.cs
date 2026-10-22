@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using MotionDesk.Services;
 
 namespace MotionDesk.Widgets
 {
@@ -18,46 +19,45 @@ namespace MotionDesk.Widgets
 
         public HotkeyManager()
         {
-            CreateHandle(new CreateParams());
+            // Handoff Φάση 5: πραγματικό message-only window (HWND_MESSAGE, -3) αντί για ένα απλό
+            // αόρατο top-level παράθυρο — δεν εμφανίζεται πουθενά σε window enumeration/Z-order, ίδιο
+            // μοτίβο με το ήδη υπάρχον ExplorerRestartWatcher (WallpaperInterop.cs).
+            CreateHandle(new CreateParams { Parent = new IntPtr(-3) });
         }
 
-        public void RegisterCtrlAlt(char key, Action onPressed)
-        {
-            int id = _nextId++;
-            _handlers[id] = onPressed;
-            RegisterHotKey(Handle, id, MOD_CONTROL | MOD_ALT, (uint)key);
-        }
+        public bool RegisterCtrlAlt(char key, Action onPressed) => Register(MOD_CONTROL | MOD_ALT, (uint)key, onPressed);
 
         // Υπερφόρτωση για πλήκτρα χωρίς απλή χαρακτήρα-αναπαράσταση (βελάκια κ.λπ.) — το Keys enum
         // έχει ήδη τους σωστούς Win32 virtual-key κωδικούς, απλή μετατροπή.
-        public void RegisterCtrlAlt(Keys key, Action onPressed)
-        {
-            int id = _nextId++;
-            _handlers[id] = onPressed;
-            RegisterHotKey(Handle, id, MOD_CONTROL | MOD_ALT, (uint)key);
-        }
+        public bool RegisterCtrlAlt(Keys key, Action onPressed) => Register(MOD_CONTROL | MOD_ALT, (uint)key, onPressed);
 
         // ΣΗΜΑΝΤΙΚΟ (βρέθηκε κατά τη δοκιμή του keyboard zone navigation): το απλό Ctrl+Alt+βελάκι
         // είναι ΗΔΗ δεσμευμένο συστημικά σε πολλά μηχανήματα από τον οδηγό γραφικών Intel/NVIDIA/AMD
         // (περιστροφή οθόνης) — το δικό μας RegisterHotKey απέτυχε σιωπηλά (ERROR_HOTKEY_ALREADY_
         // REGISTERED) χωρίς το combo να κάνει ΤΙΠΟΤΑ, επιβεβαιωμένο με αυτοτελή δοκιμή RegisterHotKey
         // σε αυτό το μηχάνημα. Το Ctrl+Alt+Shift+βελάκι είναι πολύ λιγότερο πιθανό να συγκρουστεί.
-        public void RegisterCtrlAltShift(Keys key, Action onPressed)
-        {
-            int id = _nextId++;
-            _handlers[id] = onPressed;
-            RegisterHotKey(Handle, id, MOD_CONTROL | MOD_ALT | MOD_SHIFT, (uint)key);
-        }
+        public bool RegisterCtrlAltShift(Keys key, Action onPressed) => Register(MOD_CONTROL | MOD_ALT | MOD_SHIFT, (uint)key, onPressed);
 
         // Χωρίς Alt: χρησιμοποιείται για "μετακίνηση εστίασης" (ZoneSnapEngine.FocusAdjacentZone) —
         // δεν συγκρούεται με το Ctrl+Alt+βελάκι των οδηγών γραφικών (βλ. σχόλιο παραπάνω) αφού δεν
         // περιλαμβάνει καθόλου Alt, ούτε με το Ctrl+Alt+Shift+βελάκι ("μετακίνηση παραθύρου") αφού
         // εδώ δεν πατιέται Alt.
-        public void RegisterCtrlShift(Keys key, Action onPressed)
+        public bool RegisterCtrlShift(Keys key, Action onPressed) => Register(MOD_CONTROL | MOD_SHIFT, (uint)key, onPressed);
+
+        // Handoff Φάση 5 ("conflict handling: hotkey ήδη πιασμένο -> UI μήνυμα"): πριν, η επιστρεφόμενη
+        // τιμή του RegisterHotKey αγνοούνταν εντελώς — μια σύγκρουση (π.χ. ο οδηγός γραφικών, βλ.
+        // σχόλιο Ctrl+Alt+βελάκι παραπάνω) περνούσε τελείως απαρατήρητη. Τώρα η αποτυχία καταγράφεται
+        // (RotatingLogger) ΚΑΙ επιστρέφεται στον caller, που μπορεί να την αγνοήσει (συμβατό προς τα
+        // πίσω) ή να αντιδράσει. Σκόπιμα ΧΩΡΙΣ δικό της MessageBox εδώ — μια σιωπηλή εναλλακτική
+        // συντόμευση (όπως ήδη έγινε για το Ctrl+Alt+βελάκι -> Ctrl+Alt+Shift+βελάκι) είναι λιγότερο
+        // ενοχλητική από ένα διάλογο σε κάθε εκκίνηση σε μηχανήματα με γνωστή σύγκρουση οδηγού.
+        private bool Register(uint modifiers, uint vk, Action onPressed)
         {
             int id = _nextId++;
-            _handlers[id] = onPressed;
-            RegisterHotKey(Handle, id, MOD_CONTROL | MOD_SHIFT, (uint)key);
+            bool ok = RegisterHotKey(Handle, id, modifiers, vk);
+            if (ok) { _handlers[id] = onPressed; }
+            else RotatingLogger.Write($"HotkeyManager: RegisterHotKey failed (already taken) for modifiers=0x{modifiers:X} vk=0x{vk:X} (Win32 error {Marshal.GetLastWin32Error()})");
+            return ok;
         }
 
         protected override void WndProc(ref Message m)
@@ -77,7 +77,7 @@ namespace MotionDesk.Widgets
             DestroyHandle();
         }
 
-        [DllImport("user32.dll")] private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
+        [DllImport("user32.dll", SetLastError = true)] private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
         [DllImport("user32.dll")] private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
     }
 }

@@ -16,12 +16,35 @@ namespace MotionDesk.Widgets
         private readonly HotkeyManager _hotkeys = new();
         private readonly ToolStripMenuItem _wallpaperToggleItem;
         private bool _wallpaperEnabled;
+        // E2 (v2.0 handoff PHASE0_REPORT): η μετάφραση της taskbar (GlassBlur.SetTaskbarTranslucency)
+        // εφαρμοζόταν ΜΟΝΟ μία φορά στο Program.cs, στην εκκίνηση του Opsis — ποτέ ξανά αν η ίδια η
+        // Explorer επανεκκινήσει (crash, "Restart Explorer" από Task Manager, Windows theme service).
+        // Ξεχωριστό instance από αυτό που ήδη χρησιμοποιεί το wallpaper (WallpaperWindow) — αυτό εδώ
+        // πρέπει να ζει όσο ζει η ίδια η εφαρμογή, ανεξάρτητα από το αν το wallpaper είναι ενεργό.
+        private readonly ExplorerRestartWatcher _taskbarWatcher = new();
+
+        public static event Action? ExitRequested;
+        public static void RequestExit() => ExitRequested?.Invoke();
 
         public TrayApplicationContext()
         {
+            // Safe mode (v2.0 handoff, Φάση 1 §S): αν ενεργό, παραλείπονται plugins/wallpaper/
+            // "Last Session" παρακάτω — μόνο το βασικό UI. Ο μετρητής crash μηδενίζεται μετά από
+            // 30s επιτυχούς λειτουργίας (one-shot timer πιο κάτω), όχι αμέσως, ώστε ένα crash λίγο
+            // μετά την εκκίνηση να εξακολουθεί να μετράει.
+            bool safeMode = SafeModeService.IsSafeMode;
+            if (safeMode)
+            {
+                RotatingLogger.Write("Starting in SAFE MODE - plugins/wallpaper/last-session skipped.");
+                new SafeModeBanner().Show();
+            }
+            var healthyTimer = new System.Windows.Forms.Timer { Interval = 30000 };
+            healthyTimer.Tick += (_, _) => { SafeModeService.MarkStartupHealthy(); healthyTimer.Stop(); healthyTimer.Dispose(); };
+            healthyTimer.Start();
+
             // Plugin (π.χ. News Crawler): ξεκινούν πριν χτιστεί το μενού ώστε να προσθέσουν τα δικά τους στοιχεία.
             PluginHost.Instance.NavigationRequested += key => ShowMainWindow("plugin:" + key);
-            PluginHost.Instance.StartAll();
+            if (!safeMode) PluginHost.Instance.StartAll();
 
             // Δημιουργία Context Menu για το Tray Icon — ομαδοποιημένο σε: παράθυρο, DeskZones,
             // wallpaper, γρήγορα προφίλ, γρήγορες ρυθμίσεις, έξοδος.
@@ -78,14 +101,12 @@ namespace MotionDesk.Widgets
             }
 
             contextMenu.Items.Add(new ToolStripSeparator());
-            contextMenu.Items.Add(LocalizationManager.T("Common.Exit"), null, (s, e) => {
-                try { WorkspaceProfileService.Save("Last Session"); WorkspaceProfileService.ExitSaveDone = true; } catch { }
-                PluginHost.Instance.StopAll();
-                _hotkeys.Dispose();
-                DesktopIconVisibilityEngine.Instance.Stop();
-                _trayIcon.Visible = false;
-                Application.Exit();
-            });
+            contextMenu.Items.Add(LocalizationManager.T("Common.Exit"), null, (s, e) => PerformExit());
+            // Επιτρέπει σε ΟΠΟΙΟΔΗΠΟΤΕ άλλο κομμάτι της εφαρμογής (π.χ. το κουμπί "Λήψη & εγκατάσταση"
+            // στη σελίδα About) να ζητήσει τον ΙΔΙΟ, πλήρη καθαρισμό εξόδου αντί για ένα γυμνό
+            // Application.Exit() που θα παρέκαμπτε το save session/plugin stop/hotkey dispose — ίδιο
+            // μοτίβο με το host.RequestExit()/ExitRequested του ήδη δουλεμένου OpsisNewsCrawler.
+            ExitRequested += () => PerformExit();
 
             // Αρχικοποίηση NotifyIcon — στατικό εικονίδιο (η "ζωντανή" λάμψη μετακόμισε στο
             // λογότυπο του sidebar μέσα στο κύριο παράθυρο, όχι πλέον στο tray).
@@ -99,23 +120,20 @@ namespace MotionDesk.Widgets
 
             _trayIcon.DoubleClick += (s, e) => ShowMainWindow();
 
-            // ---- high-usage alerts + monthly update check
+            // ---- high-usage alerts + update check (GearWin-style self-update, βλ. AutoCheckForUpdatesAsync)
             _uiContext = System.Threading.SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
             _alertTimer = new System.Windows.Forms.Timer { Interval = 5000 };
             _alertTimer.Tick += (_, _) => UsageAlertTick();
             _alertTimer.Start();
             _trayIcon.BalloonTipClicked += (_, _) => OpenPendingUpdate();
-            _ = CheckForUpdateAsync();
-            // Ζητήθηκε ρητά "οι ενημερώσεις να γίνονται αυτόματα κάθε μήνα" — το παραπάνω
-            // CheckForUpdateAsync() τρέχει ΜΟΝΟ μία φορά, στην εκκίνηση. Το Opsis είναι tray-resident
-            // εφαρμογή που συχνά μένει ανοιχτή για πολύ καιρό χωρίς restart (ειδικά με "Εκκίνηση με τα
-            // Windows" ενεργό) — χωρίς περιοδικό επαναέλεγχο, ένας χρήστης που σπάνια κάνει restart θα
-            // μπορούσε να μείνει χωρίς έλεγχο ενημέρωσης για πολύ περισσότερο από έναν μήνα. Το
-            // UpdateCheckService.CheckIfDueAsync() είναι ήδη φθηνό όταν δεν είναι "due" (απλή σύγκριση
-            // ημερομηνιών, καμία κλήση δικτύου) — ασφαλές να ξανατρέχει περιοδικά σε κάθε μεγάλη
-            // συνεδρία, όχι μόνο στην εκκίνηση.
-            _updateCheckTimer = new System.Windows.Forms.Timer { Interval = (int)TimeSpan.FromHours(6).TotalMilliseconds };
-            _updateCheckTimer.Tick += (_, _) => { _ = CheckForUpdateAsync(); };
+            _ = AutoCheckForUpdatesAsync();
+            // Σε ΚΑΘΕ εκκίνηση (παραπάνω) ΚΑΙ μετά κάθε ~12 ώρες (ίδια λογική με το self-update του
+            // GearWin, ήδη portαρισμένο/δοκιμασμένο στο OpsisNewsCrawler) — αντικαθιστά το
+            // προηγούμενο "μία φορά τον μήνα". Το Opsis είναι tray-resident εφαρμογή που συχνά μένει
+            // ανοιχτή για πολύ καιρό χωρίς restart, οπότε χρειάζεται ΚΑΙ περιοδικό επαναέλεγχο, όχι
+            // μόνο στην εκκίνηση.
+            _updateCheckTimer = new System.Windows.Forms.Timer { Interval = (int)UpdateCheckService.AutoCheckInterval.TotalMilliseconds };
+            _updateCheckTimer.Tick += (_, _) => { _ = AutoCheckForUpdatesAsync(); };
             _updateCheckTimer.Start();
 
             _hotkeys.RegisterCtrlAlt('F', () => DeskFlipEngine.Show());
@@ -124,7 +142,13 @@ namespace MotionDesk.Widgets
             // όλα τα εικονίδια εκτός του Ο Υπολογιστής μου/φάκελος χρήστη/Πίνακας Ελέγχου/Κάδος
             // Ανακύκλωσης — ζητήθηκε ρητά. Τρέχει σε όλη τη διάρκεια ζωής της εφαρμογής, εκτός αν ο
             // χρήστης το απενεργοποίησε ρητά (DeskZones page, "AppSettings.QuickHideDoubleClickEnabled").
-            if (AppSettings.Load().QuickHideDoubleClickEnabled) DesktopIconVisibilityEngine.Instance.Start();
+            _taskbarWatcher.ExplorerRestarted += () =>
+            {
+                try { GlassBlur.SetTaskbarTranslucency(WindowsSystemSettings.GetTransparencyEffectsEnabled()); }
+                catch (Exception) { } // σιωπηλό fallback — ζητήθηκε ρητά, βλ. E2
+            };
+
+            if (!safeMode && AppSettings.Load().QuickHideDoubleClickEnabled) DesktopIconVisibilityEngine.Instance.Start();
             AppActivity.Start();
 
             // Restore lightweight persistent preferences before showing the manager.
@@ -132,21 +156,24 @@ namespace MotionDesk.Widgets
             WidgetSnapEngine.EnableGridSnap = appSettings.GridSnap;
             WidgetSnapEngine.SnapThreshold = Math.Clamp(appSettings.SnapThreshold, 5, 50);
             WidgetSnapEngine.GridSize = Math.Clamp(appSettings.GridSize, 5, 100);
-            _wallpaperEnabled = WallpaperHostEngine.Instance.IsEnabled;
+            _wallpaperEnabled = !safeMode && WallpaperHostEngine.Instance.IsEnabled;
 
-            // Time-of-day schedule (may switch the wallpaper mode before the wallpaper starts)
-            WallpaperHostEngine.Instance.ApplyScheduleNow();
-
-            if (appSettings.StartWallpaperWithWindows)
+            if (!safeMode)
             {
-                WallpaperHostEngine.Instance.Enable();
-                _wallpaperEnabled = true;
+                // Time-of-day schedule (may switch the wallpaper mode before the wallpaper starts)
+                WallpaperHostEngine.Instance.ApplyScheduleNow();
+
+                if (appSettings.StartWallpaperWithWindows)
+                {
+                    WallpaperHostEngine.Instance.Enable();
+                    _wallpaperEnabled = true;
+                }
+
+                // The clock/date/temperature overlay keeps working over the normal Windows wallpaper when the animated wallpaper is off
+                WallpaperHostEngine.Instance.UpdateOverlayOnly();
+
+                CheckLockScreenFollowsWallpaper();
             }
-
-            // The clock/date/temperature overlay keeps working over the normal Windows wallpaper when the animated wallpaper is off
-            WallpaperHostEngine.Instance.UpdateOverlayOnly();
-
-            CheckLockScreenFollowsWallpaper();
 
             // "--background": η αυτόματη εκκίνηση με τα Windows (StartupManager.SetStartup) περνάει
             // αυτό το flag — ζητήθηκε ρητά ότι όταν υπάρχουν αποθηκευμένα widgets/DeskContainers, η
@@ -295,7 +322,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
         private System.Windows.Forms.Timer? _updateCheckTimer;
         private int _cpuHighTicks, _ramHighTicks;
         private DateTime _lastAlertUtc = DateTime.MinValue;
-        private string? _pendingUpdateUrl;
+        private bool _pendingUpdateAvailable;
 
         // Called every 5 s: CPU or memory >= 90% for 12 consecutive ticks (one minute) -> one tray balloon, then a 10-minute pause
         private void UsageAlertTick()
@@ -323,28 +350,71 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             catch (Exception) { /* an alert must never break the tray */ }
         }
 
-        private async System.Threading.Tasks.Task CheckForUpdateAsync()
+        // Ίδια λογική με το self-update του GearWin (ζητήθηκε ρητά· ήδη portαρισμένο/ζωντανά
+        // δοκιμασμένο στο OpsisNewsCrawler, βλ. TickerHost.AutoCheckForUpdatesAsync): έλεγχος σε
+        // κάθε εκκίνηση ΚΑΙ μετά κάθε ~12 ώρες, offline retry (1 λεπτό, έως 4 φορές), ΜΙΑ
+        // ειδοποίηση ανά ΈΚΔΟΣΗ (όχι ανά check — AppSettings.LastNotifiedUpdateTag).
+        private bool _autoCheckingUpdate;
+
+        private async Task AutoCheckForUpdatesAsync()
         {
+            if (_autoCheckingUpdate) return;
+            _autoCheckingUpdate = true;
             try
             {
-                await System.Threading.Tasks.Task.Delay(TimeSpan.FromSeconds(25));      // do not compete with the startup work
-                var info = await UpdateCheckService.CheckIfDueAsync();
-                if (info == null) return;
-                _uiContext.Post(_ =>
+                await Task.Delay(TimeSpan.FromSeconds(25)); // do not compete with the startup work
+                if (!AppSettings.Load().UpdateCheckEnabled) return;
+
+                for (int attempt = 0; attempt < 4; attempt++)
                 {
-                    _pendingUpdateUrl = info.Url;
-                    _trayIcon.ShowBalloonTip(10000, LocalizationManager.T("Update.Title"), string.Format(LocalizationManager.T("Update.Available"), info.Latest.ToString(3)), ToolTipIcon.Info);
-                }, null);
+                    var result = await UpdateCheckService.CheckAsync();
+                    if (result.Succeeded)
+                    {
+                        var s = AppSettings.Load();
+                        s.LastUpdateCheckUtc = DateTime.UtcNow;
+                        if (result.Update != null && !string.Equals(s.LastNotifiedUpdateTag, result.Update.Tag, StringComparison.Ordinal))
+                        {
+                            s.LastNotifiedUpdateTag = result.Update.Tag;
+                            s.Save();
+                            var found = result.Update;
+                            _uiContext.Post(_ =>
+                            {
+                                _pendingUpdateAvailable = true;
+                                _trayIcon.ShowBalloonTip(10000, LocalizationManager.T("Update.Title"),
+                                    string.Format(LocalizationManager.T("Update.Available"), found.Version.ToString(3)), ToolTipIcon.Info);
+                            }, null);
+                        }
+                        else s.Save();
+                        return;
+                    }
+                    await Task.Delay(TimeSpan.FromMinutes(1)); // offline: wait for the network
+                }
             }
             catch (Exception) { /* offline etc. */ }
+            finally { _autoCheckingUpdate = false; }
         }
 
+        // Το κλικ στο balloon ανοίγει την κάρτα ενημερώσεων μέσα στην εφαρμογή (About), όχι
+        // απευθείας το browser — εκεί υπάρχει πλέον και το κουμπί "Λήψη & εγκατάσταση".
         private void OpenPendingUpdate()
         {
-            var url = _pendingUpdateUrl;
-            if (url == null || !url.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase)) return;
-            try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true }); } catch (Exception) { }
-            _pendingUpdateUrl = null;
+            if (!_pendingUpdateAvailable) return;
+            _pendingUpdateAvailable = false;
+            ShowMainWindow("About");
+        }
+
+        // Κοινός, πλήρης καθαρισμός εξόδου — καλείται ΚΑΙ από το μενού "Έξοδος" ΚΑΙ από ένα
+        // self-update install (μέσω RequestExit/ExitRequested) ώστε και στις δύο περιπτώσεις να
+        // αποθηκεύεται η συνεδρία και να σταματούν σωστά τα plugins/hotkeys πριν το Application.Exit().
+        private void PerformExit()
+        {
+            try { WorkspaceProfileService.Save("Last Session"); WorkspaceProfileService.ExitSaveDone = true; } catch { }
+            PluginHost.Instance.StopAll();
+            _hotkeys.Dispose();
+            _taskbarWatcher.Dispose();
+            DesktopIconVisibilityEngine.Instance.Stop();
+            _trayIcon.Visible = false;
+            Application.Exit();
         }
 
         private void ChooseWallpaperFolder()
