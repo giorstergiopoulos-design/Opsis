@@ -247,7 +247,7 @@ namespace MotionDesk.Widgets
         public string? LocationName { get; set; }
         private Panel? _themedPanel;
         private Action? _themeHandler;
-        private Label? _titleLabelRef;
+        private GlassLabel? _titleLabelRef;
         // ΔΙΟΡΘΩΣΗ "η διαφάνεια να αφορά το παράθυρο όχι το περιεχόμενο" — βλ. ίδιο σχόλιο στο
         // DeskContainerWindow.cs. Δεν χρησιμοποιούμε πια Form.Opacity (ξεθωριάζει μαζί και το
         // κείμενο/εικονίδια)· το MotionDesk.UI.GlassBlur θολώνει μόνο ό,τι είναι πίσω από το widget.
@@ -659,7 +659,7 @@ namespace MotionDesk.Widgets
         // Κοινό, θεματισμένο "κέλυφος" widget: στρογγυλεμένες γωνίες + χρώματα από το UiTheme
         // αντί για μόνιμο σχεδόν-μαύρο φόντο (ζητήθηκε ρητά — "τα widgets είναι μόνο μαύρα").
         // Ξανασχεδιάζεται αυτόματα σε κάθε αλλαγή θέματος/σκουρότητας μέσω ThemeManager.Changed/Repainted.
-        private Panel CreateNativePanel(string title, out Label values)
+        private Panel CreateNativePanel(string title, out GlassLabel values)
         {
             SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.ResizeRedraw, true);
             // ΡΙΖΙΚΗ ΑΙΤΙΑ του "Πλήρης διαφάνεια" που δεν δούλευε: εδώ το TransparencyKey μηδενιζόταν
@@ -673,20 +673,20 @@ namespace MotionDesk.Widgets
             _themedPanel = panel;
             var titleBar = new Panel { Dock = DockStyle.Top, Height = 30, BackColor = Color.Transparent };
 
-            var closeLabel = new Label { Text = "✕", AutoSize = false, Size = new Size(22, 22), Dock = DockStyle.Right, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextSecondary, Font = new Font("Segoe UI", 10), Cursor = Cursors.Hand };
+            var closeLabel = new GlassLabel { Text = "✕", AutoSize = false, Size = new Size(22, 22), Dock = DockStyle.Right, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextSecondary, Font = new Font("Segoe UI", 10), Cursor = Cursors.Hand };
             closeLabel.MouseEnter += (_, _) => closeLabel.ForeColor = Color.FromArgb(231, 76, 60);
             closeLabel.MouseLeave += (_, _) => closeLabel.ForeColor = UiTheme.TextSecondary;
             closeLabel.Click += (_, _) => Close();
 
-            var lockLabel = new Label { Text = IsLocked ? "🔒" : "🔓", AutoSize = false, Size = new Size(22, 22), Dock = DockStyle.Right, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextSecondary, Font = new Font("Segoe UI", 9), Cursor = Cursors.Hand };
+            var lockLabel = new GlassLabel { Text = IsLocked ? "🔒" : "🔓", AutoSize = false, Size = new Size(22, 22), Dock = DockStyle.Right, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextSecondary, Font = new Font("Segoe UI", 9), Cursor = Cursors.Hand };
             lockLabel.Click += (_, _) => { IsLocked = !IsLocked; lockLabel.Text = IsLocked ? "🔒" : "🔓"; SaveWidgetState(); };
 
-            var menuLabel = new Label { Text = "☰", AutoSize = false, Size = new Size(22, 22), Dock = DockStyle.Left, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextSecondary, Font = new Font("Segoe UI", 10), Cursor = Cursors.Hand };
+            var menuLabel = new GlassLabel { Text = "☰", AutoSize = false, Size = new Size(22, 22), Dock = DockStyle.Left, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextSecondary, Font = new Font("Segoe UI", 10), Cursor = Cursors.Hand };
             menuLabel.MouseEnter += (_, _) => menuLabel.ForeColor = UiTheme.TextPrimary;
             menuLabel.MouseLeave += (_, _) => menuLabel.ForeColor = UiTheme.TextSecondary;
             menuLabel.Click += (_, _) => ShowWidgetMenu(menuLabel);
 
-            var titleLabel = new Label { Dock = DockStyle.Fill, Text = title, AutoEllipsis = true, Font = new Font("Segoe UI", 11, FontStyle.Bold), ForeColor = UiTheme.TextPrimary, Cursor = Cursors.SizeAll, TextAlign = ContentAlignment.MiddleLeft, Padding = new Padding(4, 0, 0, 0) };
+            var titleLabel = new GlassLabel { Dock = DockStyle.Fill, Text = title, AutoEllipsis = true, Font = new Font("Segoe UI", 11, FontStyle.Bold), ForeColor = UiTheme.TextPrimary, Cursor = Cursors.SizeAll, TextAlign = ContentAlignment.MiddleLeft, Padding = new Padding(4, 0, 0, 0) };
             _titleLabelRef = titleLabel;
             titleLabel.MouseDown += (_, e) =>
             {
@@ -700,7 +700,7 @@ namespace MotionDesk.Widgets
             titleBar.Controls.Add(menuLabel);
 
             panel.MouseDown += (_, e) => { if (e.Button == MouseButtons.Left && !IsLocked) BeginNativeDrag(); };
-            values = new Label { Dock = DockStyle.Top, Height = 52, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 10.5f), ForeColor = UiTheme.TextPrimary, BackColor = Color.Transparent };
+            values = new GlassLabel { Dock = DockStyle.Top, Height = 52, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 10.5f), ForeColor = UiTheme.TextPrimary, BackColor = Color.Transparent };
             var valuesRef = values;
             panel.Controls.Add(values); panel.Controls.Add(titleBar);
             Controls.Add(panel);
@@ -708,7 +708,7 @@ namespace MotionDesk.Widgets
             // Λαβή αλλαγής μεγέθους, κάτω-δεξιά γωνία — τοποθετείται απευθείας στη Form (όχι μέσα
             // στο panel Dock=Fill) ώστε το Anchor Bottom|Right να την κρατά πάντα στη σωστή γωνία
             // ανεξάρτητα από το layout του περιεχομένου. BringToFront ώστε να μένει πάνω από το panel.
-            var resizeGrip = new Label
+            var resizeGrip = new GlassLabel
             {
                 Text = "◢",
                 AutoSize = false,
@@ -778,14 +778,14 @@ namespace MotionDesk.Widgets
             var digitalHost = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 2, ColumnCount = 1, BackColor = Color.Transparent };
             digitalHost.RowStyles.Add(new RowStyle(SizeType.Percent, 68));
             digitalHost.RowStyles.Add(new RowStyle(SizeType.Percent, 32));
-            var timeLabel = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 22, FontStyle.Bold), ForeColor = UiTheme.TextPrimary, BackColor = Color.Transparent };
-            var dateLabelDigital = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 10), ForeColor = UiTheme.TextSecondary, BackColor = Color.Transparent };
+            var timeLabel = new GlassLabel { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 22, FontStyle.Bold), ForeColor = UiTheme.TextPrimary, BackColor = Color.Transparent };
+            var dateLabelDigital = new GlassLabel { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 10), ForeColor = UiTheme.TextSecondary, BackColor = Color.Transparent };
             digitalHost.Controls.Add(timeLabel, 0, 0);
             digitalHost.Controls.Add(dateLabelDigital, 0, 1);
 
             var analogHost = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent, Visible = false };
             var analog = new AnalogClockControl { Dock = DockStyle.Fill };
-            var dateLabelAnalog = new Label { Dock = DockStyle.Bottom, Height = 22, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9), ForeColor = UiTheme.TextSecondary, BackColor = Color.Transparent };
+            var dateLabelAnalog = new GlassLabel { Dock = DockStyle.Bottom, Height = 22, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9), ForeColor = UiTheme.TextSecondary, BackColor = Color.Transparent };
             analogHost.Controls.Add(analog);
             analogHost.Controls.Add(dateLabelAnalog);
 
@@ -804,8 +804,12 @@ namespace MotionDesk.Widgets
                 if (lastFontFamily != DigitalFontFamily)
                 {
                     lastFontFamily = DigitalFontFamily;
-                    timeLabel.Font?.Dispose();
-                    timeLabel.Font = new Font(DigitalFontFamily, 22, FontStyle.Bold);
+                    // Πρώτα νέο font, μετά dispose του παλιού ΜΟΝΟ αν όντως άλλαξε το αντικείμενο (το Font.Equals συγκρίνει ιδιότητες:
+                    // ίδιο όνομα/μέγεθος => το control κρατούσε το ήδη disposed παλιό και ζωγράφιζε κόκκινο X).
+                    var oldFont = timeLabel.Font;
+                    var newFont = new Font(DigitalFontFamily, 22, FontStyle.Bold);
+                    timeLabel.Font = newFont;
+                    if (!ReferenceEquals(timeLabel.Font, oldFont)) oldFont.Dispose(); else newFont.Dispose();
                 }
                 timeLabel.ForeColor = DigitalColorArgb == -1 ? UiTheme.TextPrimary : Color.FromArgb(DigitalColorArgb);
                 dateLabelDigital.ForeColor = UiTheme.TextSecondary;
@@ -922,9 +926,9 @@ namespace MotionDesk.Widgets
 
             // ---- Ήχος: κουμπί σίγασης + slider ----
             var volumeRow = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Dock = DockStyle.Top };
-            var muteBtn = new Label { Text = "🔊", Width = 28, Height = 24, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextPrimary, Font = new Font("Segoe UI", 12), Cursor = Cursors.Hand };
+            var muteBtn = new GlassLabel { Text = "🔊", Width = 28, Height = 24, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextPrimary, Font = new Font("Segoe UI", 12), Cursor = Cursors.Hand };
             var volumeSlider = new FlatSlider { Width = 150, Height = 24, Minimum = 0, Maximum = 100, Margin = new Padding(6, 0, 6, 0) };
-            var volumeLabel = new Label { Width = 36, Height = 24, TextAlign = ContentAlignment.MiddleLeft, ForeColor = UiTheme.TextSecondary, Font = UiTheme.FontBody };
+            var volumeLabel = new GlassLabel { Width = 36, Height = 24, TextAlign = ContentAlignment.MiddleLeft, ForeColor = UiTheme.TextSecondary, Font = UiTheme.FontBody };
             volumeRow.Controls.Add(muteBtn);
             volumeRow.Controls.Add(volumeSlider);
             volumeRow.Controls.Add(volumeLabel);
@@ -944,9 +948,9 @@ namespace MotionDesk.Widgets
             // ---- Φωτεινότητα: μόνο αν υποστηρίζεται από την οθόνη ----
             bool brightnessSupported = SystemControlService.IsBrightnessSupported();
             var brightnessRow = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Dock = DockStyle.Top, Visible = brightnessSupported };
-            var brightnessIcon = new Label { Text = "☀", Width = 28, Height = 24, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextPrimary, Font = new Font("Segoe UI", 12) };
+            var brightnessIcon = new GlassLabel { Text = "☀", Width = 28, Height = 24, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextPrimary, Font = new Font("Segoe UI", 12) };
             var brightnessSlider = new FlatSlider { Width = 150, Height = 24, Minimum = 0, Maximum = 100, Margin = new Padding(6, 0, 6, 0) };
-            var brightnessLabel = new Label { Width = 36, Height = 24, TextAlign = ContentAlignment.MiddleLeft, ForeColor = UiTheme.TextSecondary, Font = UiTheme.FontBody };
+            var brightnessLabel = new GlassLabel { Width = 36, Height = 24, TextAlign = ContentAlignment.MiddleLeft, ForeColor = UiTheme.TextSecondary, Font = UiTheme.FontBody };
             brightnessRow.Controls.Add(brightnessIcon);
             brightnessRow.Controls.Add(brightnessSlider);
             brightnessRow.Controls.Add(brightnessLabel);
@@ -966,7 +970,7 @@ namespace MotionDesk.Widgets
                 powerPanel.Controls.Clear();
                 foreach (var plan in SystemControlService.GetPowerPlans())
                 {
-                    var btn = new Label
+                    var btn = new GlassLabel
                     {
                         Text = plan.Name, AutoSize = true, Padding = new Padding(8, 3, 8, 3), Margin = new Padding(0, 0, 6, 6),
                         Cursor = Cursors.Hand, Font = UiTheme.FontBody,
@@ -1011,9 +1015,9 @@ namespace MotionDesk.Widgets
             var diskArea = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
             var ring = new DiskRingControl();
             var navRow = new Panel { Dock = DockStyle.Bottom, Height = 30, BackColor = Color.Transparent };
-            var prevBtn = new Label { Text = "◀", Dock = DockStyle.Left, Width = 36, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextSecondary, Font = new Font("Segoe UI", 12), Cursor = Cursors.Hand };
-            var nextBtn = new Label { Text = "▶", Dock = DockStyle.Right, Width = 36, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextSecondary, Font = new Font("Segoe UI", 12), Cursor = Cursors.Hand };
-            var pageLabel = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextMuted, Font = UiTheme.FontBody };
+            var prevBtn = new GlassLabel { Text = "◀", Dock = DockStyle.Left, Width = 36, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextSecondary, Font = new Font("Segoe UI", 12), Cursor = Cursors.Hand };
+            var nextBtn = new GlassLabel { Text = "▶", Dock = DockStyle.Right, Width = 36, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextSecondary, Font = new Font("Segoe UI", 12), Cursor = Cursors.Hand };
+            var pageLabel = new GlassLabel { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextMuted, Font = UiTheme.FontBody };
             navRow.Controls.Add(pageLabel);
             navRow.Controls.Add(prevBtn);
             navRow.Controls.Add(nextBtn);
@@ -1195,9 +1199,9 @@ namespace MotionDesk.Widgets
 
             var area = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
             var navRow = new Panel { Dock = DockStyle.Top, Height = 26, BackColor = Color.Transparent };
-            var prevBtn = new Label { Text = "◀", Dock = DockStyle.Left, Width = 30, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextSecondary, Font = new Font("Segoe UI", 10), Cursor = Cursors.Hand };
-            var nextBtn = new Label { Text = "▶", Dock = DockStyle.Right, Width = 30, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextSecondary, Font = new Font("Segoe UI", 10), Cursor = Cursors.Hand };
-            var monthLabel = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextPrimary, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold) };
+            var prevBtn = new GlassLabel { Text = "◀", Dock = DockStyle.Left, Width = 30, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextSecondary, Font = new Font("Segoe UI", 10), Cursor = Cursors.Hand };
+            var nextBtn = new GlassLabel { Text = "▶", Dock = DockStyle.Right, Width = 30, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextSecondary, Font = new Font("Segoe UI", 10), Cursor = Cursors.Hand };
+            var monthLabel = new GlassLabel { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextPrimary, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold) };
             navRow.Controls.Add(monthLabel); navRow.Controls.Add(prevBtn); navRow.Controls.Add(nextBtn);
             var grid = new CalendarGridControl { Dock = DockStyle.Fill };
             area.Controls.Add(grid);
@@ -1232,13 +1236,13 @@ namespace MotionDesk.Widgets
             values.Visible = false;
 
             var area = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
-            var statusLabel = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextMuted, Font = UiTheme.FontBody, Text = LocalizationManager.T("WidgetText.MediaNone") };
-            var titleLabel = new Label { Dock = DockStyle.Top, AutoEllipsis = true, Height = 26, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = UiTheme.TextPrimary };
-            var artistLabel = new Label { Dock = DockStyle.Top, AutoEllipsis = true, Height = 20, TextAlign = ContentAlignment.MiddleCenter, Font = UiTheme.FontBody, ForeColor = UiTheme.TextSecondary };
+            var statusLabel = new GlassLabel { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextMuted, Font = UiTheme.FontBody, Text = LocalizationManager.T("WidgetText.MediaNone") };
+            var titleLabel = new GlassLabel { Dock = DockStyle.Top, AutoEllipsis = true, Height = 26, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), ForeColor = UiTheme.TextPrimary };
+            var artistLabel = new GlassLabel { Dock = DockStyle.Top, AutoEllipsis = true, Height = 20, TextAlign = ContentAlignment.MiddleCenter, Font = UiTheme.FontBody, ForeColor = UiTheme.TextSecondary };
             var controlsRow = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 36, FlowDirection = FlowDirection.LeftToRight, BackColor = Color.Transparent, Anchor = AnchorStyles.None };
-            var prevBtn = new Label { Text = "⏮", Width = 40, Height = 32, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextSecondary, Font = new Font("Segoe UI", 13), Cursor = Cursors.Hand };
-            var playPauseBtn = new Label { Text = "▶", Width = 40, Height = 32, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextPrimary, Font = new Font("Segoe UI", 13), Cursor = Cursors.Hand };
-            var nextBtn = new Label { Text = "⏭", Width = 40, Height = 32, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextSecondary, Font = new Font("Segoe UI", 13), Cursor = Cursors.Hand };
+            var prevBtn = new GlassLabel { Text = "⏮", Width = 40, Height = 32, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextSecondary, Font = new Font("Segoe UI", 13), Cursor = Cursors.Hand };
+            var playPauseBtn = new GlassLabel { Text = "▶", Width = 40, Height = 32, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextPrimary, Font = new Font("Segoe UI", 13), Cursor = Cursors.Hand };
+            var nextBtn = new GlassLabel { Text = "⏭", Width = 40, Height = 32, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextSecondary, Font = new Font("Segoe UI", 13), Cursor = Cursors.Hand };
             controlsRow.Controls.Add(prevBtn); controlsRow.Controls.Add(playPauseBtn); controlsRow.Controls.Add(nextBtn);
             area.Controls.Add(statusLabel);
             area.Controls.Add(controlsRow);
@@ -1301,7 +1305,7 @@ namespace MotionDesk.Widgets
             values.Visible = false;
 
             var list = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, BackColor = Color.Transparent };
-            var statusLabel = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextMuted, Font = UiTheme.FontBody, Text = LocalizationManager.T("WidgetText.NotificationsLoading") };
+            var statusLabel = new GlassLabel { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextMuted, Font = UiTheme.FontBody, Text = LocalizationManager.T("WidgetText.NotificationsLoading") };
             // Dock=Fill χρειάζεται εξωτερικό container + BringToFront (βλ. InitializeNativeDisk) - αλλιώς
             // η λίστα ξεκινά κάτω από το title bar και κρύβεται πίσω του.
             var area = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
@@ -1362,9 +1366,9 @@ namespace MotionDesk.Widgets
                         int rowWidth = Math.Max(200, list.ClientSize.Width - 4);
                         var row = new Panel { Width = rowWidth, Height = 54, BackColor = UiTheme.Surface, Margin = new Padding(0, 0, 0, 6) };
                         UiTheme.ApplyRoundedRegion(row, 8);
-                        row.Controls.Add(new Label { Text = appName, Location = new Point(10, 6), AutoSize = true, Font = new Font(UiTheme.FontBody.FontFamily, 9f, FontStyle.Bold), ForeColor = UiTheme.TextPrimary });
-                        row.Controls.Add(new Label { Text = text, Location = new Point(10, 24), Size = new Size(rowWidth - 48, 26), AutoEllipsis = true, Font = UiTheme.FontBody, ForeColor = UiTheme.TextSecondary });
-                        var dismissBtn = new Label { Text = "✕", Location = new Point(rowWidth - 30, 6), Size = new Size(22, 22), TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextMuted, Cursor = Cursors.Hand, Anchor = AnchorStyles.Top | AnchorStyles.Right };
+                        row.Controls.Add(new GlassLabel { Text = appName, Location = new Point(10, 6), AutoSize = true, Font = new Font(UiTheme.FontBody.FontFamily, 9f, FontStyle.Bold), ForeColor = UiTheme.TextPrimary });
+                        row.Controls.Add(new GlassLabel { Text = text, Location = new Point(10, 24), Size = new Size(rowWidth - 48, 26), AutoEllipsis = true, Font = UiTheme.FontBody, ForeColor = UiTheme.TextSecondary });
+                        var dismissBtn = new GlassLabel { Text = "✕", Location = new Point(rowWidth - 30, 6), Size = new Size(22, 22), TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextMuted, Cursor = Cursors.Hand, Anchor = AnchorStyles.Top | AnchorStyles.Right };
                         uint nid = n.Id;
                         dismissBtn.Click += (_, _) => { try { listener.RemoveNotification(nid); } catch (Exception) { } _ = RefreshAsync(); };
                         row.Controls.Add(dismissBtn);
@@ -1394,7 +1398,7 @@ namespace MotionDesk.Widgets
             values.Visible = false;
 
             var list = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, BackColor = Color.Transparent };
-            var statusLabel = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextMuted, Font = UiTheme.FontBody, Text = LocalizationManager.T("WidgetText.BluetoothLoading") };
+            var statusLabel = new GlassLabel { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextMuted, Font = UiTheme.FontBody, Text = LocalizationManager.T("WidgetText.BluetoothLoading") };
             var area = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
             area.Controls.Add(list);
             area.Controls.Add(statusLabel);
@@ -1431,9 +1435,9 @@ namespace MotionDesk.Widgets
                         int rowWidth = Math.Max(200, list.ClientSize.Width - 4);
                         var row = new Panel { Width = rowWidth, Height = 40, BackColor = UiTheme.Surface, Margin = new Padding(0, 0, 0, 6) };
                         UiTheme.ApplyRoundedRegion(row, 8);
-                        row.Controls.Add(new Label { Text = connected ? "🔵" : "⚪", Location = new Point(10, 9), AutoSize = true, Font = new Font("Segoe UI", 10) });
-                        row.Controls.Add(new Label { Text = d.Name, Location = new Point(36, 10), Size = new Size(rowWidth - 150, 20), AutoEllipsis = true, Font = UiTheme.FontBody, ForeColor = UiTheme.TextPrimary });
-                        row.Controls.Add(new Label { Text = connected ? LocalizationManager.T("WidgetText.BluetoothConnected") : LocalizationManager.T("WidgetText.BluetoothPaired"), Location = new Point(rowWidth - 106, 10), Size = new Size(100, 20), TextAlign = ContentAlignment.MiddleRight, Font = new Font(UiTheme.FontBody.FontFamily, 8f), ForeColor = connected ? UiTheme.AccentCyan : UiTheme.TextMuted, Anchor = AnchorStyles.Top | AnchorStyles.Right });
+                        row.Controls.Add(new GlassLabel { Text = connected ? "🔵" : "⚪", Location = new Point(10, 9), AutoSize = true, Font = new Font("Segoe UI", 10) });
+                        row.Controls.Add(new GlassLabel { Text = d.Name, Location = new Point(36, 10), Size = new Size(rowWidth - 150, 20), AutoEllipsis = true, Font = UiTheme.FontBody, ForeColor = UiTheme.TextPrimary });
+                        row.Controls.Add(new GlassLabel { Text = connected ? LocalizationManager.T("WidgetText.BluetoothConnected") : LocalizationManager.T("WidgetText.BluetoothPaired"), Location = new Point(rowWidth - 106, 10), Size = new Size(100, 20), TextAlign = ContentAlignment.MiddleRight, Font = new Font(UiTheme.FontBody.FontFamily, 8f), ForeColor = connected ? UiTheme.AccentCyan : UiTheme.TextMuted, Anchor = AnchorStyles.Top | AnchorStyles.Right });
                         list.Controls.Add(row);
                     }
                 }
@@ -1572,6 +1576,7 @@ namespace MotionDesk.Widgets
             g.SmoothingMode = SmoothingMode.AntiAlias;
             using (var bg = new SolidBrush(UiTheme.SurfaceGlass)) g.FillRectangle(bg, ClientRectangle);
             if (_down.Count < 2) return;
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
 
             double scaleMax = Math.Max(64, Math.Max(_down.Max(), _up.Max()));
             DrawSeries(g, _down, scaleMax, UiTheme.AccentCyan, true);
@@ -1584,7 +1589,7 @@ namespace MotionDesk.Widgets
             var pts = new PointF[values.Length];
             for (int i = 0; i < values.Length; i++)
             {
-                float x = i * Width / (float)Math.Max(1, MaxPoints - 1);
+                float x = (i + (MaxPoints - values.Length)) * Width / (float)Math.Max(1, MaxPoints - 1);   // δεξιά στοιχισμένο: το νέο δείγμα μπαίνει από δεξιά
                 double v = scaleMax > 0 ? Math.Clamp(values[i] / scaleMax, 0, 1) : 0;
                 pts[i] = new PointF(x, Height - 4 - (float)(v * (Height - 8)));
             }
