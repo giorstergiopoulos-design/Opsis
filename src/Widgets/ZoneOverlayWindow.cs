@@ -30,6 +30,7 @@ namespace MotionDesk.Widgets
 
         public ZoneOverlayWindow()
         {
+            DoubleBuffered = true;
             FormBorderStyle = FormBorderStyle.None;
             StartPosition = FormStartPosition.Manual;
             ShowInTaskbar = false;

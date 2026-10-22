@@ -15,6 +15,7 @@ namespace MotionDesk.Widgets
     {
         public SafeModeBanner()
         {
+            MotionDesk.UI.Flicker.Attach(this);
             var area = (Screen.PrimaryScreen ?? Screen.AllScreens[0]).WorkingArea;
             FormBorderStyle = FormBorderStyle.None;
             StartPosition = FormStartPosition.Manual;

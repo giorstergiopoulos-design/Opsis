@@ -12,7 +12,7 @@
 <p align="center">
   <img alt="Platform" src="https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6?logo=windows&logoColor=white" />
   <img alt=".NET" src="https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white" />
-  <img alt="Version" src="https://img.shields.io/badge/version-2.0.0-00B4D8" />
+  <img alt="Version" src="https://img.shields.io/badge/version-2.1.0-00B4D8" />
   <img alt="License" src="https://img.shields.io/badge/license-MIT-green" />
   <img alt="Languages" src="https://img.shields.io/badge/localized-14%20languages-blue" />
 </p>
@@ -54,7 +54,7 @@ runtime.
 Ρωσικά, Κινέζικα, Ιαπωνικά, Πορτογαλικά, Κορεατικά, Τουρκικά, Αραβικά, Χίντι), πραγματική taskbar
 διαφάνεια (τεχνική TranslucentTB, χωρίς DLL injection), αυτόματη ενημέρωση από τα GitHub releases (έλεγχος σε κάθε εκκίνηση και ανά 12 ώρες, επαλήθευση SHA-256, και η εγκατάσταση γίνεται μόνο αφού το επιβεβαιώσεις), και σύστημα plugin επεκτάσιμο μέσω
 `AssemblyLoadContext` (το πρώτο, το **Opsis News Crawler**, προσθέτει μπάρα ειδήσεων/τιμών στην
-επιφάνεια εργασίας).
+επιφάνεια εργασίας· το δεύτερο, το [**Opsis Appearance**](https://github.com/giorstergiopoulos-design/OpsisAppearance), αλλάζει την εμφάνιση των ίδιων των Windows — αυτόματο Light/Dark, accent, taskbar, χρωματιστό border παραθύρων, γωνίες). Και τα δύο διατίθενται και ως αυτόνομες εφαρμογές.
 
 ### Στιγμιότυπα οθόνης / Screenshots
 
@@ -146,7 +146,7 @@ Also: full support for 14 languages (English, Greek, German, French, Spanish, It
 Chinese, Japanese, Portuguese, Korean, Turkish, Arabic, Hindi), real taskbar translucency
 (TranslucentTB technique, no DLL injection), self-update from GitHub releases (checked on every start and every 12 hours, SHA-256 verified, and installed only after you confirm), and a plugin system built on
 `AssemblyLoadContext` (the first one, **Opsis News Crawler**, adds a news/market ticker bar to the
-desktop).
+desktop; the second, [**Opsis Appearance**](https://github.com/giorstergiopoulos-design/OpsisAppearance), changes the look of Windows itself — automatic Light/Dark, accent, taskbar, coloured window borders, corners). Both are also available as stand-alone apps).
 
 ### Install
 

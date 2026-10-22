@@ -23,7 +23,9 @@ namespace MotionDesk.Services
     // και γράφουμε το δικό μας preset σε ΞΕΧΩΡΙΣΤΟ αρχείο.
     public static class EqualizerApoService
     {
-        private static string ConfigDir => @"C:\Program Files\EqualizerAPO\config";
+        /// <summary>Μόνο για δοκιμές: ανακατεύθυνση σε προσωρινό φάκελο αντί για το πραγματικό Equalizer APO.</summary>
+        internal static string? ConfigDirOverride;
+        private static string ConfigDir => ConfigDirOverride ?? @"C:\Program Files\EqualizerAPO\config";
         private static string ConfigFile => Path.Combine(ConfigDir, "config.txt");
         private static string MotionDeskIncludeFile => Path.Combine(ConfigDir, "Opsis.txt");
         private const string IncludeLine = "Include: Opsis.txt";
@@ -58,6 +60,19 @@ namespace MotionDesk.Services
                 _ => "Preamp: 0 dB\n", // "Flat"
             };
 
+            return WriteInclude(filters);
+        }
+
+        /// <summary>Εφαρμόζει ένα προφίλ 10 ζωνών (ή εισαγμένο από το Waveframe / αρχείο Equalizer APO) σε ΟΛΟ το σύστημα.</summary>
+        public static (bool Success, string Message) ApplyProfile(AudioEqProfile profile)
+        {
+            if (!IsInstalled) return (false, LocalizationManager.T("Apo.NotFound"));
+            return WriteInclude(profile.ToEqualizerApo());
+        }
+
+        // Κοινή εγγραφή: δικό μας Opsis.txt + (μία φορά) η γραμμή Include στο config.txt. Δεν πειράζει τίποτα άλλο του χρήστη.
+        private static (bool Success, string Message) WriteInclude(string filters)
+        {
             try
             {
                 File.WriteAllText(MotionDeskIncludeFile,

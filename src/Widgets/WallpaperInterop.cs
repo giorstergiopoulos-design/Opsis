@@ -111,6 +111,10 @@ namespace MotionDesk.Widgets
             return shellViewParent;
         }
 
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
+        private const uint GW_CHILD = 5, GW_HWNDLAST = 1;
+
         private const int GWL_EXSTYLE = -20;
         private const long WS_EX_NOREDIRECTIONBITMAP = 0x00200000L;
 
@@ -159,25 +163,29 @@ namespace MotionDesk.Widgets
             // στιγμή που επιστρέφει το SendMessageTimeout -> μικρό retry loop.
             for (int attempt = 0; attempt < 8; attempt++)
             {
-                // SMTO_ABORTIFHUNG (0x0002): μην περιμένεις όλο το timeout αν ο Explorer έχει
-                // κολλήσει — γύρνα αμέσως αντί να μπλοκάρεις έως 1000ms άδικα ανά προσπάθεια.
-                SendMessageTimeout(progman, 0x052C, IntPtr.Zero, IntPtr.Zero, 0x0002, 1000, out _);
-                SendMessageTimeout(progman, 0x052C, new IntPtr(0xD), new IntPtr(1), 0x0002, 1000, out _);
+                // Raised desktop (24H2+): ΕΠΑΛΗΘΕΥΜΕΝΟ ότι κάθε επιπλέον 0x052C ξαναδημιουργεί το system WorkerW (άλλαζε
+                // το handle του σε κάθε attach/settle-recheck) και χαλάει το z-order — όπως και στο Lively, ο μηχανισμός
+                // στέλνει το μήνυμα ΜΙΑ φορά και μόνο αν δεν υπάρχει ήδη WorkerW child του Progman.
+                if (raised)
+                {
+                    if (FindWindowEx(progman, IntPtr.Zero, "WorkerW", null) == IntPtr.Zero)
+                        SendMessageTimeout(progman, 0x052C, new IntPtr(0xD), new IntPtr(1), 0x0002, 1000, out _);
+                }
+                else
+                {
+                    // SMTO_ABORTIFHUNG (0x0002): μην περιμένεις όλο το timeout αν ο Explorer έχει κολλήσει.
+                    SendMessageTimeout(progman, 0x052C, IntPtr.Zero, IntPtr.Zero, 0x0002, 1000, out _);
+                    SendMessageTimeout(progman, 0x052C, new IntPtr(0xD), new IntPtr(1), 0x0002, 1000, out _);
+                }
 
                 if (raised)
                 {
-                    // Πρώτη προσπάθεια (απλούστερη, επιβεβαιωμένη ΚΑΙ από δεύτερο ανεξάρτητο
-                    // ενεργό project που κάνει ακριβώς την ίδια δουλειά με WebView2 —
-                    // bbabcock1990/tool-animated-wallpapers): τα ίδια τα Windows δημιουργούν ΗΔΗ
-                    // ένα WorkerW-παιδί του Progman, σωστά τοποθετημένο πίσω από το DefView, για
-                    // να ζωγραφίσει το προεπιλεγμένο φόντο· γίνεσαι child ΑΥΤΟΥ αντί να παλεύεις
-                    // μόνος σου με το z-order σχετικά με το SHELLDLL_DefView.
-                    IntPtr systemWallpaperWorkerW = FindWindowEx(progman, IntPtr.Zero, "WorkerW", null);
-                    if (systemWallpaperWorkerW != IntPtr.Zero && AttachClassic(windowHandle, systemWallpaperWorkerW, targetBounds))
-                        return true;
-
-                    // Fallback (πιο σύνθετο, από τη Lively Wallpaper): attach απευθείας στο
-                    // Progman με ρητό z-order "αμέσως πίσω από το SHELLDLL_DefView".
+                    // Μηχανισμός raised desktop (Windows 11 24H2/25H2/26H2): το Progman έχει WS_EX_NOREDIRECTIONBITMAP, το
+                    // SHELLDLL_DefView είναι layered child του και ένα WorkerW child ΑΠΟ ΚΑΤΩ ζωγραφίζει το wallpaper των
+                    // Windows. Το δικό μας παράθυρο πρέπει να είναι layered (alpha 255) child του Progman, ΑΚΡΙΒΩΣ πίσω από
+                    // το DefView και ΑΠΟ ΠΑΝΩ από το WorkerW — και το WorkerW να μένει το τελευταίο child (EnsureWorkerWZOrder).
+                    // (Επαληθεύτηκε με πραγματικό τεστ pixel στο build 26300: ένα SendToBack() έβαζε το παράθυρο ΚΑΤΩ από το
+                    // WorkerW => αόρατο wallpaper.)
                     IntPtr shellDllDefView = FindWindowEx(progman, IntPtr.Zero, "SHELLDLL_DefView", null);
                     if (shellDllDefView != IntPtr.Zero && AttachRaisedDesktop(windowHandle, progman, shellDllDefView, targetBounds))
                         return true;
@@ -208,13 +216,48 @@ namespace MotionDesk.Widgets
         // μας κώδικας, όχι αντιγραμμένος — η ίδια η τεχνική/σειρά ενεργειών επαληθεύτηκε εκεί).
         private static bool AttachRaisedDesktop(IntPtr windowHandle, IntPtr progman, IntPtr shellDllDefView, Rectangle targetBounds)
         {
-            MakeChildStyle(windowHandle);
-            SetParent(windowHandle, progman);
-            if (GetAncestor(windowHandle, GA_PARENT) != progman) return false;
+            // IDEMPOTENT: τα settle re-checks ξανακαλούν το attach κάθε 1,5 s. Αν το παράθυρο είναι ήδη child του Progman, ΔΕΝ
+            // ξανακάνουμε SetWindowLong(style)/SetParent — αυτό αναβόσβηνε (εξαφανιζόταν για ~1 s) το wallpaper.
+            if (GetAncestor(windowHandle, GA_PARENT) != progman)
+            {
+                MakeChildStyle(windowHandle);
+                SetParent(windowHandle, progman);
+                if (GetAncestor(windowHandle, GA_PARENT) != progman) return false;
+            }
 
             RepositionRelativeToParent(windowHandle, progman, targetBounds, shellDllDefView);
+            EnsureWorkerWZOrder(progman);
             LastAttachedWorkerW = progman;
             return true;
+        }
+
+        // Το system WorkerW (wallpaper των Windows) πρέπει να είναι το ΤΕΛΕΥΤΑΙΟ child του Progman, κάτω από το δικό μας.
+        private static void EnsureWorkerWZOrder(IntPtr progman)
+        {
+            IntPtr workerW = FindWindowEx(progman, IntPtr.Zero, "WorkerW", null);
+            if (workerW == IntPtr.Zero) return;
+            IntPtr last = GetWindow(progman, GW_CHILD);
+            if (last != IntPtr.Zero) last = GetWindow(last, GW_HWNDLAST);
+            if (last != workerW)
+                SetWindowPos(workerW, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+        }
+
+        /// <summary>Αντικαθιστά το Form.SendToBack(): σε raised desktop το HWND_BOTTOM θα έβαζε το παράθυρο ΚΑΤΩ από το
+        /// system WorkerW (αόρατο wallpaper). Εδώ το βάζουμε ακριβώς πίσω από το SHELLDLL_DefView.</summary>
+        public static void KeepBehindIcons(IntPtr windowHandle)
+        {
+            IntPtr progman = FindWindowEx(IntPtr.Zero, IntPtr.Zero, "Progman", null);
+            if (progman != IntPtr.Zero && IsRaisedDesktop(progman) && GetAncestor(windowHandle, GA_PARENT) == progman)
+            {
+                IntPtr defView = FindWindowEx(progman, IntPtr.Zero, "SHELLDLL_DefView", null);
+                if (defView != IntPtr.Zero)
+                {
+                    SetWindowPos(windowHandle, defView, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+                    EnsureWorkerWZOrder(progman);
+                    return;
+                }
+            }
+            SetWindowPos(windowHandle, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
         }
 
         // Κλασικό μονοπάτι (Windows 10 / παλαιότερα Windows 11 builds): parent = ο ξεχωριστός
@@ -222,9 +265,12 @@ namespace MotionDesk.Widgets
         // πριν, ήδη επιβεβαιωμένο ότι δουλεύει σε αυτή τη διάταξη.
         private static bool AttachClassic(IntPtr windowHandle, IntPtr target, Rectangle targetBounds)
         {
-            MakeChildStyle(windowHandle);
-            SetParent(windowHandle, target);
-            if (GetAncestor(windowHandle, GA_PARENT) != target) return false;
+            if (GetAncestor(windowHandle, GA_PARENT) != target)   // idempotent, βλ. AttachRaisedDesktop
+            {
+                MakeChildStyle(windowHandle);
+                SetParent(windowHandle, target);
+                if (GetAncestor(windowHandle, GA_PARENT) != target) return false;
+            }
 
             RepositionRelativeToParent(windowHandle, target, targetBounds, HWND_BOTTOM);
             LastAttachedWorkerW = target;
@@ -271,7 +317,11 @@ namespace MotionDesk.Widgets
             if (!GetWindowRect(parent, out var parentRect)) return;
             int relX = targetBounds.X - parentRect.Left;
             int relY = targetBounds.Y - parentRect.Top;
-            MoveWindow(windowHandle, relX, relY, targetBounds.Width, targetBounds.Height, true);
+            // Μετακίνηση ΜΟΝΟ αν χρειάζεται: ένα MoveWindow(repaint) στην ίδια θέση προκαλεί άσκοπο repaint/flicker.
+            bool sameRect = GetWindowRect(windowHandle, out var cur)
+                && cur.Left - parentRect.Left == relX && cur.Top - parentRect.Top == relY
+                && cur.Right - cur.Left == targetBounds.Width && cur.Bottom - cur.Top == targetBounds.Height;
+            if (!sameRect) MoveWindow(windowHandle, relX, relY, targetBounds.Width, targetBounds.Height, true);
 
             // insertAfter = HWND_BOTTOM (κλασικό μονοπάτι: πίσω από ΟΛΑ τα αδέρφια μέσα στο
             // WorkerW-αδερφό, δεν υπάρχουν εικονίδια εκεί ούτως ή άλλως) ή το ίδιο το

@@ -81,6 +81,7 @@ namespace MotionDesk.UI
             // DoubleBuffered = true (η καθιερωμένη τεχνική για Form, χωρίς UserPaint) διπλασιάζει
             // την απόδοση χωρίς να πειράξει το background-erase pipeline.
             DoubleBuffered = true;
+            Flicker.Attach(this);   // κάθε container/παιδί (τωρινό και μελλοντικό) με double buffering
             var appSettings = AppSettings.Load();
             WidgetSnapEngine.EnableGridSnap = appSettings.GridSnap;
             WidgetSnapEngine.SnapThreshold = Math.Clamp(appSettings.SnapThreshold, 5, 50);
@@ -117,7 +118,7 @@ namespace MotionDesk.UI
             }
 
             // "Αναπνέουσα" λάμψη στο λογότυπο του sidebar (όχι πλέον στο tray icon).
-            _brandPulseTimer = new System.Windows.Forms.Timer { Interval = 60 };
+            _brandPulseTimer = new System.Windows.Forms.Timer { Interval = HardwareProfileService.ScaleDecorativeInterval(60) };
             _brandPulseTimer.Tick += (_, _) => { _brandPulseT += 0.08; _brandDot.Invalidate(); };
             _brandPulseTimer.Start();
 
@@ -215,15 +216,17 @@ namespace MotionDesk.UI
                 // τρέχουσα σελίδα) — χωρίς αυτό, κάθε ενδιάμεσο Controls.Clear()/Add() προκαλούσε
                 // δικό του layout+repaint pass, ορατό ως στιγμιαία "λευκά τετραγωνάκια" στο σημείο
                 // που μόλις άδειασε πριν γεμίσει ξανά.
-                SuspendLayout();
-                try
+                Flicker.BatchRedraw(this, () =>
                 {
-                    ApplyChromeColors();
-                    RebuildSidebarNav();
-                    if (_pageBuilders.TryGetValue(_currentPageKey, out var builder)) builder();
-                }
-                finally { ResumeLayout(true); }
-                Invalidate(true);
+                    SuspendLayout();
+                    try
+                    {
+                        ApplyChromeColors();
+                        RebuildSidebarNav();
+                        if (_pageBuilders.TryGetValue(_currentPageKey, out var builder)) builder();
+                    }
+                    finally { ResumeLayout(true); }
+                });
             }));
         }
 
@@ -396,7 +399,7 @@ namespace MotionDesk.UI
             _header.Controls.Add(_pageTitle);
             _headerRule = new Panel { Dock = DockStyle.Bottom, Height = 1 };
             _header.Controls.Add(_headerRule);
-            _headerWaveTimer = new System.Windows.Forms.Timer { Interval = 45 };
+            _headerWaveTimer = new System.Windows.Forms.Timer { Interval = HardwareProfileService.ScaleDecorativeInterval(45) };
             _headerWaveTimer.Tick += (_, _) => { _headerWaveT += 0.03; _header.Invalidate(); };
             _headerWaveTimer.Start();
 
@@ -895,6 +898,11 @@ namespace MotionDesk.UI
         private void SetPage(string titleKey, Control control)
         {
             _pageTitle.Text = LocalizationManager.T(titleKey);
+            Flicker.BatchRedraw(_content, () => SetPageCore(control));
+        }
+
+        private void SetPageCore(Control control)
+        {
             _content.SuspendLayout();
             // ΔΙΟΡΘΩΣΗ πραγματικού bug: Controls.Clear() αφαιρεί τα child controls από τη συλλογή
             // αλλά ΔΕΝ τα κάνει Dispose — έτσι το παλιό page panel (π.χ. του Audio Enhancement, με
@@ -2080,6 +2088,36 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             var deskStripToggle = new FlatCheckBox { Text = LocalizationManager.T("Personalization.EnableDeskStrip"), AutoSize = true, Checked = DeskStripHostEngine.Instance.IsEnabled, BackColor = UiTheme.Surface, Margin = new Padding(0, 4, 0, 10) };
             deskStripCard.Controls.Add(deskStripToggle);
 
+            // Ρυθμίσεις dock (θέση, auto-hide, μέγεθος, μεγέθυνση, τρέχουσες εφαρμογές, προεπισκοπήσεις) — εφαρμόζονται αμέσως.
+            string Ld(string el, string en) => LocalizationManager.CurrentLanguage == "el" ? el : en;
+            var dockCfg = DeskStripHostEngine.Instance.GetSettings();
+            var posValues = new[] { DockPosition.Bottom, DockPosition.Top, DockPosition.Left, DockPosition.Right };
+            var posLabels = new[] { Ld("Κάτω", "Bottom"), Ld("Πάνω", "Top"), Ld("Αριστερά", "Left"), Ld("Δεξιά", "Right") };
+            deskStripCard.Controls.Add(new Label { AutoSize = true, Text = Ld("Θέση στην οθόνη", "Position on screen"), ForeColor = UiTheme.TextMuted, Font = UiTheme.FontBody, Margin = new Padding(0, 2, 0, 2) });
+            var posCombo = new FlatComboBox { Width = 220, Margin = new Padding(0, 0, 0, 8) };
+            posCombo.SetItems(posLabels, posLabels[Math.Max(0, Array.IndexOf(posValues, dockCfg.Position))]);
+            posCombo.SelectedIndexChanged += (_, _) => DeskStripHostEngine.Instance.UpdateSettings(c => c.Position = posValues[Math.Max(0, posCombo.SelectedIndex)]);
+            deskStripCard.Controls.Add(posCombo);
+
+            FlatCheckBox DockCheck(string text, bool value, Action<DeskStripSettings, bool> apply)
+            {
+                var cb = new FlatCheckBox { Text = text, AutoSize = true, Checked = value, BackColor = UiTheme.Surface, Margin = new Padding(0, 2, 0, 4) };
+                cb.CheckedChanged += (_, _) => DeskStripHostEngine.Instance.UpdateSettings(c => apply(c, cb.Checked));
+                deskStripCard.Controls.Add(cb);
+                return cb;
+            }
+            DockCheck(Ld("Αυτόματη απόκρυψη (εμφάνιση από την άκρη της οθόνης)", "Auto-hide (reveal from the screen edge)"), dockCfg.AutoHide, (c, v) => c.AutoHide = v);
+            DockCheck(Ld("Μεγέθυνση εικονιδίων στο hover", "Magnify icons on hover"), dockCfg.Magnify, (c, v) => c.Magnify = v);
+            DockCheck(Ld("Εμφάνιση τρεχουσών εφαρμογών", "Show running apps"), dockCfg.ShowRunning, (c, v) => c.ShowRunning = v);
+            DockCheck(Ld("Προεπισκόπηση παραθύρου στο hover", "Window preview on hover"), dockCfg.ShowPreviews, (c, v) => c.ShowPreviews = v);
+            var sizeLabel = new Label { AutoSize = true, ForeColor = UiTheme.TextMuted, Font = UiTheme.FontBody, Margin = new Padding(0, 6, 0, 2) };
+            void ShowSize(int v) => sizeLabel.Text = Ld($"Μέγεθος εικονιδίων: {v}px", $"Icon size: {v}px");
+            ShowSize(dockCfg.IconSize);
+            deskStripCard.Controls.Add(sizeLabel);
+            var sizeSlider = new FlatSlider { Minimum = 28, Maximum = 72, Value = Math.Clamp(dockCfg.IconSize, 28, 72), Width = 300, Height = 28, Margin = new Padding(0, 0, 0, 10) };
+            sizeSlider.ValueChanged += (_, _) => { ShowSize(sizeSlider.Value); DeskStripHostEngine.Instance.UpdateSettings(c => c.IconSize = sizeSlider.Value); };
+            deskStripCard.Controls.Add(sizeSlider);
+
             var pinnedList = new FlowLayoutPanel { AutoSize = true, FlowDirection = FlowDirection.TopDown, WrapContents = false };
             deskStripCard.Controls.Add(pinnedList);
 
@@ -2684,7 +2722,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
         // έπιασε ζωντανά ("το ιστορικό μένει στην 1.9.0"). Πρόσθεσε ΚΑΙ εδώ τη νέα έκδοση.
         private static readonly (string Version, string Date)[] VersionHistory =
         {
-            ("2.0.0", "2026-10"), ("1.9.12", "2026-10"), ("1.9.11", "2026-10"), ("1.9.10", "2026-10"), ("1.9.9", "2026-10"), ("1.9.8", "2026-10"), ("1.9.7", "2026-10"), ("1.9.6", "2026-10"), ("1.9.5", "2026-10"), ("1.9.4", "2026-10"), ("1.9.3", "2026-10"), ("1.9.2", "2026-10"), ("1.9.1", "2026-10"), ("1.9.0", "2026-10"), ("1.8.9", "2026-10"), ("1.8.8", "2026-10"), ("1.8.7", "2026-10"), ("1.8.6", "2026-10"), ("1.8.5", "2026-10"), ("1.7.8", "2026-10"), ("1.7.6", "2026-10"), ("1.7.5", "2026-10"), ("1.6.8", "2026-10"), ("1.6.2", "2026-10"), ("1.6.1", "2026-10"), ("1.6.0", "2026-09"), ("1.5.0", "2026-09"), ("1.4.1", "2026-09"), ("1.4.0", "2026-09"), ("1.3.0", "2026-09"), ("1.2.9", "2026-09"), ("1.2.8", "2026-09"), ("1.2.7", "2026-09"), ("1.2.6", "2026-09"), ("1.2.5", "2026-09"), ("1.2.4", "2026-09"), ("1.2.3", "2026-09"), ("1.2.2", "2026-09"), ("1.2.1", "2026-09"), ("1.2.0", "2026-09"), ("1.1.2", "2026-09"), ("1.1.1", "2026-09"), ("1.1.0", "2026-09"), ("1.0.0", "2026-09")
+            ("2.1.0", "2026-10"), ("2.0.0", "2026-10"), ("1.9.12", "2026-10"), ("1.9.11", "2026-10"), ("1.9.10", "2026-10"), ("1.9.9", "2026-10"), ("1.9.8", "2026-10"), ("1.9.7", "2026-10"), ("1.9.6", "2026-10"), ("1.9.5", "2026-10"), ("1.9.4", "2026-10"), ("1.9.3", "2026-10"), ("1.9.2", "2026-10"), ("1.9.1", "2026-10"), ("1.9.0", "2026-10"), ("1.8.9", "2026-10"), ("1.8.8", "2026-10"), ("1.8.7", "2026-10"), ("1.8.6", "2026-10"), ("1.8.5", "2026-10"), ("1.7.8", "2026-10"), ("1.7.6", "2026-10"), ("1.7.5", "2026-10"), ("1.6.8", "2026-10"), ("1.6.2", "2026-10"), ("1.6.1", "2026-10"), ("1.6.0", "2026-09"), ("1.5.0", "2026-09"), ("1.4.1", "2026-09"), ("1.4.0", "2026-09"), ("1.3.0", "2026-09"), ("1.2.9", "2026-09"), ("1.2.8", "2026-09"), ("1.2.7", "2026-09"), ("1.2.6", "2026-09"), ("1.2.5", "2026-09"), ("1.2.4", "2026-09"), ("1.2.3", "2026-09"), ("1.2.2", "2026-09"), ("1.2.1", "2026-09"), ("1.2.0", "2026-09"), ("1.1.2", "2026-09"), ("1.1.1", "2026-09"), ("1.1.0", "2026-09"), ("1.0.0", "2026-09")
         };
 
 
@@ -2757,6 +2795,8 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             MarkActive(presetButtons, settings.AudioEnhancementPreset);
             AddText(panel, LocalizationManager.T("AudioEnhancement.PresetsNote"));
 
+            BuildEqStudioSection(panel, apoInstalled);
+
             AddSection(panel, LocalizationManager.T("AudioEnhancement.SectionVisualizer"));
             var equalizer = new EqualizerControl { Width = 700, Height = 200, Style = "WMP", Margin = new Padding(0, 0, 0, 8) };
             panel.Controls.Add(equalizer);
@@ -2788,6 +2828,119 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             };
 
             SetPage("AudioEnhancement.Title", panel);
+        }
+
+
+        // ---- Ισοσταθμιστής 10 ζωνών ΣΕ ΟΛΟ ΤΟ ΣΥΣΤΗΜΑ (Equalizer APO) + ανταλλαγή presets με το Waveframe ----
+        private void BuildEqStudioSection(FlowLayoutPanel panel, bool apoInstalled)
+        {
+            string Ld(string el, string en) => LocalizationManager.CurrentLanguage == "el" ? el : en;
+            AddSection(panel, Ld("Ισοσταθμιστής 10 ζωνών (σε όλο το σύστημα)", "10-band equalizer (system-wide)"));
+            AddText(panel, Ld(
+                "Σύρε τις ζώνες (διπλό κλικ = μηδέν). Εφαρμόζεται σε ΟΛΟΝ τον ήχο των Windows μέσω Equalizer APO. Μπορείς να εισάγεις presets από το Waveframe (αρχείο .txt ή .json) και να εξάγεις τα δικά σου.",
+                "Drag the bands (double-click = zero). Applied to ALL Windows audio through Equalizer APO. You can import presets from Waveframe (.txt or .json) and export your own."));
+
+            var settings = AppSettings.Load();
+            var eq = new EqBandsControl { Width = 700, Height = 220, Margin = new Padding(0, 0, 0, 8) };
+            var current = new AudioEqProfile { Name = Ld("Τρέχον", "Current") };
+            var saved = settings.CustomEqProfiles.FirstOrDefault(p => p.Name == settings.ActiveEqProfile);
+            if (saved != null) current = saved.Clone();
+            eq.Bands = current.Bands;
+            panel.Controls.Add(eq);
+
+            var applyTimer = new System.Windows.Forms.Timer { Interval = 400 };
+            void ApplyNow()
+            {
+                applyTimer.Stop();
+                current.Bands = eq.Bands;
+                if (!apoInstalled) { _statusLabel.Text = LocalizationManager.T("AudioEnhancement.ApoMissing"); return; }
+                var (ok, msg) = EqualizerApoService.ApplyProfile(current);
+                _statusLabel.Text = ok ? Ld($"Ισοσταθμιστής εφαρμόστηκε σε όλο το σύστημα: {current.Name}", $"Equalizer applied system-wide: {current.Name}") : $"Equalizer APO: {msg}";
+            }
+            applyTimer.Tick += (_, _) => ApplyNow();
+            eq.BandsChanged += (_, _) => { applyTimer.Stop(); applyTimer.Start(); };   // debounce: ένα αρχείο ανά "σταμάτημα" του σύρματος
+            panel.Disposed += (_, _) => { applyTimer.Stop(); applyTimer.Dispose(); };
+
+            HoverButton Btn(string text, int width, EventHandler click)
+            {
+                var b = new HoverButton { Text = text, Width = width, Height = 32, Margin = new Padding(0, 0, 8, 6), FlatStyle = FlatStyle.Flat, ForeColor = UiTheme.TextPrimary, BackColor = UiTheme.SurfaceHover, Cursor = Cursors.Hand };
+                b.FlatAppearance.BorderSize = 0; b.Click += click; return b;
+            }
+
+            // Presets: τα 16 του Waveframe + τα δικά σου
+            var combo = new FlatComboBox { Width = 260, Margin = new Padding(0, 0, 8, 6) };
+            List<(string Label, AudioEqProfile Profile)> entries = new();
+            void FillCombo(string? select)
+            {
+                entries = AudioEqProfile.BuiltIn.Select(b => (Ld(b.El, b.En), new AudioEqProfile { Name = Ld(b.El, b.En), Bands = (double[])b.Bands.Clone() })).ToList();
+                foreach (var c in AppSettings.Load().CustomEqProfiles) entries.Add(("★ " + c.Name, c.Clone()));
+                combo.SetItems(entries.Select(x => x.Label).ToArray(), select != null && entries.Any(x => x.Label == select) ? select : null);
+            }
+            FillCombo(null);
+            combo.SelectedIndexChanged += (_, _) =>
+            {
+                if (combo.SelectedIndex < 0 || combo.SelectedIndex >= entries.Count) return;
+                current = entries[combo.SelectedIndex].Profile.Clone();
+                eq.Bands = current.Bands;
+                var a2 = AppSettings.Load(); a2.ActiveEqProfile = current.Name; a2.Save();
+                ApplyNow();
+            };
+
+            var row1 = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 0, 0, 4) };
+            row1.Controls.Add(combo);
+            row1.Controls.Add(Btn(Ld("Μηδενισμός", "Reset to flat"), 120, (_, _) => { current = new AudioEqProfile { Name = Ld("Επίπεδο", "Flat") }; eq.Bands = current.Bands; ApplyNow(); }));
+            row1.Controls.Add(Btn(Ld("Αποθήκευση ως…", "Save as…"), 130, (_, _) =>
+            {
+                string? name = PromptForText(Ld("Όνομα preset", "Preset name"), current.Name.Length > 0 ? current.Name : Ld("Το preset μου", "My preset"));
+                if (string.IsNullOrWhiteSpace(name)) return;
+                var st = AppSettings.Load();
+                var p = current.Clone(); p.Name = name.Trim(); p.Bands = eq.Bands;
+                st.CustomEqProfiles.RemoveAll(x => x.Name == p.Name); st.CustomEqProfiles.Add(p); st.ActiveEqProfile = p.Name; st.Save();
+                current = p; FillCombo("★ " + p.Name);
+            }));
+            row1.Controls.Add(Btn(Ld("Διαγραφή", "Delete"), 100, (_, _) =>
+            {
+                var st = AppSettings.Load();
+                if (st.CustomEqProfiles.RemoveAll(x => x.Name == current.Name) > 0) { st.Save(); FillCombo(null); }
+            }));
+            panel.Controls.Add(row1);
+
+            var row2 = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 0, 0, 10) };
+            row2.Controls.Add(Btn(Ld("Εισαγωγή (Waveframe / Equalizer APO)…", "Import (Waveframe / Equalizer APO)…"), 290, (_, _) =>
+            {
+                using var dlg = new OpenFileDialog { Filter = "Waveframe / Equalizer APO (*.txt;*.json)|*.txt;*.json|*.*|*.*", Title = Ld("Εισαγωγή EQ", "Import EQ") };
+                if (dlg.ShowDialog(this) != DialogResult.OK) return;
+                try
+                {
+                    var info = new FileInfo(dlg.FileName);
+                    if (info.Length > 256 * 1024) { _statusLabel.Text = Ld("Το αρχείο είναι πολύ μεγάλο για preset EQ.", "The file is too large to be an EQ preset."); return; }
+                    var imported = AudioEqProfile.Import(File.ReadAllText(dlg.FileName), Path.GetFileNameWithoutExtension(dlg.FileName));
+                    if (imported == null) { _statusLabel.Text = Ld("Δεν βρέθηκαν φίλτρα EQ σε αυτό το αρχείο.", "No EQ filters found in this file."); return; }
+                    current = imported; eq.Bands = current.Bands;
+                    _statusLabel.Text = Ld($"Εισήχθη: {current.Name}" + (current.ExtraLines.Count > 0 ? $" (+{current.ExtraLines.Count} επιπλέον φίλτρα)" : ""), $"Imported: {current.Name}" + (current.ExtraLines.Count > 0 ? $" (+{current.ExtraLines.Count} extra filters)" : ""));
+                    ApplyNow();
+                }
+                catch (Exception ex) { _statusLabel.Text = ex.Message; }
+            }));
+            row2.Controls.Add(Btn(Ld("Εξαγωγή (.txt)…", "Export (.txt)…"), 150, (_, _) =>
+            {
+                using var dlg = new SaveFileDialog { Filter = "Equalizer APO (*.txt)|*.txt", FileName = "opsis-eq.txt", Title = Ld("Εξαγωγή EQ", "Export EQ") };
+                if (dlg.ShowDialog(this) != DialogResult.OK) return;
+                try { current.Bands = eq.Bands; File.WriteAllText(dlg.FileName, current.ToEqualizerApo()); _statusLabel.Text = Ld("Αποθηκεύτηκε.", "Saved."); }
+                catch (Exception ex) { _statusLabel.Text = ex.Message; }
+            }));
+            panel.Controls.Add(row2);
+        }
+
+        private string? PromptForText(string prompt, string initial)
+        {
+            using var f = new Form { Text = "Opsis", FormBorderStyle = FormBorderStyle.FixedDialog, StartPosition = FormStartPosition.CenterParent, Width = 380, Height = 160, MinimizeBox = false, MaximizeBox = false, BackColor = UiTheme.Surface, ForeColor = UiTheme.TextPrimary };
+            var l = new Label { Text = prompt, Left = 12, Top = 12, AutoSize = true };
+            var t = new TextBox { Left = 12, Top = 36, Width = 340, Text = initial };
+            var ok = new Button { Text = "OK", Left = 196, Top = 72, Width = 75, DialogResult = DialogResult.OK };
+            var cancel = new Button { Text = LocalizationManager.T("Common.Cancel"), Left = 277, Top = 72, Width = 75, DialogResult = DialogResult.Cancel };
+            f.Controls.AddRange(new Control[] { l, t, ok, cancel }); f.AcceptButton = ok; f.CancelButton = cancel;
+            return f.ShowDialog(this) == DialogResult.OK ? t.Text : null;
         }
 
         private void ShowAbout()
@@ -3417,6 +3570,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
         // πάντα σταθερό, ενώ το ύψος συνεχίζει να υπολογίζεται κανονικά από το περιεχόμενο.
         private sealed class FixedWidthPanel : Panel
         {
+            public FixedWidthPanel() { DoubleBuffered = true; }
             public int FixedWidth { get; set; }
             public override Size GetPreferredSize(Size proposedSize)
             {
@@ -3431,6 +3585,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
         // ήταν AutoSize+GrowAndShrink με απλή ιδιότητα Width (όχι πραγματικά "κλειδωμένο" πλάτος).
         private sealed class FixedWidthFlowPanel : FlowLayoutPanel
         {
+            public FixedWidthFlowPanel() { DoubleBuffered = true; }
             public int FixedWidth { get; set; }
             public override Size GetPreferredSize(Size proposedSize)
             {
@@ -4004,6 +4159,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
         {
             public SettingsView()
             {
+                DoubleBuffered = true;
                 BackColor = UiTheme.Background;
                 AutoScroll = true;
                 GlassBlur.ApplyScrollbarTheme(this, UiTheme.Background.GetBrightness() < 0.5f);

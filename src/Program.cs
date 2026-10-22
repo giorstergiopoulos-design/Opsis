@@ -37,6 +37,45 @@ namespace MotionDesk
                 return;
             }
 
+            // Διαγνωστικά επιφάνειας εργασίας/wallpaper/καιρού (βλ. DesktopDiagnostics).
+            if (args.Length >= 1 && args[0] == "--diag")
+            {
+                ApplicationConfiguration.Initialize();
+                Environment.Exit(Services.DesktopDiagnostics.Run(args.Length > 1 && args[1] == "--show-desktop"));
+                return;
+            }
+
+            if (args.Length == 2 && args[0] == "--test-transparency")
+            {
+                ApplicationConfiguration.Initialize();
+                Environment.Exit(Services.DesktopDiagnostics.TestTransparency(args[1]));
+                return;
+            }
+            if (args.Length == 3 && args[0] == "--test-widgets")
+            {
+                ApplicationConfiguration.Initialize();
+                Environment.Exit(Services.DesktopDiagnostics.TestWidgets(args[1], args[2]));
+                return;
+            }
+            if (args.Length == 3 && args[0] == "--test-deskstrip")
+            {
+                ApplicationConfiguration.Initialize();
+                Environment.Exit(Services.DesktopDiagnostics.TestDeskStrip(args[1], args[2]));
+                return;
+            }
+            if (args.Length == 2 && args[0] == "--test-containers")
+            {
+                ApplicationConfiguration.Initialize();
+                Environment.Exit(Services.DesktopDiagnostics.TestContainers(args[1]));
+                return;
+            }
+            if (args.Length == 2 && args[0] == "--render-sysmon")
+            {
+                ApplicationConfiguration.Initialize();
+                Environment.Exit(Services.DesktopDiagnostics.RenderSysmon(args[1]));
+                return;
+            }
+
             // Single-instance: δύο ταυτόχρονες εκτελέσεις θα πάλευαν για τα ίδια global hotkeys,
             // θα έφτιαχναν διπλά wallpaper windows/tray icons και θα έγραφαν τα ίδια config αρχεία.
             using var singleInstance = new System.Threading.Mutex(true, @"Local\Opsis.SingleInstance", out bool isFirst);

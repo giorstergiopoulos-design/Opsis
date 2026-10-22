@@ -500,7 +500,7 @@ namespace MotionDesk.Widgets
         {
             if (_webView != null) _webView.Visible = true;
             Show();
-            SendToBack();
+            KeepBehindIcons();
             Revealed?.Invoke();
         }
 
@@ -515,7 +515,19 @@ namespace MotionDesk.Widgets
                 _revealTimeout.Tick += (_, _) =>
                 {
                     _revealTimeout?.Stop();
-                    if (_wantShow && !IsDisposed && !Visible) { _wantShow = false; ShowRevealed(); }
+                    if (_wantShow && !IsDisposed && !Visible)
+                    {
+                        // Αν το WebView2 δεν ξεκίνησε, ΜΗΝ αποκαλύπτεις συμπαγές σκούρο παράθυρο πάνω από το φόντο
+                        // των Windows (φαινόταν ως "το wallpaper δεν δουλεύει"): ξαναδοκίμασε και κράτα το κρυφό.
+                        if (_webView?.CoreWebView2 == null)
+                        {
+                            MotionDesk.Services.AttachLog.Write($"[{TargetScreen.DeviceName}] WebView2 not ready after 4s - keeping window hidden, retrying init");
+                            if (!_initializing) _ = InitializeWebViewAsync();
+                            _revealTimeout?.Stop(); _revealTimeout?.Start();
+                            return;
+                        }
+                        _wantShow = false; ShowRevealed();
+                    }
                 };
             }
             _revealTimeout.Stop(); _revealTimeout.Start();
@@ -569,6 +581,8 @@ namespace MotionDesk.Widgets
         // Handle αναγκάζει τη δημιουργία του native handle χωρίς να κάνει το Form ορατό), και το
         // TryAttachAsync είναι το ΜΟΝΟ σημείο που καλεί Show(), αφού πρώτα έχει ήδη γίνει
         // SendToBack πίσω από τα εικονίδια.
+        private void KeepBehindIcons() => WallpaperInterop.KeepBehindIcons(Handle);
+
         public void BeginAttach() => _ = TryAttachAsync();
 
         protected override void OnHandleCreated(EventArgs e)
@@ -600,7 +614,7 @@ namespace MotionDesk.Widgets
             if (attached)
             {
                 IsAttached = true;
-                SendToBack();
+                KeepBehindIcons();
                 _reattachTimer?.Stop();
                 RevealWhenReady();
                 BeginSettleRecheck();
@@ -637,7 +651,7 @@ namespace MotionDesk.Widgets
                 bool ok = await Task.Run(() => WallpaperInterop.AttachToDesktop(handle, bounds));
                 MotionDesk.Services.AttachLog.Write($"[{TargetScreen.DeviceName}] settle re-check ({14 - _settleAttemptsLeft}/14) {(ok ? "OK" : "FAILED")}");
                 if (IsDisposed) return;
-                if (ok) SendToBack();
+                if (ok) KeepBehindIcons();
             };
             _settleTimer.Start();
         }
@@ -655,7 +669,7 @@ namespace MotionDesk.Widgets
             if (attached)
             {
                 IsAttached = true;
-                SendToBack();
+                KeepBehindIcons();
                 RevealWhenReady();
                 BeginSettleRecheck();
             }
@@ -750,10 +764,14 @@ namespace MotionDesk.Widgets
                 // παιχνίδι) θα έπαιζε κανονικά πίσω από το παιχνίδι.
                 _webView.CoreWebView2.NavigationCompleted += (_, _) => { if (_paused) _ = SetPausedAsync(true); };
                 if (File.Exists(htmlPath)) _webView.CoreWebView2.Navigate(htmlPath);
+                else MotionDesk.Services.AttachLog.Write($"[{TargetScreen.DeviceName}] wallpaper page MISSING: {htmlPath}");
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Wallpaper WebView2 initialization failed: {ex}");
+                MotionDesk.Services.AttachLog.Write($"[{TargetScreen.DeviceName}] WebView2 init FAILED: {ex.GetType().Name}: {ex.Message} (runtime={WebView2Support.GetRuntimeVersion() ?? "MISSING"})");
+                // Καθάρισε το μισο-φτιαγμένο control ώστε η επόμενη προσπάθεια να ξεκινά καθαρά.
+                try { if (_webView != null && _webView.CoreWebView2 == null) { Controls.Remove(_webView); _webView.Dispose(); _webView = null; } } catch (Exception) { }
             }
             finally { _initializing = false; }
         }

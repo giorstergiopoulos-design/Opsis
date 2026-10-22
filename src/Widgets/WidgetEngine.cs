@@ -255,6 +255,7 @@ namespace MotionDesk.Widgets
 
         public WidgetWindow(string widgetId, int defaultX, int defaultY, int width, int height)
         {
+            Flicker.Attach(this);
             WidgetId = widgetId;
             this.FormBorderStyle = FormBorderStyle.None;
             this.StartPosition = FormStartPosition.Manual;
@@ -2006,109 +2007,149 @@ namespace MotionDesk.Widgets
         }
     }
 
-    // "Ομορφότερο" System Monitor — 4 γραμμές (CPU/RAM/Δίκτυο/GPU) καθεμιά με μεγαλύτερο, bold,
-    // έγχρωμο κείμενο τιμής ΚΑΙ μια ενσωματωμένη μπάρα-μετρητή δίπλα, αντί για γυμνό
-    // πολυγραμμικό κείμενο — ζητήθηκε ρητά.
+    // System Monitor — σύγχρονο "dashboard tiles" στυλ (SeelenUI / Windows 11 Widgets): ένα στρογγυλεμένο tile ανά μέτρηση
+    // (CPU/RAM/Δίκτυο/GPU) με σταθερό χρώμα-ταυτότητα, μικρή ετικέτα, μεγάλη τιμή, υπο-κείμενο και sparkline-ιστορικό
+    // (area με gradient) στο πίσω μέρος. Κόκκινο ΜΟΝΟ πάνω από 90% ως προειδοποίηση. Προσαρμόζεται στο μέγεθος:
+    // σε μικρό ύψος ή στενό πλάτος κρύβονται οι δευτερεύουσες λεπτομέρειες αντί να κόβονται.
     internal sealed class SystemMonitorRowsControl : Control
     {
-        private double _cpuPct;
-        private double _ramPct; private string _ramSub = "";
-        private double _netDown, _netUp; private double _netPeak = 64;
-        private double? _gpuPct; private string _gpuSub = "";
+        private const int HistoryLength = 60;   // 60 δείγματα × 2 s = 2 λεπτά ιστορικού
+
+        private sealed class Series
+        {
+            public readonly Queue<double> Values = new();
+            public void Push(double v01) { Values.Enqueue(Math.Clamp(v01, 0, 1)); while (Values.Count > HistoryLength) Values.Dequeue(); }
+        }
+
+        private double _cpuPct, _ramPct, _netDown, _netUp, _netPeak = 64;
+        private string _ramSub = "", _gpuSub = "";
+        private double? _gpuPct;
+        private readonly Series _cpuH = new(), _ramH = new(), _netH = new(), _gpuH = new();
 
         public SystemMonitorRowsControl()
         {
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
         }
 
-        public void SetCpu(double pct) { _cpuPct = pct; Invalidate(); }
-        public void SetRam(double pct, string sub) { _ramPct = pct; _ramSub = sub; Invalidate(); }
+        public void SetCpu(double pct) { _cpuPct = pct; _cpuH.Push(pct / 100.0); Invalidate(); }
+        public void SetRam(double pct, string sub) { _ramPct = pct; _ramSub = sub; _ramH.Push(pct / 100.0); Invalidate(); }
         public void SetNetwork(double downKbps, double upKbps)
         {
-            _netDown = downKbps; _netUp = upKbps; _netPeak = Math.Max(_netPeak * 0.98, Math.Max(downKbps, upKbps));
+            _netDown = downKbps; _netUp = upKbps;
+            _netPeak = Math.Max(_netPeak * 0.98, Math.Max(downKbps, upKbps));
+            _netH.Push(_netPeak > 0 ? Math.Max(downKbps, upKbps) / _netPeak : 0);
             Invalidate();
         }
-        public void SetGpu(double? pct, string sub) { _gpuPct = pct; _gpuSub = sub; Invalidate(); }
+        public void SetGpu(double? pct, string sub) { _gpuPct = pct; _gpuSub = sub; _gpuH.Push((pct ?? 0) / 100.0); Invalidate(); }
 
-        // ΑΝΑΣΧΕΔΙΑΣΜΟΣ (ζητήθηκε ρητά "δεν είναι όμορφο, δες τι προτάσεις υπάρχουν στο web") — οι
-        // 4 στοιβαγμένες γραμμές μπάρας+sparkline αντικαταστάθηκαν από πλέγμα 2x2 δακτυλίων
-        // (ring gauges), ίδια ακριβώς οπτική γλώσσα με το ήδη αποδεδειγμένα όμορφο widget Δίσκοι
-        // (DiskRingControl παρακάτω) — συνεπές ύφος σε όλα τα native widgets αντί για δύο
-        // διαφορετικά στυλ μετρητή. Κοινό μοτίβο σε εργαλεία όπως το Rainmeter: ένας κυκλικός
-        // μετρητής ανά μέτρηση, τιμή στο κέντρο, ετικέτα από κάτω.
+        private static Color Identity(double pct, Color c) => pct > 90 ? Color.FromArgb(235, 76, 66) : c;
+
+        private static string Rate(double kbps) => kbps >= 1024 ? $"{kbps / 1024:0.0} MB/s" : $"{kbps:0} KB/s";
+
         protected override void OnPaint(PaintEventArgs e)
         {
             var g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
             using (var bg = new SolidBrush(UiTheme.SurfaceGlass)) g.FillRectangle(bg, ClientRectangle);
-            if (Width < 40 || Height < 40) return;
+            if (Width < 60 || Height < 60) return;
 
-            float cellW = Width / 2f, cellH = Height / 2f;
-            double netLevel = _netPeak > 0 ? Math.Clamp(Math.Max(_netDown, _netUp) / _netPeak, 0, 1) : 0;
+            const float pad = 6f, gap = 6f;
+            // Πλατύ widget -> 2×2 πλέγμα, ψηλό/στενό -> 4 γραμμές.
+            bool grid = Width >= Height * 1.1f;
+            int cols = grid ? 2 : 1, rows = grid ? 2 : 4;
+            float tw = (Width - pad * 2 - gap * (cols - 1)) / cols;
+            float th = (Height - pad * 2 - gap * (rows - 1)) / rows;
 
-            // ΑΝΑΣΧΕΔΙΑΣΜΟΣ (ζητήθηκε ρητά "δεν είναι όμορφες ούτε ευδιάκριτες οι γραφικές
-            // απεικονίσεις, δες SeelenUI"): πριν, ΚΑΙ οι 4 δακτύλιοι χρωματίζονταν με το ΙΔΙΟ
-            // κόκκινο/κίτρινο/πράσινο "traffic light" σχήμα ανάλογα με το ποσοστό - σε συνηθισμένα
-            // επίπεδα χρήσης (π.χ. CPU 8%, RAM 40%) αυτό σήμαινε ότι όλοι οι δακτύλιοι έβγαιναν στο
-            // ΙΔΙΟ πράσινο, χωρίς καμία οπτική διαφοροποίηση ανάμεσα στις 4 μετρήσεις - δύσκολο να
-            // ξεχωρίσεις CPU από RAM με μια ματιά. Το SeelenUI (και τα περισσότερα σύγχρονα system
-            // monitors) δίνουν σε κάθε μέτρηση το ΔΙΚΟ της σταθερό χρώμα-ταυτότητα· το κόκκινο μένει
-            // ΜΟΝΟ ως προειδοποίηση υπερφόρτωσης (>90%), πάνω από το κανονικό χρώμα της μέτρησης.
-            // Κενό (0-4px) ανάμεσα στα 4 κελιά προστέθηκε επίσης - πριν ακουμπούσαν το ένα το άλλο.
-            const float gap = 3f;
-            var cpuRect = new RectangleF(0, 0, cellW - gap, cellH - gap);
-            var ramRect = new RectangleF(cellW + gap, 0, cellW - gap, cellH - gap);
-            var netRect = new RectangleF(0, cellH + gap, cellW - gap, cellH - gap);
-            var gpuRect = new RectangleF(cellW + gap, cellH + gap, cellW - gap, cellH - gap);
-
-            DrawRingCell(g, cpuRect, "CPU", $"{_cpuPct:0}%", _cpuPct / 100.0, MeterColor(_cpuPct, UiTheme.AccentCyan));
-            DrawRingCell(g, ramRect, "RAM", $"{_ramPct:0}%", _ramPct / 100.0, MeterColor(_ramPct, UiTheme.AccentBlue));
-            DrawRingCell(g, netRect, LocalizationManager.T("WidgetText.NetLabel"), $"↓{_netDown:0.0}\n↑{_netUp:0.0}", netLevel, MeterColor(netLevel * 100.0, Color.FromArgb(180, 120, 235)));
-            DrawRingCell(g, gpuRect, "GPU", _gpuPct.HasValue ? $"{_gpuPct:0}%" : "—", (_gpuPct ?? 0) / 100.0, MeterColor(_gpuPct ?? 0, Color.FromArgb(240, 150, 60)), _gpuSub);
+            var tiles = new (string Label, string Value, string Sub, Series H, Color C, double Pct)[]
+            {
+                ("CPU", $"{_cpuPct:0}%", "", _cpuH, UiTheme.AccentCyan, _cpuPct),
+                ("RAM", $"{_ramPct:0}%", _ramSub, _ramH, UiTheme.AccentBlue, _ramPct),
+                (LocalizationManager.T("WidgetText.NetLabel"), Rate(Math.Max(_netDown, _netUp)), $"↓ {Rate(_netDown)}   ↑ {Rate(_netUp)}", _netH, Color.FromArgb(180, 120, 235), 0),
+                ("GPU", _gpuPct.HasValue ? $"{_gpuPct:0}%" : "—", _gpuSub, _gpuH, Color.FromArgb(240, 150, 60), _gpuPct ?? 0),
+            };
+            for (int i = 0; i < tiles.Length; i++)
+            {
+                int cx = grid ? i % 2 : 0, cy = grid ? i / 2 : i;
+                var r = new RectangleF(pad + cx * (tw + gap), pad + cy * (th + gap), tw, th);
+                DrawTile(g, r, tiles[i].Label, tiles[i].Value, tiles[i].Sub, tiles[i].H, Identity(tiles[i].Pct, tiles[i].C));
+            }
         }
 
-        // Σταθερό χρώμα-ταυτότητα ανά μέτρηση (identityColor) - γίνεται κόκκινο ΜΟΝΟ πάνω από 90%,
-        // ως σαφής προειδοποίηση υπερφόρτωσης, όχι ως το συνηθισμένο χρώμα σε κανονικά επίπεδα χρήσης.
-        private static Color MeterColor(double pct, Color identityColor) => pct > 90 ? Color.FromArgb(235, 76, 66) : identityColor;
-
-        private void DrawRingCell(Graphics g, RectangleF cell, string label, string valueText, double level01, Color ringColor, string? footnote = null)
+        private static GraphicsPath Rounded(RectangleF r, float radius)
         {
-            using var labelFont = new Font("Segoe UI", Math.Max(7f, cell.Height * 0.085f), FontStyle.Bold);
-            using var labelBrush = new SolidBrush(UiTheme.TextMuted);
-            var labelSize = g.MeasureString(label, labelFont);
-            float labelY = cell.Bottom - labelSize.Height - 2;
-            g.DrawString(label, labelFont, labelBrush, cell.X + (cell.Width - labelSize.Width) / 2f, labelY);
+            float d = radius * 2;
+            var p = new GraphicsPath();
+            p.AddArc(r.X, r.Y, d, d, 180, 90); p.AddArc(r.Right - d, r.Y, d, d, 270, 90);
+            p.AddArc(r.Right - d, r.Bottom - d, d, d, 0, 90); p.AddArc(r.X, r.Bottom - d, d, d, 90, 90);
+            p.CloseFigure();
+            return p;
+        }
 
-            float ringAreaH = labelY - cell.Y;
-            float size = Math.Min(cell.Width, ringAreaH) * 0.78f;
-            if (size < 24) return;
-            float cx = cell.X + cell.Width / 2f, cy = cell.Y + ringAreaH / 2f;
-            float thickness = Math.Max(4f, size * 0.12f);
-            var ringRect = new RectangleF(cx - size / 2f, cy - size / 2f, size, size);
-            var inset = ringRect; inset.Inflate(-thickness / 2f, -thickness / 2f);
+        private void DrawTile(Graphics g, RectangleF r, string label, string value, string sub, Series h, Color accent)
+        {
+            if (r.Width < 30 || r.Height < 24) return;
+            float radius = Math.Min(12f, r.Height * 0.22f);
+            using var shape = Rounded(r, radius);
+            // "Πλήρης διαφάνεια": το παράθυρο είναι color-key (Black) - ό,τι ζωγραφίζεται ημιδιαφανές πάνω του γίνεται σκούρο
+            // κουτί (όχι διαφάνεια). Εκεί ζωγραφίζουμε ΜΟΝΟ τις πληροφορίες (κείμενο + γραμμή ιστορικού), χωρίς fill/gradient.
+            bool transparent = UiTheme.IsFullyTransparent;
+            if (!transparent)
+                using (var fill = new SolidBrush(Color.FromArgb(70, UiTheme.Surface))) g.FillPath(fill, shape);
 
-            // ΔΙΟΡΘΩΣΗ "το system widget δεν εμφανίζεται σωστά": στο DiskRingControl το ελαφρύ
-            // track (alpha 70) δεν πειράζει γιατί η χρήση δίσκου σπάνια είναι κοντά στο 0% — εδώ
-            // όμως Δίκτυο/GPU είναι συχνά σχεδόν άδεια, οπότε με το ίδιο αχνό track ο δακτύλιος
-            // ουσιαστικά εξαφανίζεται και μένει μόνο μια μικρή "κουκκίδα" από το τόξο. Πιο ορατό
-            // track εδώ ώστε ο πλήρης κύκλος να φαίνεται πάντα, ακόμα και στο 0%.
-            using (var trackPen = new Pen(Color.FromArgb(130, UiTheme.Border), thickness) { StartCap = LineCap.Round, EndCap = LineCap.Round })
-                g.DrawEllipse(trackPen, inset);
-            float sweep = (float)(Math.Clamp(level01, 0, 1) * 360.0);
-            if (sweep > 0.5f)
-                using (var levelPen = new Pen(ringColor, thickness) { StartCap = LineCap.Round, EndCap = LineCap.Round })
-                    g.DrawArc(levelPen, inset, -90f, sweep);
-
-            using var valueFont = new Font("Segoe UI", Math.Max(7f, size * 0.20f), FontStyle.Bold);
-            using var valueBrush = new SolidBrush(UiTheme.TextPrimary);
-            using var centerFormat = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-            g.DrawString(valueText, valueFont, valueBrush, new RectangleF(ringRect.X, ringRect.Y, ringRect.Width, ringRect.Height * (footnote != null ? 0.6f : 1f)), centerFormat);
-
-            if (!string.IsNullOrEmpty(footnote))
+            // Sparkline-ιστορικό (area + γραμμή) στο κάτω ~55% του tile, clipped στο στρογγυλεμένο σχήμα.
+            var state = g.Save();
+            g.SetClip(shape, CombineMode.Intersect);
+            var vals = h.Values.ToArray();
+            if (vals.Length >= 2)
             {
-                using var footFont = new Font("Segoe UI", Math.Max(6f, size * 0.10f));
-                using var footBrush = new SolidBrush(UiTheme.TextSecondary);
-                g.DrawString(footnote, footFont, footBrush, new RectangleF(ringRect.X, cy, ringRect.Width, ringRect.Height * 0.4f), centerFormat);
+                float sx = r.X, sw = r.Width, sh = r.Height * 0.40f, sy = r.Bottom - 3;
+                var pts = new PointF[vals.Length];
+                for (int i = 0; i < vals.Length; i++)
+                    pts[i] = new PointF(sx + sw * (i + (HistoryLength - vals.Length)) / (HistoryLength - 1f), sy - (float)vals[i] * sh);
+                var area = new PointF[pts.Length + 2];
+                Array.Copy(pts, area, pts.Length);
+                area[pts.Length] = new PointF(pts[^1].X, r.Bottom); area[pts.Length + 1] = new PointF(pts[0].X, r.Bottom);
+                if (!transparent)
+                    using (var grad = new LinearGradientBrush(new RectangleF(sx, sy - sh, sw, sh + 4), Color.FromArgb(110, accent), Color.FromArgb(0, accent), LinearGradientMode.Vertical))
+                        g.FillPolygon(grad, area);
+                using var line = new Pen(transparent ? accent : Color.FromArgb(230, accent), transparent ? 2f : 1.6f) { LineJoin = LineJoin.Round };
+                g.DrawLines(line, pts);
+            }
+            g.Restore(state);
+
+            // Λεπτή μπάρα-ταυτότητα αριστερά.
+            using (var bar = new SolidBrush(accent)) g.FillRectangle(bar, r.X + 7, r.Y + 8, 3, Math.Min(r.Height - 16, 26f));
+
+            float textX = r.X + 16;
+            bool roomy = r.Height >= 58;
+            using var labelFont = new Font("Segoe UI Semibold", Math.Clamp(r.Height * 0.15f, 7f, 10f));
+            using var valueFont = new Font("Segoe UI Semibold", Math.Clamp(r.Height * (roomy ? 0.25f : 0.34f), 10f, 20f));
+            using var subFont = new Font("Segoe UI", Math.Clamp(r.Height * 0.12f, 6.5f, 8.5f));
+            using var muted = new SolidBrush(UiTheme.TextMuted);
+            using var primary = new SolidBrush(UiTheme.TextPrimary);
+            using var secondary = new SolidBrush(UiTheme.TextSecondary);
+
+            float valueY = r.Y + 5 + labelFont.GetHeight(g);
+            if (transparent)
+            {
+                // Διακριτική σκιά για αναγνωσιμότητα πάνω σε οποιοδήποτε wallpaper (όχι ακριβώς μαύρο: δεν είναι το color-key).
+                using var shadow = new SolidBrush(Color.FromArgb(255, 14, 14, 18));
+                g.DrawString(label.ToUpperInvariant(), labelFont, shadow, textX + 1, r.Y + 6);
+                g.DrawString(value, valueFont, shadow, textX + 1.5f, valueY);
+            }
+            g.DrawString(label.ToUpperInvariant(), labelFont, muted, textX, r.Y + 5);
+            g.DrawString(value, valueFont, primary, textX, valueY - 1);
+            if (roomy && sub.Length > 0 && r.Width >= 110)
+            {
+                var subRect = new RectangleF(textX, valueY + valueFont.GetHeight(g) - 2, r.Right - textX - 6, subFont.GetHeight(g) + 2);
+                using var fmt = new StringFormat { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap };
+                if (transparent)
+                {
+                    using var shadow = new SolidBrush(Color.FromArgb(255, 14, 14, 18));
+                    g.DrawString(sub, subFont, shadow, new RectangleF(subRect.X + 1, subRect.Y + 1, subRect.Width, subRect.Height), fmt);
+                }
+                g.DrawString(sub, subFont, secondary, subRect, fmt);
             }
         }
     }

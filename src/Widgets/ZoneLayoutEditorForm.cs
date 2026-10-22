@@ -30,6 +30,7 @@ namespace MotionDesk.Widgets
 
         public ZoneLayoutEditorForm(Screen? initialScreen = null)
         {
+            Flicker.Attach(this);
             _selectedScreen = initialScreen ?? Screen.PrimaryScreen ?? Screen.AllScreens[0];
             _selectedTemplate = ZoneLayoutStore.GetLayout(_selectedScreen.DeviceName).Template;
             LoadStepperValuesFromLayout();

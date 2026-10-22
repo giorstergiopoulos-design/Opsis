@@ -27,6 +27,9 @@ namespace MotionDesk.Services
         private static readonly object _sync = new();
         private static HardwareTier? _cached;
 
+        /// <summary>Διακοσμητικά animations (παλμοί, κύματα) τρέχουν 3× πιο αραιά σε αδύναμα συστήματα (Low tier).</summary>
+        public static int ScaleDecorativeInterval(int baseMs) => CurrentTier == HardwareTier.Low ? baseMs * 3 : baseMs;
+
         public static HardwareTier CurrentTier
         {
             get { lock (_sync) { return _cached ??= Compute(); } }

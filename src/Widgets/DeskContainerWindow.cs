@@ -53,6 +53,17 @@ namespace MotionDesk.Widgets
         // Form.Opacity (ξεθωριάζει μαζί και το κείμενο/εικονίδια) — βλ. MotionDesk.UI.GlassBlur.
         private double _backgroundOpacity = 1.0;
 
+        // ---- Fences-style επεκτάσεις: Folder Portal, μέγεθος εικονιδίων, ετικέτες, επιλογή στοιχείων ----
+        private string? _portalFolder, _portalCurrent;            // Folder Portal: το container δείχνει ζωντανά το περιεχόμενο ενός φακέλου
+        private FileSystemWatcher? _portalWatcher;
+        private System.Windows.Forms.Timer? _portalDebounce;
+        private Label? _backLabel;
+        private readonly HashSet<string> _selected = new(StringComparer.OrdinalIgnoreCase);
+        public int IconPx { get; set; } = 48;                     // 32 / 48 / 64
+        public bool ShowLabels { get; set; } = true;
+        public bool IsPortal => _portalFolder != null;
+        internal IReadOnlyList<string> ItemPaths => _items.Select(i => i.Path).ToList();
+
         public string ContainerId => _containerId;
         public string ContainerTitle => _title;
         public bool IsLocked { get; set; }
@@ -65,6 +76,7 @@ namespace MotionDesk.Widgets
 
         public DeskContainerWindow(string containerId, string title, int x, int y, int width, int height)
         {
+            Flicker.Attach(this);
             _containerId = containerId;
             _title = title;
             _expandedHeight = height;
@@ -169,6 +181,10 @@ namespace MotionDesk.Widgets
             titleBar.Controls.Add(lockLabel);
             titleBar.Controls.Add(closeLabel);
             titleBar.Controls.Add(menuLabel);
+            // Κουμπί "πίσω" για Folder Portal όταν έχεις μπει σε υποφάκελο.
+            _backLabel = new Label { Text = "⬅", AutoSize = false, Size = new Size(TitleBarHeight, TitleBarHeight), Dock = DockStyle.Left, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(220, 255, 255, 255), BackColor = Color.Transparent, Font = new Font("Segoe UI", 11), Cursor = Cursors.Hand, Visible = false };
+            _backLabel.Click += (_, _) => PortalUp();
+            titleBar.Controls.Add(_backLabel);
             Controls.Add(titleBar);
 
             // Μεγαλύτερο πάνω padding (8 -> 12) ώστε να υπάρχει καθαρό, ορατό κενό κάτω από τη
@@ -189,6 +205,7 @@ namespace MotionDesk.Widgets
             GlassBlur.ApplyScrollbarTheme(_grid, dark: true);
             _grid.DragEnter += Grid_DragEnter;
             _grid.DragDrop += Grid_DragDrop;
+            _grid.MouseDown += (_, _) => { if (_selected.Count > 0) { _selected.Clear(); InvalidateTiles(); } _grid.Focus(); };
             Controls.Add(_grid);
             PerformLayout();
 
@@ -226,11 +243,26 @@ namespace MotionDesk.Widgets
         private void Grid_DragDrop(object? sender, DragEventArgs e)
         {
             if (e.Data?.GetData(DataFormats.FileDrop) is not string[] files) return;
+            // Σύρσιμο από ΑΛΛΟ container: μεταφορά (αφαιρείται από την πηγή). Τα αρχεία δεν αγγίζονται ποτέ.
+            string? sourceId = null;
+            if (e.Data.GetData(ContainerIconTile.SourceFormat) is string tag && tag.Contains('|')) sourceId = tag[..tag.IndexOf('|')];
+            if (sourceId == _containerId) return;                        // σύρσιμο μέσα στο ίδιο container: τίποτα
+            if (IsPortal) { CopyIntoPortal(files); return; }
             AddPaths(files);
+            if (sourceId != null)
+                DeskContainerHostEngine.Instance.GetActiveContainers().FirstOrDefault(c => c.ContainerId == sourceId && !c.IsPortal)?.RemovePathsExternal(files);
         }
 
-        private void AddPaths(IEnumerable<string> files)
+        /// <summary>Αφαιρεί στοιχεία (χρησιμοποιείται όταν μεταφέρονται σε άλλο container).</summary>
+        public void RemovePathsExternal(IEnumerable<string> paths)
         {
+            var set = new HashSet<string>(paths, StringComparer.OrdinalIgnoreCase);
+            if (_items.RemoveAll(i => set.Contains(i.Path)) > 0) { _selected.Clear(); RebuildGrid(); QueueSave(); }
+        }
+
+        internal void AddPaths(IEnumerable<string> files)
+        {
+            if (IsPortal) { CopyIntoPortal(files); return; }
             bool changed = false;
             foreach (var f in files)
             {
@@ -259,7 +291,8 @@ namespace MotionDesk.Widgets
             {
                 string path = item.Path;
                 if (_filter.Length > 0 && Path.GetFileName(path).IndexOf(_filter, StringComparison.OrdinalIgnoreCase) < 0) continue;
-                var tile = new ContainerIconTile(path, RemovePath, () => IncrementOpenCount(path));
+                var tile = new ContainerIconTile(path, RemovePath, () => IncrementOpenCount(path), IconPx, ShowLabels, p => _selected.Contains(p), SelectItem,
+                    DragPathsFor, _containerId, IsPortal ? NavigatePortal : null, IsPortal, RemoveSelected);
                 // ΔΙΟΡΘΩΣΗ "δεν λειτουργεί το drag&drop": οι χειριστές ήταν μόνο στο _grid/στο
                 // Form, όχι στα ίδια τα ContainerIconTile — αφού τα πλακίδια γεμίζουν όλο το grid,
                 // ΚΑΘΕ drop πάνω σε ήδη-υπάρχον εικονίδιο (δηλ. σχεδόν πάντα, αφού αυτό είναι το
@@ -273,10 +306,165 @@ namespace MotionDesk.Widgets
             _grid.ResumeLayout();
             _grid.AutoScrollPosition = new Point(-savedScroll.X, -savedScroll.Y);
             _titleBarRef?.Invalidate();       // the item count in the title follows the list
+            if (_backLabel != null) _backLabel.Visible = IsPortal && _portalCurrent != null && !string.Equals(_portalCurrent, _portalFolder, StringComparison.OrdinalIgnoreCase);
+        }
+
+        // ---- επιλογή στοιχείων ----
+        private void SelectItem(string path, bool additive)
+        {
+            if (path == "*") { foreach (var i in _items) _selected.Add(i.Path); }
+            else
+            {
+                if (!additive) _selected.Clear();
+                if (additive && _selected.Contains(path)) _selected.Remove(path); else _selected.Add(path);
+            }
+            InvalidateTiles();
+        }
+
+        private void InvalidateTiles() { foreach (Control c in _grid.Controls) c.Invalidate(); }
+
+        private List<string> DragPathsFor(string path) => _selected.Contains(path) && _selected.Count > 1 ? _selected.ToList() : new List<string> { path };
+
+        private void RemoveSelected()
+        {
+            if (IsPortal || _selected.Count == 0) return;
+            if (_items.RemoveAll(i => _selected.Contains(i.Path)) > 0) { _selected.Clear(); RebuildGrid(); QueueSave(); }
+        }
+
+        // ---- Folder Portal: το container δείχνει ζωντανά τα περιεχόμενα ενός φακέλου (δεν μετακινεί/διαγράφει τίποτα) ----
+        public void SetPortal(string? folder)
+        {
+            _portalWatcher?.Dispose(); _portalWatcher = null;
+            _selected.Clear();
+            _portalFolder = string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder) ? null : folder;
+            _portalCurrent = _portalFolder;
+            if (_portalFolder == null) { RebuildGrid(); QueueSave(); return; }
+            string leaf = Path.GetFileName(_portalFolder.TrimEnd('\\', '/'));
+            _title = leaf.Length > 0 ? leaf : _portalFolder;
+            WatchPortal();
+            ReloadPortal();
+            QueueSave();
+        }
+
+        private void WatchPortal()
+        {
+            _portalWatcher?.Dispose(); _portalWatcher = null;
+            if (_portalCurrent == null || !Directory.Exists(_portalCurrent)) return;
+            try
+            {
+                _portalDebounce ??= new System.Windows.Forms.Timer { Interval = 300 };
+                _portalDebounce.Tick -= PortalDebounceTick; _portalDebounce.Tick += PortalDebounceTick;
+                _portalWatcher = new FileSystemWatcher(_portalCurrent) { NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite, EnableRaisingEvents = true };
+                void Changed() { if (IsHandleCreated && !IsDisposed) BeginInvoke(new Action(() => { _portalDebounce!.Stop(); _portalDebounce.Start(); })); }
+                _portalWatcher.Created += (_, _) => Changed(); _portalWatcher.Deleted += (_, _) => Changed();
+                _portalWatcher.Changed += (_, _) => Changed(); _portalWatcher.Renamed += (_, _) => Changed();
+            }
+            catch (Exception) { /* δίκτυο/δίσκος μη διαθέσιμος: το container μένει όπως είναι */ }
+        }
+
+        private void PortalDebounceTick(object? sender, EventArgs e) { _portalDebounce?.Stop(); ReloadPortal(); }
+
+        private void ReloadPortal()
+        {
+            if (_portalCurrent == null) return;
+            var list = new List<ContainerItem>();
+            try
+            {
+                foreach (var e in Directory.EnumerateFileSystemEntries(_portalCurrent).OrderByDescending(Directory.Exists).ThenBy(p => Path.GetFileName(p), StringComparer.OrdinalIgnoreCase))
+                {
+                    try { var at = File.GetAttributes(e); if ((at & (FileAttributes.Hidden | FileAttributes.System)) != 0) continue; } catch { continue; }
+                    list.Add(new ContainerItem { Path = e });
+                }
+            }
+            catch (Exception) { /* φάκελος που δεν υπάρχει πια */ }
+            _items = list;
+            _selected.IntersectWith(list.Select(i => i.Path));
+            if (_sortMode != ContainerSortMode.None) ApplySort(); else RebuildGrid();
+        }
+
+        internal void NavigatePortal(string folder) { if (!IsPortal || !Directory.Exists(folder)) return; _portalCurrent = folder; _selected.Clear(); WatchPortal(); ReloadPortal(); }
+
+        private void PortalUp()
+        {
+            if (_portalCurrent == null || _portalFolder == null) return;
+            var parent = Directory.GetParent(_portalCurrent)?.FullName;
+            if (parent != null && _portalCurrent.Length > _portalFolder.Length) NavigatePortal(parent);
+        }
+
+        /// <summary>Σε portal η "απόθεση" ΑΝΤΙΓΡΑΦΕΙ τα αρχεία στον φάκελο (ποτέ δεν μετακινεί/αντικαθιστά αρχεία του χρήστη).</summary>
+        private void CopyIntoPortal(IEnumerable<string> files)
+        {
+            if (_portalCurrent == null) return;
+            foreach (var f in files)
+            {
+                try
+                {
+                    string name = Path.GetFileName(f.TrimEnd('\\', '/'));
+                    string dest = Path.Combine(_portalCurrent, name);
+                    if (string.Equals(Path.GetDirectoryName(f), _portalCurrent, StringComparison.OrdinalIgnoreCase)) continue;
+                    if (File.Exists(f)) File.Copy(f, UniqueName(dest, isDir: false), overwrite: false);
+                    else if (Directory.Exists(f)) CopyDirectory(f, UniqueName(dest, isDir: true));
+                }
+                catch (Exception) { /* αρχείο σε χρήση / χωρίς δικαίωμα: συνεχίζουμε με τα υπόλοιπα */ }
+            }
+            ReloadPortal();
+        }
+
+        private static string UniqueName(string dest, bool isDir)
+        {
+            if (!(isDir ? Directory.Exists(dest) : File.Exists(dest))) return dest;
+            string dir = Path.GetDirectoryName(dest)!, name = isDir ? Path.GetFileName(dest) : Path.GetFileNameWithoutExtension(dest), ext = isDir ? "" : Path.GetExtension(dest);
+            for (int i = 2; ; i++) { string c = Path.Combine(dir, $"{name} ({i}){ext}"); if (!(isDir ? Directory.Exists(c) : File.Exists(c))) return c; }
+        }
+
+        private static void CopyDirectory(string from, string to)
+        {
+            Directory.CreateDirectory(to);
+            foreach (var f in Directory.GetFiles(from)) File.Copy(f, Path.Combine(to, Path.GetFileName(f)), overwrite: false);
+            foreach (var d in Directory.GetDirectories(from)) CopyDirectory(d, Path.Combine(to, Path.GetFileName(d)));
+        }
+
+        // ---- Snap κατά τη μετακίνηση: άκρες οθόνης + άκρες άλλων containers (Shift = χωρίς snap) ----
+        private const int WM_MOVING = 0x0216;
+        private const int SnapDistance = 14;
+
+        [StructLayout(LayoutKind.Sequential)] private struct RECT { public int Left, Top, Right, Bottom; }
+
+        protected override void WndProc(ref Message m)
+        {
+            if (m.Msg == WM_MOVING && (ModifierKeys & Keys.Shift) == 0 && !IsDisposed)
+            {
+                try
+                {
+                    var r = Marshal.PtrToStructure<RECT>(m.LParam);
+                    int w = r.Right - r.Left, h = r.Bottom - r.Top;
+                    var wa = Screen.FromRectangle(new Rectangle(r.Left, r.Top, w, h)).WorkingArea;
+                    var xs = new List<int> { wa.Left, wa.Right - w };
+                    var ys = new List<int> { wa.Top, wa.Bottom - h };
+                    foreach (var o in DeskContainerHostEngine.Instance.GetActiveContainers())
+                    {
+                        if (o == this || o.IsDisposed || !o.Visible) continue;
+                        var ob = o.Bounds;
+                        xs.Add(ob.Right); xs.Add(ob.Left - w); xs.Add(ob.Left); xs.Add(ob.Right - w);
+                        ys.Add(ob.Bottom); ys.Add(ob.Top - h); ys.Add(ob.Top); ys.Add(ob.Bottom - h);
+                    }
+                    int nx = r.Left, ny = r.Top, bestX = SnapDistance + 1, bestY = SnapDistance + 1;
+                    foreach (var x in xs) { int d = Math.Abs(x - r.Left); if (d < bestX) { bestX = d; nx = x; } }
+                    foreach (var y in ys) { int d = Math.Abs(y - r.Top); if (d < bestY) { bestY = d; ny = y; } }
+                    if (bestX <= SnapDistance || bestY <= SnapDistance)
+                    {
+                        int left = bestX <= SnapDistance ? nx : r.Left, top = bestY <= SnapDistance ? ny : r.Top;
+                        Marshal.StructureToPtr(new RECT { Left = left, Top = top, Right = left + w, Bottom = top + h }, m.LParam, false);
+                    }
+                }
+                catch (Exception) { }
+            }
+            base.WndProc(ref m);
         }
 
         private void RemovePath(string path)
         {
+            if (IsPortal) return;
             if (_items.RemoveAll(i => string.Equals(i.Path, path, StringComparison.OrdinalIgnoreCase)) > 0)
             {
                 RebuildGrid();
@@ -397,6 +585,17 @@ namespace MotionDesk.Widgets
             appearanceStack.Controls.Add(Row(resetColorBtn));
             appearanceStack.Controls.Add(Row(new Label { Text = LocalizationManager.T("DeskContainer.TitleFont"), AutoSize = true, ForeColor = UiTheme.TextSecondary, Margin = new Padding(0, 6, 10, 0) }));
             appearanceStack.Controls.Add(Row(titleFontCombo, titleSizeUpDown));
+            string Ld(string el, string en) => LocalizationManager.CurrentLanguage == "el" ? el : en;
+            var iconCombo = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 180 };
+            var iconChoices = new[] { (Ld("Μικρά (32)", "Small (32)"), 32), (Ld("Μεσαία (48)", "Medium (48)"), 48), (Ld("Μεγάλα (64)", "Large (64)"), 64) };
+            foreach (var c in iconChoices) iconCombo.Items.Add(c.Item1);
+            iconCombo.SelectedIndex = Math.Max(0, Array.FindIndex(iconChoices, c => c.Item2 == IconPx));
+            iconCombo.SelectedIndexChanged += (_, _) => { IconPx = iconChoices[iconCombo.SelectedIndex].Item2; RebuildGrid(); QueueSave(); };
+            var labelsCheck = new FlatCheckBox { Text = Ld("Εμφάνιση ονομάτων κάτω από τα εικονίδια", "Show names under the icons"), Checked = ShowLabels, AutoSize = true, BackColor = UiTheme.Surface };
+            labelsCheck.CheckedChanged += (_, _) => { ShowLabels = labelsCheck.Checked; RebuildGrid(); QueueSave(); };
+            appearanceStack.Controls.Add(Row(new Label { Text = Ld("Μέγεθος εικονιδίων", "Icon size"), AutoSize = true, ForeColor = UiTheme.TextSecondary, Margin = new Padding(0, 6, 10, 0) }));
+            appearanceStack.Controls.Add(Row(iconCombo));
+            appearanceStack.Controls.Add(Row(labelsCheck));
 
             // --- Ταξινόμηση ---
             var tabSorting = NewTab("DeskContainer.TabSorting");
@@ -439,6 +638,16 @@ namespace MotionDesk.Widgets
 
             var filesStack = StackOf(tabFiles);
             filesStack.Controls.Add(Row(addFilesBtn));
+            var portalBtn = new Button { Text = Ld("Φάκελος-Portal: εμφάνιση φακέλου σε αυτό το container…", "Folder Portal: show a folder in this container…"), AutoSize = true };
+            portalBtn.Click += (_, _) =>
+            {
+                using var fb = new FolderBrowserDialog { Description = Ld("Επίλεξε φάκελο: το container θα δείχνει ζωντανά το περιεχόμενό του (δεν μετακινείται/διαγράφεται τίποτα).", "Pick a folder: the container will show its contents live (nothing is moved or deleted).") };
+                if (fb.ShowDialog(this) == DialogResult.OK) SetPortal(fb.SelectedPath);
+            };
+            var stopPortalBtn = new Button { Text = Ld("Τέλος portal (επιστροφή σε κανονικό container)", "Stop portal (back to a normal container)"), AutoSize = true, Enabled = IsPortal };
+            stopPortalBtn.Click += (_, _) => { SetPortal(null); _items = new List<ContainerItem>(); RebuildGrid(); stopPortalBtn.Enabled = false; };
+            filesStack.Controls.Add(Row(portalBtn));
+            filesStack.Controls.Add(Row(stopPortalBtn));
             filesStack.Controls.Add(Row(findBtn, clearFindBtn));
 
             tabs.TabPages.AddRange(new[] { tabGeneral, tabAppearance, tabSorting, tabFiles });
@@ -735,7 +944,7 @@ namespace MotionDesk.Widgets
                     Width = Width,
                     Height = IsRolledUp ? _expandedHeight : Height,
                     Title = _title,
-                    Items = _items,
+                    Items = IsPortal ? new List<ContainerItem>() : _items,
                     IsLocked = IsLocked,
                     IsRolledUp = IsRolledUp,
                     ExcludeFromQuickHide = ExcludeFromQuickHide,
@@ -745,7 +954,10 @@ namespace MotionDesk.Widgets
                     SortMode = _sortMode.ToString(),
                     AutoCollectExtensions = AutoCollectExtensions,
                     TitleFontFamily = TitleFontFamily,
-                    TitleFontSize = TitleFontSize
+                    TitleFontSize = TitleFontSize,
+                    PortalFolder = _portalFolder,
+                    IconPx = IconPx,
+                    ShowLabels = ShowLabels
                 };
                 MotionDesk.Services.AtomicFile.WriteAllText(path, JsonSerializer.Serialize(state));
             }
@@ -780,6 +992,9 @@ namespace MotionDesk.Widgets
                         _backgroundOpacity = state.WindowOpacity is > 0 and <= 1 ? state.WindowOpacity : 1.0;
                         Enum.TryParse(state.SortMode, out _sortMode);
                         AutoCollectExtensions = state.AutoCollectExtensions ?? "";
+                        IconPx = state.IconPx is 32 or 48 or 64 ? state.IconPx : 48;
+                        ShowLabels = state.ShowLabels;
+                        if (!string.IsNullOrWhiteSpace(state.PortalFolder) && Directory.Exists(state.PortalFolder)) { _portalFolder = _portalCurrent = state.PortalFolder; WatchPortal(); }
                         // ΔΕΝ φιλτράρουμε τα στοιχεία που λείπουν: ένας offline δίσκος/USB/δικτυακός πόρος εξαφάνιζε μόνιμα τα στοιχεία του
                         // (το επόμενο save τα έσβηνε). Μένουν ως εικονίδιο που ο χρήστης αφαιρεί χειροκίνητα.
                         if (state.Items != null) _items = state.Items.ToList();
@@ -813,51 +1028,109 @@ namespace MotionDesk.Widgets
         [DllImport("user32.dll")] private static extern IntPtr SendMessage(IntPtr hWnd, int Msg, int wParam, int lParam);
     }
 
-    // Owner-draw πλακίδιο: πραγματικό system icon (μέσω Icon.ExtractAssociatedIcon) + όνομα από
-    // κάτω, σαν κανονικό εικονίδιο επιφάνειας εργασίας. Διπλό-κλικ = άνοιγμα, δεξί-κλικ = αφαίρεση.
+    // Owner-draw πλακίδιο: πραγματικό system icon + όνομα, σαν εικονίδιο επιφάνειας εργασίας. Επιλογή (κλικ / Ctrl+κλικ / Ctrl+A),
+    // σύρσιμο (ένα ή πολλά στοιχεία — ΜΟΝΟ Copy προς τα έξω ώστε ποτέ να μη μετακινηθούν τα πραγματικά αρχεία), διπλό κλικ = άνοιγμα
+    // (σε Folder Portal οι φάκελοι ανοίγουν μέσα στο container), δεξί κλικ = μενού στοιχείου (Fences-style).
     internal sealed class ContainerIconTile : Panel
     {
+        internal const string SourceFormat = "opsis-container-src";
+
         private readonly string _path;
         private readonly Action<string> _onRemove;
         private readonly Action _onOpen;
         private readonly Icon? _icon;
+        private readonly int _iconPx;
+        private readonly bool _showLabels;
+        private readonly Func<string, bool> _isSelected;
+        private readonly Action<string, bool> _onSelect;               // (path, additive)
+        private readonly Func<string, List<string>> _getDragPaths;
+        private readonly string _containerId;
+        private readonly Action<string>? _onNavigate;
+        private readonly bool _isPortal;
+        private readonly Action? _onRemoveSelected;
         private bool _hover;
+        private Point _downAt; private bool _dragArmed;
 
-        public ContainerIconTile(string path, Action<string> onRemove, Action onOpen)
+        public ContainerIconTile(string path, Action<string> onRemove, Action onOpen, int iconPx, bool showLabels, Func<string, bool> isSelected,
+            Action<string, bool> onSelect, Func<string, List<string>> getDragPaths, string containerId, Action<string>? onNavigate, bool isPortal, Action? onRemoveSelected)
         {
-            _path = path;
-            _onRemove = onRemove;
-            _onOpen = onOpen;
-            // Μεγαλύτερο πλακίδιο (ζητήθηκε ρητά — τα εικονίδια ήταν πολύ μικρά): πλήρες 48x48
-            // εικονίδιο (όχι το 32x32 του Icon.ExtractAssociatedIcon) + χώρος για 2 γραμμές κειμένου.
-            Size = new Size(92, 100);
-            Margin = new Padding(4);
+            _path = path; _onRemove = onRemove; _onOpen = onOpen; _iconPx = Math.Clamp(iconPx, 24, 96); _showLabels = showLabels;
+            _isSelected = isSelected; _onSelect = onSelect; _getDragPaths = getDragPaths; _containerId = containerId;
+            _onNavigate = onNavigate; _isPortal = isPortal; _onRemoveSelected = onRemoveSelected;
+            Size = new Size(Math.Max(_iconPx + 36, showLabels ? 84 : _iconPx + 20), _iconPx + (showLabels ? 52 : 24));
+            Margin = new Padding(3);
             Cursor = Cursors.Hand;
             TabStop = true;
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.Selectable, true);
             _icon = LoadLargeIcon(path);
             MouseEnter += (_, _) => { _hover = true; Invalidate(); };
             MouseLeave += (_, _) => { _hover = false; Invalidate(); };
-            DoubleClick += (_, _) => LaunchSelf();
+            DoubleClick += (_, _) => OpenSelf();
+            MouseDown += (_, e) =>
+            {
+                if (e.Button != MouseButtons.Left && e.Button != MouseButtons.Right) return;
+                Focus();
+                bool additive = (ModifierKeys & Keys.Control) != 0;
+                if (!_isSelected(_path) || additive) _onSelect(_path, additive);
+                if (e.Button == MouseButtons.Left) { _downAt = e.Location; _dragArmed = !additive; }
+            };
+            MouseMove += (_, e) =>
+            {
+                if (!_dragArmed || e.Button != MouseButtons.Left) return;
+                if (Math.Abs(e.X - _downAt.X) < SystemInformation.DragSize.Width && Math.Abs(e.Y - _downAt.Y) < SystemInformation.DragSize.Height) return;
+                _dragArmed = false;
+                var paths = _getDragPaths(_path);
+                var data = new DataObject(DataFormats.FileDrop, paths.ToArray());
+                data.SetData(SourceFormat, _containerId + "|" + string.Join("\n", paths));
+                // ΜΟΝΟ Copy: με Move ο Explorer θα μετακινούσε τα πραγματικά αρχεία του χρήστη αν τα έριχνε σε φάκελο.
+                DoDragDrop(data, DragDropEffects.Copy);
+            };
             MouseUp += (_, e) =>
             {
-                if (e.Button == MouseButtons.Left) Focus();
-                if (e.Button == MouseButtons.Right)
-                {
-                    Focus();
-                    var menu = new ContextMenuStrip();
-                    menu.Items.Add(LocalizationManager.T("DCMenu.Open"), null, (_, _) => LaunchSelf());
-                    menu.Items.Add(LocalizationManager.T("DCMenu.QuickLook"), null, (_, _) => QuickLookPreview.Show(_path));
-                    menu.Items.Add(LocalizationManager.T("DCMenu.Remove"), null, (_, _) => _onRemove(_path));
-                    menu.Show(this, e.Location);
-                }
+                _dragArmed = false;
+                if (e.Button == MouseButtons.Right) ShowItemMenu(e.Location);
             };
-            // Space = Quick Look, στο πνεύμα των macOS/PowerToys Peek — απαιτεί IsInputKey ώστε το
-            // Space να φτάσει σε KeyDown αντί να καταναλωθεί ως "πάτημα κουμπιού" από τον Panel/Selectable στυλ.
-            KeyDown += (_, e) => { if (e.KeyCode == Keys.Space) { QuickLookPreview.Show(_path); e.Handled = true; } };
+            // Space = Quick Look · Enter = άνοιγμα · Delete = αφαίρεση επιλεγμένων · Ctrl+A = επιλογή όλων
+            KeyDown += (_, e) =>
+            {
+                if (e.KeyCode == Keys.Space) { QuickLookPreview.Show(_path); e.Handled = true; }
+                else if (e.KeyCode == Keys.Enter) { OpenSelf(); e.Handled = true; }
+                else if (e.KeyCode == Keys.Delete && !_isPortal) { _onRemoveSelected?.Invoke(); e.Handled = true; }
+                else if (e.KeyCode == Keys.A && e.Control) { _onSelect("*", false); e.Handled = true; }
+            };
         }
 
-        protected override bool IsInputKey(Keys keyData) => keyData == Keys.Space || base.IsInputKey(keyData);
+        protected override bool IsInputKey(Keys keyData) => keyData is Keys.Space or Keys.Enter or Keys.Delete || base.IsInputKey(keyData);
+
+        private void ShowItemMenu(Point at)
+        {
+            string Ld(string el, string en) => LocalizationManager.CurrentLanguage == "el" ? el : en;
+            var menu = new ContextMenuStrip();
+            menu.Items.Add(LocalizationManager.T("DCMenu.Open"), null, (_, _) => OpenSelf());
+            menu.Items.Add(Ld("Άνοιγμα τοποθεσίας αρχείου", "Open file location"), null, (_, _) =>
+            {
+                try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", $"/select,\"{_path}\"") { UseShellExecute = true }); } catch { }
+            });
+            menu.Items.Add(Ld("Αντιγραφή διαδρομής", "Copy path"), null, (_, _) => { try { Clipboard.SetText(_path); } catch { } });
+            menu.Items.Add(LocalizationManager.T("DCMenu.QuickLook"), null, (_, _) => QuickLookPreview.Show(_path));
+            menu.Items.Add(Ld("Ιδιότητες", "Properties"), null, (_, _) =>
+            {
+                try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(_path) { UseShellExecute = true, Verb = "properties" }); } catch { }
+            });
+            if (!_isPortal)
+            {
+                menu.Items.Add(new ToolStripSeparator());
+                menu.Items.Add(LocalizationManager.T("DCMenu.Remove"), null, (_, _) => { if (_onRemoveSelected != null && _isSelected(_path)) _onRemoveSelected(); else _onRemove(_path); });
+            }
+            menu.Closed += (_, _) => menu.Dispose();
+            menu.Show(this, at);
+        }
+
+        private void OpenSelf()
+        {
+            if (_onNavigate != null && Directory.Exists(_path)) { _onNavigate(_path); return; }
+            LaunchSelf();
+        }
 
         private void LaunchSelf()
         {
@@ -873,25 +1146,30 @@ namespace MotionDesk.Widgets
         {
             var g = e.Graphics;
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            if (_hover)
+            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+            bool selected = _isSelected(_path);
+            if (selected || _hover)
             {
-                using var bg = new SolidBrush(Color.FromArgb(40, 255, 255, 255));
-                g.FillRectangle(bg, 0, 0, Width, Height);
+                using var bg = new SolidBrush(Color.FromArgb(selected ? 85 : 40, selected ? 0 : 255, selected ? 150 : 255, selected ? 230 : 255));
+                using var path = MotionDesk.UI.UiTheme.RoundedPath(new Rectangle(1, 1, Width - 3, Height - 3), 6);
+                g.FillPath(bg, path);
+                if (selected) { using var pen = new Pen(Color.FromArgb(150, 80, 190, 255)); g.DrawPath(pen, path); }
             }
-            if (_icon != null) g.DrawIcon(_icon, new Rectangle((Width - 48) / 2, 8, 48, 48));
+            if (_icon != null) g.DrawIcon(_icon, new Rectangle((Width - _iconPx) / 2, 8, _iconPx, _iconPx));
 
-            string name = Path.GetFileName(_path);
-            using var font = new Font("Segoe UI", 8f);
-            using var textBrush = new SolidBrush(Color.White);
-            var textRect = new RectangleF(2, 60, Width - 4, Height - 62);
-            using var sf = new StringFormat { Alignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.LineLimit };
-            g.DrawString(name, font, textBrush, textRect, sf);
+            if (_showLabels)
+            {
+                string name = Path.GetFileName(_path);
+                if (name.Length == 0) name = _path;
+                using var font = new Font("Segoe UI", 8f);
+                using var textBrush = new SolidBrush(Color.White);
+                var textRect = new RectangleF(2, 8 + _iconPx + 4, Width - 4, Height - (8 + _iconPx + 6));
+                using var sf = new StringFormat { Alignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.LineLimit };
+                g.DrawString(name, font, textBrush, textRect, sf);
+            }
         }
 
-        // Icon.ExtractAssociatedIcon γυρνάει πάντα 32x32 — μικρό, θολωμένο αν το τεντώσεις σε
-        // μεγαλύτερο μέγεθος. SHGetFileInfo με SHGFI_LARGEICON δίνει το πραγματικό "μεγάλο"
-        // εικονίδιο του συστήματος (48x48 στις περισσότερες ρυθμίσεις DPI), ίδιο μέγεθος με τα
-        // κανονικά εικονίδια της επιφάνειας εργασίας των Windows.
+        // SHGetFileInfo με SHGFI_LARGEICON δίνει το πραγματικό "μεγάλο" εικονίδιο του συστήματος (48x48 στις περισσότερες ρυθμίσεις DPI).
         private static Icon? LoadLargeIcon(string path)
         {
             try
@@ -954,6 +1232,9 @@ namespace MotionDesk.Widgets
         public string AutoCollectExtensions { get; set; } = "";
         public string TitleFontFamily { get; set; } = "Segoe UI Semibold";
         public float TitleFontSize { get; set; } = 10.5f;
+        public string? PortalFolder { get; set; }
+        public int IconPx { get; set; } = 48;
+        public bool ShowLabels { get; set; } = true;
     }
 
     // Snapshot ενός DeskContainer για αποθήκευση μέσα σε ένα WorkspaceProfile (π.χ. "Last

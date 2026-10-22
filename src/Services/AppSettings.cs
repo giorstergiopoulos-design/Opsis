@@ -45,6 +45,9 @@ namespace MotionDesk.Services
 
         // Μηχανισμός plugin (φάκελος "plugins"): false = κανένα plugin δεν φορτώνεται (π.χ. για διάγνωση προβλήματος).
         public bool PluginsEnabled { get; set; } = true;
+        // Προσωπικά presets του ισοσταθμιστή 10 ζωνών (Audio Enhancement) + το τελευταίο ενεργό.
+        public List<AudioEqProfile> CustomEqProfiles { get; set; } = new();
+        public string? ActiveEqProfile { get; set; }
         // Ζητήθηκε ρητά: ξεχωριστό ενεργό/ανενεργό ΑΝΑ plugin (π.χ. το News Crawler), πέρα από τον
         // γενικό διακόπτη PluginsEnabled παραπάνω. Αποθηκεύει το Id όσων ο χρήστης έχει απενεργοποιήσει.
         public HashSet<string> DisabledPluginIds { get; set; } = new();

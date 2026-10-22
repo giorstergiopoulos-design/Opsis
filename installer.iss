@@ -1,5 +1,5 @@
 #define MyAppName "Opsis - Desktop Customization"
-#define MyAppVersion "2.0.0"
+#define MyAppVersion "2.1.0"
 #define MyAppPublisher "Opsis Team"
 #define MyAppExeName "Opsis.exe"
 ; Πού βρίσκεται ο installer του News Crawler (δημοσιεύεται ως GitHub release του αντίστοιχου repo).
@@ -173,7 +173,7 @@ hindi.InstallingFfmpeg=FFmpeg इंस्टॉल हो रहा है...
 ; υποστηρίζει 14 γλώσσες, όπως το GearWin, και ο installer τις καλύπτει όλες. Chinese.isl/Hindi.isl είναι custom
 ; (αντιγραφή από το GearWin installer), τα υπόλοιπα .isl έρχονται με το Inno Setup.
 [Languages]
-Name: "greek"; MessagesFile: "compiler:Languages\Greek.isl"; LicenseFile: "installer\license_el.txt"; InfoBeforeFile: "installer\app_description_el.txt"
+Name: "greek"; MessagesFile: "installer\Greek.isl"; LicenseFile: "installer\license_el.txt"; InfoBeforeFile: "installer\app_description_el.txt"
 Name: "english"; MessagesFile: "compiler:Default.isl"; LicenseFile: "installer\license_en.txt"; InfoBeforeFile: "installer\app_description_en.txt"
 Name: "german"; MessagesFile: "compiler:Languages\German.isl"; LicenseFile: "installer\license_de.txt"; InfoBeforeFile: "installer\app_description_de.txt"
 Name: "french"; MessagesFile: "compiler:Languages\French.isl"; LicenseFile: "installer\license_fr.txt"; InfoBeforeFile: "installer\app_description_fr.txt"
