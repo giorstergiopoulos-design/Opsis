@@ -2231,6 +2231,19 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             // ---------- .theme Packages ----------
             var themeCard = AddCardSection(panel, LocalizationManager.T("Personalization.SectionThemePackages"));
             AddText(themeCard, LocalizationManager.T("Personalization.ThemePackagesIntro"));
+            // Για ΠΛΗΡΗ θέματα (light/dark, accent, εφέ παραθύρων, wallpaper, εισαγωγή/εξαγωγή) υπάρχει το Theme Manager του plugin Opsis Appearance.
+            string LdTheme(string el, string en) => LocalizationManager.CurrentLanguage == "el" ? el : en;
+            AddText(themeCard, LdTheme("Τα παρακάτω .theme των Windows αλλάζουν wallpaper, δείκτες και ήχους. Για πλήρη θέματα (σκούρο/φωτεινό, accent, εφέ παραθύρων, wallpaper, εισαγωγή/εξαγωγή) χρησιμοποίησε το Theme Manager.",
+                "The Windows .theme files below change wallpaper, cursors and sounds. For full themes (dark/light, accent, window effects, wallpaper, import/export) use the Theme Manager."));
+            AddButtonGrid(themeCard, (LdTheme("Άνοιγμα Theme Manager (Opsis Appearance)", "Open Theme Manager (Opsis Appearance)"), (_, _) =>
+            {
+                if (Services.PluginHost.Instance.GetNavigationItems().Any(i => i.Key == "OpsisAppearance")) NavigateTo("plugin:OpsisAppearance");
+                else
+                {
+                    try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://github.com/giorstergiopoulos-design/OpsisAppearance/releases/latest") { UseShellExecute = true }); } catch (Exception) { }
+                    _statusLabel.Text = LdTheme("Το plugin Opsis Appearance δεν είναι εγκατεστημένο — άνοιξε η σελίδα λήψης.", "The Opsis Appearance plugin is not installed — opened its download page.");
+                }
+            }));
 
             var themeList = new FlowLayoutPanel { AutoSize = true, FlowDirection = FlowDirection.TopDown, WrapContents = false };
             themeCard.Controls.Add(themeList);
@@ -2722,7 +2735,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
         // έπιασε ζωντανά ("το ιστορικό μένει στην 1.9.0"). Πρόσθεσε ΚΑΙ εδώ τη νέα έκδοση.
         private static readonly (string Version, string Date)[] VersionHistory =
         {
-            ("2.1.0", "2026-10"), ("2.0.0", "2026-10"), ("1.9.12", "2026-10"), ("1.9.11", "2026-10"), ("1.9.10", "2026-10"), ("1.9.9", "2026-10"), ("1.9.8", "2026-10"), ("1.9.7", "2026-10"), ("1.9.6", "2026-10"), ("1.9.5", "2026-10"), ("1.9.4", "2026-10"), ("1.9.3", "2026-10"), ("1.9.2", "2026-10"), ("1.9.1", "2026-10"), ("1.9.0", "2026-10"), ("1.8.9", "2026-10"), ("1.8.8", "2026-10"), ("1.8.7", "2026-10"), ("1.8.6", "2026-10"), ("1.8.5", "2026-10"), ("1.7.8", "2026-10"), ("1.7.6", "2026-10"), ("1.7.5", "2026-10"), ("1.6.8", "2026-10"), ("1.6.2", "2026-10"), ("1.6.1", "2026-10"), ("1.6.0", "2026-09"), ("1.5.0", "2026-09"), ("1.4.1", "2026-09"), ("1.4.0", "2026-09"), ("1.3.0", "2026-09"), ("1.2.9", "2026-09"), ("1.2.8", "2026-09"), ("1.2.7", "2026-09"), ("1.2.6", "2026-09"), ("1.2.5", "2026-09"), ("1.2.4", "2026-09"), ("1.2.3", "2026-09"), ("1.2.2", "2026-09"), ("1.2.1", "2026-09"), ("1.2.0", "2026-09"), ("1.1.2", "2026-09"), ("1.1.1", "2026-09"), ("1.1.0", "2026-09"), ("1.0.0", "2026-09")
+            ("2.1.1", "2026-10"), ("2.1.0", "2026-10"), ("2.0.0", "2026-10"), ("1.9.12", "2026-10"), ("1.9.11", "2026-10"), ("1.9.10", "2026-10"), ("1.9.9", "2026-10"), ("1.9.8", "2026-10"), ("1.9.7", "2026-10"), ("1.9.6", "2026-10"), ("1.9.5", "2026-10"), ("1.9.4", "2026-10"), ("1.9.3", "2026-10"), ("1.9.2", "2026-10"), ("1.9.1", "2026-10"), ("1.9.0", "2026-10"), ("1.8.9", "2026-10"), ("1.8.8", "2026-10"), ("1.8.7", "2026-10"), ("1.8.6", "2026-10"), ("1.8.5", "2026-10"), ("1.7.8", "2026-10"), ("1.7.6", "2026-10"), ("1.7.5", "2026-10"), ("1.6.8", "2026-10"), ("1.6.2", "2026-10"), ("1.6.1", "2026-10"), ("1.6.0", "2026-09"), ("1.5.0", "2026-09"), ("1.4.1", "2026-09"), ("1.4.0", "2026-09"), ("1.3.0", "2026-09"), ("1.2.9", "2026-09"), ("1.2.8", "2026-09"), ("1.2.7", "2026-09"), ("1.2.6", "2026-09"), ("1.2.5", "2026-09"), ("1.2.4", "2026-09"), ("1.2.3", "2026-09"), ("1.2.2", "2026-09"), ("1.2.1", "2026-09"), ("1.2.0", "2026-09"), ("1.1.2", "2026-09"), ("1.1.1", "2026-09"), ("1.1.0", "2026-09"), ("1.0.0", "2026-09")
         };
 
 

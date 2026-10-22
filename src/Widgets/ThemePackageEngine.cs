@@ -66,36 +66,53 @@ namespace MotionDesk.Widgets
             string safeName = string.Join("_", themeName.Split(Path.GetInvalidFileNameChars()));
             string path = Path.Combine(UserThemesFolder, $"{safeName}.theme");
 
+            var cursors = new List<KeyValuePair<string, string>>();
+            using (var cursorsKey = Registry.CurrentUser.OpenSubKey(@"Control Panel\Cursors"))
+            {
+                if (cursorsKey != null)
+                    foreach (var name in cursorsKey.GetValueNames())
+                    {
+                        if (string.IsNullOrEmpty(name)) continue;
+                        if (cursorsKey.GetValue(name) is string v && !string.IsNullOrEmpty(v)) cursors.Add(new(name, v));
+                    }
+            }
+
+            // ΔΙΟΡΘΩΣΗ: το παλιό πακέτο έγραφε μόνο aero.msstyles — εφαρμόζοντας ένα αποθηκευμένο θέμα τα Windows γύριζαν σε ΦΩΤΕΙΝΟ
+            // με το προεπιλεγμένο accent, χάνοντας το σκούρο θέμα και το χρώμα που είχε ο χρήστης. Τώρα καταγράφονται και αυτά.
+            bool? dark = null; int? colorization = null;
+            try
+            {
+                using var pk = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
+                if (pk?.GetValue("AppsUseLightTheme") is int light) dark = light == 0;
+                using var dk = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\DWM");
+                if (dk?.GetValue("ColorizationColor") is int c) colorization = c;
+            }
+            catch (Exception) { }
+
+            File.WriteAllText(path, BuildThemeText(themeName, wallpaperOverride ?? GetCurrentDesktopWallpaper(), cursors, GetCurrentSoundSchemeName(), dark, colorization), Encoding.Unicode);
+            return path;
+        }
+
+        /// <summary>Το κείμενο ενός αρχείου .theme (καθαρή συνάρτηση, δοκιμάζεται με unit tests).</summary>
+        internal static string BuildThemeText(string themeName, string? wallpaper, IEnumerable<KeyValuePair<string, string>> cursors, string? soundScheme, bool? dark, int? colorizationArgb)
+        {
             var sb = new StringBuilder();
-            sb.AppendLine("; Δημιουργήθηκε από το Opsis — IconAtlas/DeskCursors/DeskSounds snapshot");
+            sb.AppendLine("; Δημιουργήθηκε από το Opsis — wallpaper, δείκτες, ήχοι, χρώμα και σκούρο/φωτεινό θέμα");
             sb.AppendLine("[Theme]");
-            sb.AppendLine($"DisplayName={themeName}");
+            sb.AppendLine($"DisplayName={themeName.Replace('\r', ' ').Replace('\n', ' ')}");
             sb.AppendLine();
 
             sb.AppendLine("[Control Panel\\Desktop]");
-            string wallpaper = wallpaperOverride ?? GetCurrentDesktopWallpaper();
             if (!string.IsNullOrEmpty(wallpaper)) sb.AppendLine($"Wallpaper={wallpaper}");
             sb.AppendLine("WallpaperStyle=10");
             sb.AppendLine("TileWallpaper=0");
             sb.AppendLine();
 
             sb.AppendLine("[Control Panel\\Cursors]");
-            using (var cursorsKey = Registry.CurrentUser.OpenSubKey(@"Control Panel\Cursors"))
-            {
-                if (cursorsKey != null)
-                {
-                    foreach (var name in cursorsKey.GetValueNames())
-                    {
-                        if (string.IsNullOrEmpty(name)) continue;
-                        if (cursorsKey.GetValue(name) is string v && !string.IsNullOrEmpty(v))
-                            sb.AppendLine($"{name}={v}");
-                    }
-                }
-            }
+            foreach (var kv in cursors) sb.AppendLine($"{kv.Key}={kv.Value}");
             sb.AppendLine();
 
             sb.AppendLine("[Sounds]");
-            string? soundScheme = GetCurrentSoundSchemeName();
             if (!string.IsNullOrEmpty(soundScheme)) sb.AppendLine($"SchemeName={soundScheme}");
             sb.AppendLine();
 
@@ -103,9 +120,17 @@ namespace MotionDesk.Widgets
             sb.AppendLine(@"Path=%SystemRoot%\resources\Themes\aero\aero.msstyles");
             sb.AppendLine("ColorStyle=NormalColor");
             sb.AppendLine("Size=NormalSize");
-
-            File.WriteAllText(path, sb.ToString(), Encoding.Unicode);
-            return path;
+            if (colorizationArgb is int argb)
+            {
+                sb.AppendLine("AutoColorization=0");
+                sb.AppendLine($"ColorizationColor=0x{unchecked((uint)argb):X8}");
+            }
+            if (dark is bool d)
+            {
+                sb.AppendLine($"SystemMode={(d ? "Dark" : "Light")}");
+                sb.AppendLine($"AppMode={(d ? "Dark" : "Light")}");
+            }
+            return sb.ToString();
         }
 
         // Στατική, "τεχνολογικού" ύφους εικόνα wallpaper — ζητήθηκε ρητά ένα νέο πακέτο θέματος με
