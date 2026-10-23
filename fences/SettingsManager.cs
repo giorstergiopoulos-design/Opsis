@@ -30,6 +30,7 @@ namespace Desktop_Fences
         public static int TintValue { get; set; } = 80;
         public static int MenuTintValue { get; set; } = 85;
         public static int MenuIcon { get; set; } = 1;
+        public static bool AutoRollUpOnHover { get; set; } = false;      // Opsis: roll fences up when the mouse leaves, expand on hover
         // Title bar band (Stardock-style): "Auto" = a darker shade of the fence colour, otherwise a named colour; opacity 0-100.
         public static string TitleBarColor { get; set; } = "Auto";
         public static int TitleBarOpacity { get; set; } = 90;
@@ -172,6 +173,7 @@ namespace Desktop_Fences
                 TintValue,
                 MenuTintValue,
                 MenuIcon,
+                AutoRollUpOnHover,
                 TitleBarColor,
                 TitleBarOpacity,
                 LockIcon,
@@ -237,13 +239,14 @@ namespace Desktop_Fences
             try { ShowInTray = data.ShowInTray ?? true; } catch { ShowInTray = true; }
             try { EnableSounds = data.EnableSounds ?? true; } catch { EnableSounds = true; }
             try { UseRecycleBin = data.UseRecycleBin ?? true; } catch { UseRecycleBin = true; }
-            try { TintValue = data.TintValue ?? 85; } catch { TintValue = 85; }
+            try { TintValue = data.TintValue ?? 80; } catch { TintValue = 80; }
             try { MenuTintValue = data.MenuTintValue ?? 85; } catch { MenuTintValue = 85; }
-            try { MenuIcon = data.MenuIcon ?? 0; } catch { MenuIcon = 0; }
+            try { MenuIcon = data.MenuIcon ?? 1; } catch { MenuIcon = 1; }
+            try { AutoRollUpOnHover = data.AutoRollUpOnHover ?? false; } catch { AutoRollUpOnHover = false; }
             try { TitleBarColor = data.TitleBarColor ?? "Auto"; } catch { TitleBarColor = "Auto"; }
             try { TitleBarOpacity = data.TitleBarOpacity ?? 90; } catch { TitleBarOpacity = 90; }
             try { LockIcon = data.LockIcon ?? 0; } catch { LockIcon = 0; }
-            try { SelectedColor = data.SelectedColor ?? "Gray"; } catch { SelectedColor = "Gray"; }
+            try { SelectedColor = data.SelectedColor ?? "Black"; } catch { SelectedColor = "Black"; }
             try { IsLogEnabled = data.IsLogEnabled ?? false; } catch { IsLogEnabled = false; }
             try { SingleClickToLaunch = data.SingleClickToLaunch ?? true; } catch { SingleClickToLaunch = true; }
             try { EnableDimensionSnap = data.EnableDimensionSnap ?? false; } catch { EnableDimensionSnap = false; }

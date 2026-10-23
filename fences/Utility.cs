@@ -383,7 +383,7 @@ namespace Desktop_Fences
                     var lockIcon = FindChild<TextBlock>(win, "FenceLockIcon");
                     if (lockIcon != null)
                     {
-                        lockIcon.Text = lockSymbol;
+                        // Opsis: the padlock glyph follows the lock state (UpdateLockState), not the removed icon option.
                         lockIcon.BeginAnimation(UIElement.OpacityProperty, null);
                         lockIcon.Opacity = iconOpacity;
 

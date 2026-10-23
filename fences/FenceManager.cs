@@ -30,7 +30,69 @@ namespace Desktop_Fences
     {
         internal static readonly System.Collections.Generic.Dictionary<string, Action> RenameStarters = new System.Collections.Generic.Dictionary<string, Action>();
 
+        // Opsis: expand-on-hover roll-up (the Stardock/DeskContainers behaviour). When "Auto roll-up on hover" is on, a fence rolls up
+        // 0.7 s after the mouse leaves it and unrolls when the mouse comes back, reusing the normal roll-up code (toggleRoll).
+        internal static readonly System.Collections.Generic.Dictionary<string, Action> RollToggles = new System.Collections.Generic.Dictionary<string, Action>();
+        private static System.Windows.Threading.DispatcherTimer _hoverRollTimer;
+        private static readonly System.Collections.Generic.Dictionary<string, DateTime> _leftAt = new System.Collections.Generic.Dictionary<string, DateTime>();
+
+        private static void EnsureHoverRollTimer()
+        {
+            if (_hoverRollTimer != null) return;
+            _hoverRollTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+            _hoverRollTimer.Tick += (s, e) =>
+            {
+                if (!SettingsManager.AutoRollUpOnHover || System.Windows.Application.Current == null) return;
+                foreach (var w in System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>().ToList())
+                {
+                    if (!(w.Tag is string id) || !RollToggles.TryGetValue(id, out var toggle) || _fencesInTransition.Contains(id)) continue;
+                    dynamic f = FenceDataManager.FenceData.FirstOrDefault(x => x.Id?.ToString() == id);
+                    if (f == null || f.ItemsType?.ToString() == "Note") continue;                       // note fences keep their text visible
+                    bool rolled = f.IsRolled?.ToString().ToLower() == "true";
+                    bool over = w.IsMouseOver || w.IsKeyboardFocusWithin || Mouse.LeftButton == MouseButtonState.Pressed;
+                    try
+                    {
+                        if (over) { _leftAt.Remove(id); if (rolled) toggle(); }
+                        else if (rolled) _leftAt.Remove(id);
+                        else if (!_leftAt.TryGetValue(id, out var t)) _leftAt[id] = DateTime.UtcNow;
+                        else if ((DateTime.UtcNow - t).TotalMilliseconds > 700) { _leftAt.Remove(id); toggle(); }
+                    }
+                    catch (Exception) { }
+                }
+            };
+            _hoverRollTimer.Start();
+        }
+
         // Opsis: F2 -> rename the fence currently under the mouse pointer.
+        // Opsis: first-run welcome note (replaces the upstream "Desktop Fences+ Startup Tips").
+        private static bool OpsisGreek => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "el";
+
+        private static string OpsisWelcomeTitle() => OpsisGreek ? "Καλώς ήρθες στα Opsis Fences" : "Welcome to Opsis Fences";
+
+        private static string OpsisWelcomeText() => OpsisGreek
+            ? "ΚΑΛΩΣ ΗΡΘΕΣ ΣΤΑ OPSIS FENCES\r\n" +
+              "---------------------------\r\n" +
+              "• Σύρε αρχεία, φακέλους και συντομεύσεις πάνω σε ένα fence για να τα ομαδοποιήσεις.\r\n" +
+              "• Μενού: πάτα το εικονίδιο ☰ (πάνω αριστερά) για Options, νέα fences, portals και σημειώσεις.\r\n" +
+              "• Μετονομασία: F2 πάνω από ένα fence, Enter για αποθήκευση.\r\n" +
+              "• Μάζεμα/άνοιγμα: διπλό κλικ στη γραμμή τίτλου.\r\n" +
+              "• Λουκέτο (πάνω δεξιά): κλείδωσε το fence στη θέση του.\r\n" +
+              "• Αναζήτηση παντού: Ctrl + `.\r\n" +
+              "• Δεξί κλικ στη γραμμή τίτλου → Customize (χρώμα, εικονίδια, κείμενο).\r\n" +
+              "• Καρτέλες: ☰ → Enable Tabs On This Fence.\r\n\r\n" +
+              "Τα Opsis Fences βασίζονται στο ανοιχτού κώδικα Desktop Fences + (MIT)."
+            : "WELCOME TO OPSIS FENCES\r\n" +
+              "---------------------------\r\n" +
+              "• Drag files, folders and shortcuts onto a fence to group them.\r\n" +
+              "• Menu: click the ☰ icon (top-left) for Options, new fences, portals and notes.\r\n" +
+              "• Rename: F2 over a fence, Enter to save.\r\n" +
+              "• Roll up/down: double-click the title bar.\r\n" +
+              "• Padlock (top-right): lock the fence in place.\r\n" +
+              "• Search everything: Ctrl + `.\r\n" +
+              "• Right-click the title bar → Customize (colour, icons, text).\r\n" +
+              "• Tabs: ☰ → Enable Tabs On This Fence.\r\n\r\n" +
+              "Opsis Fences is based on the open-source Desktop Fences + (MIT).";
+
         public static void RenameHoveredFence()
         {
             if (System.Windows.Application.Current == null) return;
@@ -4217,7 +4279,7 @@ namespace Desktop_Fences
                 var noteFence = new
                 {
                     Id = Guid.NewGuid().ToString(), // Unique ID
-                    Title = "Desktop Fences+ Startup Tips", // Explicit Name
+                    Title = OpsisWelcomeTitle(), // Explicit Name
                     X = 20.0,   // Positioned below the data fence
                     Y = 200.0,  // Data fence ends then this fence begins
                     Width = 555.0,
@@ -4230,17 +4292,7 @@ namespace Desktop_Fences
                     TextColor = "Teal",         // Teal text
 
                     // Note Settings
-                    NoteContent = "WELCOME TO DESKTOP FENCES +\r\n" +
-                                  "---------------------------\r\n" +
-                                  "• Roll Up/Down: Double-click the fence title bar.\r\n" +
-                                  "• Rename: F2 over a fence (or Ctrl + Click the title bar), Enter to save.\r\n" +
-                                  "• Search (SpotSearch): Press Ctrl + ` (Tilde) to find any icon instantly.\r\n" +
-                                  "• Options: Click the ⋯ menu icon (top-left).\r\n" +
-                                  "• Reorder Icons on a Fence: Ctrl + Drag icon to new position.\r\n" +
-                                  "• Context Menu: Right-click icons or Fences for more options.\r\n" +
-                                  " \r\n" +
-                                  "TIP: Ctrl + Click or Ctrl + Right-click, gives even more options.\r\n\r\n" +
-                                  "Try customizing this fence! Right-click the title bar -> Customize...",
+                    NoteContent = OpsisWelcomeText(),
 
                     NoteFontSize = "Medium",
                     NoteFontFamily = "Segoe UI",
@@ -4509,7 +4561,7 @@ namespace Desktop_Fences
                 VerticalAlignment = VerticalAlignment.Top,
                 Cursor = Cursors.Hand,
                 ToolTip = fence.IsLocked?.ToString().ToLower() == "true" ? "Fence is locked (click to unlock)" : "Fence is unlocked (click to lock)",
-                Opacity = fence.IsLocked?.ToString().ToLower() == "true" ? (double)SettingsManager.MenuTintValue / 100 : 0.0 // Opsis: like Stardock Fences the shield only shows while locked (or hovered)
+                Opacity = (double)SettingsManager.MenuTintValue / 100
             };
 
   
@@ -4523,7 +4575,7 @@ namespace Desktop_Fences
 
             lockIcon.MouseLeave += (s, e) =>
             {
-                double targetOpacity = object.ReferenceEquals(lockIcon.Foreground, System.Windows.Media.Brushes.Red) ? (double)SettingsManager.MenuTintValue / 100 : 0.0;
+                double targetOpacity = (double)SettingsManager.MenuTintValue / 100;
 
                 DoubleAnimation fadeBack = new DoubleAnimation
                 {
@@ -5827,17 +5879,9 @@ namespace Desktop_Fences
                 titletb.Visibility = Visibility.Visible;
                 rw.BeginKeyboardInteractiveEdit(titletb);
             };
-            titlelabel.MouseDown += (sender, e) =>
+            // Opsis: roll-up toggle extracted so the hover auto-roll-up can reuse the exact same animation/state code.
+            Action toggleRoll = () =>
             {
-                // FIX: Directly call CommitRename logic
-                if (titletb.IsVisible)
-                {
-                    CommitRename?.Invoke();
-                    return;
-                }
-
-                if (e.ClickCount == 2)
-                {
                     // Roll-up/roll-down logic (swapped from Ctrl+Click)
                     NonActivatingWindow win = FindVisualParent<NonActivatingWindow>(titlelabel);
                     string fenceId = win?.Tag?.ToString();
@@ -5978,6 +6022,21 @@ namespace Desktop_Fences
                         win.BeginAnimation(Window.HeightProperty, heightAnimation);
                         // DebugLog("ANIMATION", fenceId, $"Started ROLLDOWN animation to height {unrolledHeight:F1}");
                     }
+            };
+            RollToggles[fenceId] = toggleRoll;
+            EnsureHoverRollTimer();
+            titlelabel.MouseDown += (sender, e) =>
+            {
+                // FIX: Directly call CommitRename logic
+                if (titletb.IsVisible)
+                {
+                    CommitRename?.Invoke();
+                    return;
+                }
+
+                if (e.ClickCount == 2)
+                {
+                    toggleRoll();
                     e.Handled = true;
                 }
                 else if (e.LeftButton == MouseButtonState.Pressed)
@@ -7455,6 +7514,7 @@ namespace Desktop_Fences
             {
                 // Update lock icon
                 lockIcon.Foreground = isLocked ? System.Windows.Media.Brushes.DeepPink : System.Windows.Media.Brushes.White;
+                lockIcon.Text = isLocked ? "🔒" : "🔓";   // Opsis: closed / open padlock instead of the shield
                 lockIcon.ToolTip = isLocked ? "Fence is locked (click to unlock)" : "Fence is unlocked (click to lock)";
 
                 // Find the NonActivatingWindow

@@ -65,7 +65,7 @@ namespace Desktop_Fences
                 mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(40) }); // Header
                 mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) }); // Content
                 mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(60) }); // Footer
-                mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(80) }); // Donation
+                mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(0) }); // Donation
 
                 // Header
                 Border headerBorder = new Border { Background = new SolidColorBrush(_userAccentColor), Height = 40 };
@@ -105,7 +105,8 @@ namespace Desktop_Fences
 
                 CreateTabContent(mainGrid);
                 CreateFooter(mainGrid);
-                CreateDonationSection(mainGrid);
+                // Opsis: no upstream donation banner in the Opsis Options window (credit stays in About).
+                // CreateDonationSection(mainGrid);
 
                 mainGrid.Children.Add(headerBorder);
                 mainBorder.Child = mainGrid;
@@ -249,6 +250,7 @@ namespace Desktop_Fences
             var chamCb = CreateCheckBoxReturn(c, "Enable Chameleon Mode (Auto-match Wallpaper Color)", "EnableChameleon", SettingsManager.EnableChameleonMode);
             chamCb.ToolTip = "Fences will automatically change color to blend perfectly with your desktop background.";
 
+            CreateCheckBox(c, "Auto roll-up (fences roll up when the mouse leaves and expand on hover)", "AutoRollUpOnHover", SettingsManager.AutoRollUpOnHover);
             CreateSliderControl(c, "Fence Tint", "TintSlider", SettingsManager.TintValue);
             CreateSliderControl(c, "Menu Tint", "MenuTintSlider", SettingsManager.MenuTintValue);
             CreateColorComboBox(c);
@@ -259,8 +261,6 @@ namespace Desktop_Fences
             CreateSectionHeader(c, "Icons", ColorStyle);
             c.Children.Add(new TextBlock { Text = "Menu Icon", FontWeight = FontWeights.SemiBold, Margin = new Thickness(15, 5, 0, 5) });
             CreateIconRadioButtonGroup(c, "MenuIconGroup", new Dictionary<string, int> { { "⋯", 0 }, { "☰", 1 }, { "≣", 2 }, { "𓃑", 3 } }, SettingsManager.MenuIcon);
-            c.Children.Add(new TextBlock { Text = "Lock Icon", FontWeight = FontWeights.SemiBold, Margin = new Thickness(15, 10, 0, 5) });
-            CreateIconRadioButtonGroup(c, "LockIconGroup", new Dictionary<string, int> { { "🛡️", 0 }, { "🔑", 1 }, { "🔐", 2 }, { "🔒", 3 } }, SettingsManager.LockIcon);
 
             t.Content = new ScrollViewer { Content = c, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
             _tabControl.Items.Add(t);
@@ -753,6 +753,7 @@ namespace Desktop_Fences
                     if (child is CheckBox cb)
                     {
                         if (cb.Name == "EnableChameleon") SettingsManager.EnableChameleonMode = cb.IsChecked == true;
+                        if (cb.Name == "AutoRollUpOnHover") SettingsManager.AutoRollUpOnHover = cb.IsChecked == true;
                         if (cb.Name == "EnablePortalWatermark") { newPortalWatermarkState = cb.IsChecked == true; SettingsManager.ShowBackgroundImageOnPortalFences = newPortalWatermarkState; }
                         if (cb.Name == "DisableFenceScrollbars") SettingsManager.DisableFenceScrollbars = cb.IsChecked == true;
                         if (cb.Name == "EnableSounds") SettingsManager.EnableSounds = cb.IsChecked == true;

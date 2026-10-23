@@ -20,6 +20,11 @@ namespace Desktop_Fences
 
         public static void Init()
         {
+            // Menus always follow the Opsis style (dark surface); colours come from the passed palette when dark, else built-in Opsis defaults.
+            string[] pal = (Environment.GetEnvironmentVariable("OPSIS_THEME") ?? "").Split(';');
+            bool havePal = pal.Length >= 9 && pal[0] == "1";
+            try { OpsisMenuStyles.Apply(havePal ? "#" + pal[2] : "#1E2129", havePal ? "#" + pal[3] : "#2C303C", havePal ? "#" + pal[4] : "#3A3F4E", havePal ? "#" + pal[5] : "#EBEEF5", havePal ? "#" + pal[7] : "#8E94A6", havePal ? "#" + pal[8] : "#00C8FF"); } catch (Exception) { /* the stock menus stay if the style fails */ }
+
             string? spec = Environment.GetEnvironmentVariable("OPSIS_THEME");
             if (string.IsNullOrWhiteSpace(spec)) return;
             var p = spec.Split(';');
@@ -45,11 +50,16 @@ namespace Desktop_Fences
         private static void OnWindowLoaded(object sender, RoutedEventArgs e)
         {
             if (!_enabled || sender is not Window w || IsFenceOrOverlay(w) || !ReferenceEquals(e.OriginalSource, w)) return;
-            Recolor(w);
+            try { Recolor(w); } catch (Exception ex) { Log(ex); }
             var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };   // content built later (tabs, lists) gets the same treatment
-            timer.Tick += (_, _) => { if (w.IsVisible) Recolor(w); else timer.Stop(); };
+            timer.Tick += (_, _) => { if (w.IsVisible) { try { Recolor(w); } catch (Exception ex) { Log(ex); } } else timer.Stop(); };
             timer.Start();
             w.Closed += (_, _) => timer.Stop();
+        }
+
+        private static void Log(Exception ex)
+        {
+            try { System.IO.File.AppendAllText(System.IO.Path.Combine(DataRoot.Dir, "opsis_theme.log"), DateTime.Now + " " + ex + Environment.NewLine); } catch { }
         }
 
         private static double Lum(Color c) => (0.2126 * c.R + 0.7152 * c.G + 0.0722 * c.B) / 255.0;
@@ -72,7 +82,8 @@ namespace Desktop_Fences
         {
             if (b is not SolidColorBrush s || s.Color.A < 16) return b;
             double l = Lum(s.Color);
-            if (l >= 0.5 || Sat(s.Color) > 0.5) return b;
+            if (l < 0.5 && Sat(s.Color) > 0.5) { var ab = new SolidColorBrush(Color.FromArgb(s.Color.A, _accent.R, _accent.G, _accent.B)); ab.Freeze(); return ab; }   // coloured section headings follow the Opsis accent
+            if (l >= 0.5) return b;
             var n = l < 0.25 ? _text : _text2;
             var nb = new SolidColorBrush(Color.FromArgb(s.Color.A, n.R, n.G, n.B)); nb.Freeze(); return nb;
         }
@@ -85,7 +96,7 @@ namespace Desktop_Fences
 
         private static void Recolor(DependencyObject root)
         {
-            int n = VisualTreeHelper.GetChildrenCount(root);
+            if (!(root is System.Windows.Media.Visual) && !(root is System.Windows.Media.Media3D.Visual3D)) return;
             switch (root)
             {
                 case Window w: w.Background = MapBack(w.Background); break;
@@ -97,10 +108,73 @@ namespace Desktop_Fences
                     break;
                 case Shape sh: sh.Stroke = MapBorder(sh.Stroke); break;
             }
+            if (root is ComboBox combo && combo.ReadLocalValue(FrameworkElement.StyleProperty) == DependencyProperty.UnsetValue && !ReferenceEquals(combo.Style, ComboStyle))
+            {
+                combo.Background = new SolidColorBrush(_hover);        // the stock gradient background is not a solid brush, so the colour map skips it
+                combo.BorderBrush = new SolidColorBrush(_border);
+                combo.Foreground = new SolidColorBrush(_text);
+                combo.Style = ComboStyle;
+                combo.ItemContainerStyle = ComboItemStyle;
+            }
             if (root is Button button && button.ReadLocalValue(FrameworkElement.StyleProperty) == DependencyProperty.UnsetValue && !ReferenceEquals(button.Style, ButtonStyle))
                 button.Style = ButtonStyle;
-            for (int i = 0; i < n; i++) Recolor(VisualTreeHelper.GetChild(root, i));
+            // applying a style re-creates the template, so the child count is read only now and re-checked on every step
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+            {
+                DependencyObject child;
+                try { child = VisualTreeHelper.GetChild(root, i); } catch (ArgumentOutOfRangeException) { break; }
+                Recolor(child);
+            }
         }
+
+        private static Style? _comboStyle, _comboItemStyle;
+        private static Style ComboStyle => _comboStyle ??= (Style)XamlReader.Parse(@"<Style xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' TargetType='ComboBox'>
+  <Setter Property='Foreground' Value='#TEXT'/>
+  <Setter Property='Background' Value='#HOVER'/>
+  <Setter Property='BorderBrush' Value='#BORDER'/>
+  <Setter Property='Padding' Value='4'/>
+  <Setter Property='Template'>
+    <Setter.Value>
+      <ControlTemplate TargetType='ComboBox'>
+        <Grid>
+          <ToggleButton ClickMode='Press' Focusable='False' IsChecked='{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}'>
+            <ToggleButton.Template>
+              <ControlTemplate TargetType='ToggleButton'>
+                <Border Background='{Binding Background, RelativeSource={RelativeSource AncestorType=ComboBox}}' BorderBrush='{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=ComboBox}}' BorderThickness='1' CornerRadius='6'>
+                  <Path HorizontalAlignment='Right' Margin='0,0,9,0' VerticalAlignment='Center' Data='M 0 0 L 4 4 L 8 0' Stroke='#MUTED' StrokeThickness='1.5'/>
+                </Border>
+              </ControlTemplate>
+            </ToggleButton.Template>
+          </ToggleButton>
+          <ContentPresenter IsHitTestVisible='False' Content='{TemplateBinding SelectionBoxItem}' ContentTemplate='{TemplateBinding SelectionBoxItemTemplate}' Margin='9,2,26,2' VerticalAlignment='Center' HorizontalAlignment='Left'/>
+          <Popup IsOpen='{TemplateBinding IsDropDownOpen}' Placement='Bottom' AllowsTransparency='True' Focusable='False' PopupAnimation='Fade'>
+            <Border MinWidth='{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}' MaxHeight='260' Background='#SURFACE' BorderBrush='#BORDER' BorderThickness='1' CornerRadius='6' Margin='0,2,0,0' Padding='3'>
+              <ScrollViewer><StackPanel IsItemsHost='True'/></ScrollViewer>
+            </Border>
+          </Popup>
+        </Grid>
+      </ControlTemplate>
+    </Setter.Value>
+  </Setter>
+</Style>".Replace("#TEXT", ToHex(_text)).Replace("#HOVER", ToHex(_hover)).Replace("#BORDER", ToHex(_border)).Replace("#MUTED", ToHex(_muted)).Replace("#SURFACE", ToHex(_surface)));
+
+        private static Style ComboItemStyle => _comboItemStyle ??= (Style)XamlReader.Parse(@"<Style xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' TargetType='ComboBoxItem'>
+  <Setter Property='Foreground' Value='#TEXT'/>
+  <Setter Property='Padding' Value='8,4'/>
+  <Setter Property='Template'>
+    <Setter.Value>
+      <ControlTemplate TargetType='ComboBoxItem'>
+        <Border x:Name='bd' xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' Background='Transparent' CornerRadius='4' Padding='{TemplateBinding Padding}'>
+          <ContentPresenter/>
+        </Border>
+        <ControlTemplate.Triggers>
+          <Trigger Property='IsHighlighted' Value='True'><Setter TargetName='bd' Property='Background' Value='#HOVER'/></Trigger>
+          <Trigger Property='IsSelected' Value='True'><Setter TargetName='bd' Property='Background' Value='#HOVER'/></Trigger>
+        </ControlTemplate.Triggers>
+      </ControlTemplate>
+    </Setter.Value>
+  </Setter>
+</Style>".Replace("#TEXT", ToHex(_text)).Replace("#HOVER", ToHex(_hover)));
 
         private static Style ButtonStyle => _buttonStyle ??= BuildButtonStyle();
 
