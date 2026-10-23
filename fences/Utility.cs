@@ -197,15 +197,33 @@ namespace Desktop_Fences
             );
         }
 
-        // Opsis: title bar band colour (Settings > Appearance > Title Bar).
-        public static Brush GetTitleBarBrush(string fenceColorName)
+        // Opsis: safe property read for fence data that may be a JObject (loaded), an ExpandoObject (just created) or missing the key.
+        public static string FenceProp(object fence, string name)
         {
-            string name = SettingsManager.TitleBarColor;
+            try
+            {
+                if (fence is Newtonsoft.Json.Linq.JObject j) return j[name]?.ToString();
+                if (fence is System.Collections.Generic.IDictionary<string, object> d) return d.TryGetValue(name, out var v) ? v?.ToString() : null;
+            }
+            catch { }
+            return null;
+        }
+
+        // Opsis: title text size names -> points (shared by fence creation and the Customize window).
+        public static double TitleSizeToPoints(string name) => name switch
+        {
+            "Small" => 10, "Large" => 16, "Extra Large" => 20, "Huge" => 26, _ => 12
+        };
+
+        // Opsis: per-fence title bar colour ("Default"/empty = Auto = the darkest shade of the fence colour).
+        public static Brush GetTitleBarBrush(string fenceColorName, string fenceTitleBarColor)
+        {
+            string name = string.IsNullOrEmpty(fenceTitleBarColor) || fenceTitleBarColor == "Default" ? SettingsManager.TitleBarColor : fenceTitleBarColor;
             Color c;
             if (string.IsNullOrEmpty(name) || name == "Auto")
             {
                 var b = GetColorFromName(string.IsNullOrEmpty(fenceColorName) || fenceColorName == "Default" ? SettingsManager.SelectedColor : fenceColorName);
-                c = Color.FromRgb((byte)(b.R * 0.45), (byte)(b.G * 0.45), (byte)(b.B * 0.45));
+                c = Color.FromRgb((byte)(b.R * 0.3), (byte)(b.G * 0.3), (byte)(b.B * 0.3));      // the darkest shade of the fence colour
             }
             else c = GetColorFromName(name);
             byte a = (byte)Math.Clamp(SettingsManager.TitleBarOpacity * 2.55, 0, 255);
@@ -214,7 +232,39 @@ namespace Desktop_Fences
             return br;
         }
 
-        private static Grid FindTitleGrid(DependencyObject root)
+        private static string FenceTitleBarColorOf(Window fence)
+        {
+            try
+            {
+                string id = fence.Tag?.ToString();
+                foreach (var f in FenceManager.GetFenceData())
+                {
+                    string fid = f is Newtonsoft.Json.Linq.JObject j ? j["Id"]?.ToString() : (string)(f.Id?.ToString());
+                    if (fid == id) return f is Newtonsoft.Json.Linq.JObject jj ? jj["TitleBarColor"]?.ToString() : (string)(f.TitleBarColor?.ToString());
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        // Opsis: title bar band colour (Settings > Appearance > Title Bar).
+        public static Brush GetTitleBarBrush(string fenceColorName)
+        {
+            string name = SettingsManager.TitleBarColor;
+            Color c;
+            if (string.IsNullOrEmpty(name) || name == "Auto")
+            {
+                var b = GetColorFromName(string.IsNullOrEmpty(fenceColorName) || fenceColorName == "Default" ? SettingsManager.SelectedColor : fenceColorName);
+                c = Color.FromRgb((byte)(b.R * 0.3), (byte)(b.G * 0.3), (byte)(b.B * 0.3));
+            }
+            else c = GetColorFromName(name);
+            byte a = (byte)Math.Clamp(SettingsManager.TitleBarOpacity * 2.55, 0, 255);
+            var br = new SolidColorBrush(Color.FromArgb(a, c.R, c.G, c.B));
+            br.Freeze();
+            return br;
+        }
+
+        internal static Grid FindTitleGrid(DependencyObject root)
         {
             if (root == null) return null;
             int n = VisualTreeHelper.GetChildrenCount(root);
@@ -244,7 +294,7 @@ namespace Desktop_Fences
                 : Brushes.Transparent;
 
             var titleGridToTint = FindTitleGrid(fence);
-            if (titleGridToTint != null) titleGridToTint.Background = GetTitleBarBrush(effectiveColor);
+            if (titleGridToTint != null) titleGridToTint.Background = GetTitleBarBrush(effectiveColor, FenceTitleBarColorOf(fence));
 
             // TABS FEATURE: Refresh tab colors when fence color changes
             if (fence is NonActivatingWindow fenceWindow)

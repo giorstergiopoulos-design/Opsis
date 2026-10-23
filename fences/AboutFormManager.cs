@@ -179,7 +179,7 @@ namespace Desktop_Fences
 
             TextBlock titleText = new TextBlock
             {
-                Text = "Desktop Fences +",
+                Text = "Opsis Fences",
                 FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 22, // Your improved font size
                 FontWeight = FontWeights.Bold,
@@ -241,8 +241,8 @@ namespace Desktop_Fences
             StackPanel contentStack = new StackPanel();
 
             // About Section
-            CreateSection(contentStack, "About", "Organize your desktop like magic!",
-                "Desktop Fences + creates virtual fences on your desktop, allowing you to group and organize icons in a clean and convenient way.", 20);
+            CreateSection(contentStack, "About", "Opsis Fences - part of Opsis Desktop Customization",
+                "Opsis Fences groups the icons of your desktop into fences. It is built on the open-source Desktop Fences + (MIT).", 20);
 
             // Credits Section
             CreateSection(contentStack, "Credits", null,
@@ -318,7 +318,7 @@ namespace Desktop_Fences
             // Title
             TextBlock titleBlock = new TextBlock
             {
-                Text = "Support Development",
+                Text = "Original project",
                 FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 18, // Your improved font size
                 FontWeight = FontWeights.Bold,
@@ -350,6 +350,7 @@ namespace Desktop_Fences
                 Margin = new Thickness(0, 0, 12, 0)
             };
 
+            donateButton.Visibility = Visibility.Collapsed;   // Opsis: no upstream donation button in the Opsis About window
             donateButton.MouseEnter += (s, e) => donateButton.Background = new SolidColorBrush(Color.FromRgb(230, 90, 40));
             donateButton.MouseLeave += (s, e) => donateButton.Background = new SolidColorBrush(Color.FromRgb(255, 102, 51));
             donateButton.Click += (s, e) =>

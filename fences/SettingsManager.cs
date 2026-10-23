@@ -34,6 +34,7 @@ namespace Desktop_Fences
         // Title bar band (Stardock-style): "Auto" = a darker shade of the fence colour, otherwise a named colour; opacity 0-100.
         public static string TitleBarColor { get; set; } = "Auto";
         public static int TitleBarOpacity { get; set; } = 90;
+        public static int TitleBarHeight { get; set; } = 28;                 // Opsis: title bar height in DIPs (also the rolled-up height)
         public static int LockIcon { get; set; } = 0;
         public static string SelectedColor { get; set; } = "Black";
         public static bool IsLogEnabled { get; set; } = false;
@@ -176,6 +177,7 @@ namespace Desktop_Fences
                 AutoRollUpOnHover,
                 TitleBarColor,
                 TitleBarOpacity,
+                TitleBarHeight,
                 LockIcon,
                 SelectedColor,
                 IsLogEnabled,
@@ -245,6 +247,7 @@ namespace Desktop_Fences
             try { AutoRollUpOnHover = data.AutoRollUpOnHover ?? false; } catch { AutoRollUpOnHover = false; }
             try { TitleBarColor = data.TitleBarColor ?? "Auto"; } catch { TitleBarColor = "Auto"; }
             try { TitleBarOpacity = data.TitleBarOpacity ?? 90; } catch { TitleBarOpacity = 90; }
+            try { TitleBarHeight = Math.Clamp((int)(data.TitleBarHeight ?? 28), 24, 64); } catch { TitleBarHeight = 28; }
             try { LockIcon = data.LockIcon ?? 0; } catch { LockIcon = 0; }
             try { SelectedColor = data.SelectedColor ?? "Black"; } catch { SelectedColor = "Black"; }
             try { IsLogEnabled = data.IsLogEnabled ?? false; } catch { IsLogEnabled = false; }

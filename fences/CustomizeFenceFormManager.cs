@@ -31,6 +31,9 @@ namespace Desktop_Fences
         private ComboBox _cmbTitleTextColor;
         private ComboBox _cmbTitleTextSize;
         private CheckBox _chkBoldTitleText;
+        private ComboBox _cmbTitleFont;
+        private ComboBox _cmbTitleBarColor;
+        private readonly string[] _validTitleFonts = { "Segoe UI", "Segoe UI Semibold", "Arial", "Calibri", "Cambria", "Consolas", "Georgia", "Tahoma", "Trebuchet MS", "Verdana", "Comic Sans MS" };
         private ComboBox _cmbIconSize;
         private NumericTextBox _nudIconSpacing;
         private ComboBox _cmbTextColor;
@@ -40,7 +43,7 @@ namespace Desktop_Fences
         // Valid options from existing code
         private readonly string[] _validColors = { "Red", "Green", "Teal", "Blue", "Bismark", "White", "Beige", "Gray", "Black", "Purple", "Fuchsia", "Yellow", "Orange" };
         private readonly string[] _validEffects = { "Zoom", "Bounce", "FadeOut", "SlideUp", "Rotate", "Agitate", "GrowAndFly", "Pulse", "Elastic", "Flip3D", "Spiral", "Shockwave", "Matrix", "Supernova", "Teleport" };
-        private readonly string[] _validTextSizes = { "Small", "Medium", "Large" };
+        private readonly string[] _validTextSizes = { "Small", "Medium", "Large", "Extra Large", "Huge" };
         private readonly string[] _validIconSizes = { "Tiny", "Small", "Medium", "Large", "Huge" };
 
         private Color _userAccentColor;
@@ -398,6 +401,8 @@ namespace Desktop_Fences
 
             CreateDropdownField(titleStack, "Title Text Color:", _validColors, out _cmbTitleTextColor);
             CreateDropdownField(titleStack, "Title Text Size:", _validTextSizes, out _cmbTitleTextSize);
+            CreateDropdownField(titleStack, "Title Font:", _validTitleFonts, out _cmbTitleFont);
+            CreateDropdownField(titleStack, "Title Bar Color:", _validColors, out _cmbTitleBarColor);
             CreateCheckboxField(titleStack, "Bold Title Text", out _chkBoldTitleText);
 
             titleGroupBox.Content = titleStack;
@@ -558,6 +563,8 @@ namespace Desktop_Fences
                 _cmbFenceBorderColor.SelectedIndex = 0;
                 _cmbTitleTextColor.SelectedIndex = 0;
                 _cmbTitleTextSize.SelectedIndex = 0;
+                _cmbTitleFont.SelectedIndex = 0;
+                _cmbTitleBarColor.SelectedIndex = 0;
                 _cmbIconSize.SelectedIndex = 0;
                 _cmbTextColor.SelectedIndex = 0;
 
@@ -752,6 +759,8 @@ namespace Desktop_Fences
                 // Load Title Section properties
                 LoadDropdownValue(_cmbTitleTextColor, _fence.TitleTextColor?.ToString(), "TitleTextColor");
                 LoadDropdownValue(_cmbTitleTextSize, _fence.TitleTextSize?.ToString(), "TitleTextSize");
+                LoadDropdownValue(_cmbTitleFont, Utility.FenceProp((object)_fence, "TitleFontFamily"), "TitleFontFamily");
+                LoadDropdownValue(_cmbTitleBarColor, Utility.FenceProp((object)_fence, "TitleBarColor"), "TitleBarColor");
                 LoadCheckboxValue(_chkBoldTitleText, _fence.BoldTitleText?.ToString(), "BoldTitleText");
 
                 // Load Icons Section properties
@@ -977,6 +986,8 @@ namespace Desktop_Fences
                 FenceManager.UpdateFenceProperty(_fence, "FenceBorderThickness", fenceBorderThickness, $"FenceBorderThickness updated to '{fenceBorderThickness}'");
                 FenceManager.UpdateFenceProperty(_fence, "TitleTextColor", titleTextColor, $"TitleTextColor updated to '{titleTextColor}'");
                 FenceManager.UpdateFenceProperty(_fence, "TitleTextSize", titleTextSize, $"TitleTextSize updated to '{titleTextSize}'");
+                FenceManager.UpdateFenceProperty(_fence, "TitleFontFamily", GetDropdownValue(_cmbTitleFont), "TitleFontFamily updated");
+                FenceManager.UpdateFenceProperty(_fence, "TitleBarColor", GetDropdownValue(_cmbTitleBarColor), "TitleBarColor updated");
                 FenceManager.UpdateFenceProperty(_fence, "BoldTitleText", boldTitleText, $"BoldTitleText updated to '{boldTitleText}'");
                 FenceManager.UpdateFenceProperty(_fence, "IconSize", iconSize, $"IconSize updated to '{iconSize}'");
                 FenceManager.UpdateFenceProperty(_fence, "IconSpacing", iconSpacing, $"IconSpacing updated to '{iconSpacing}'");
@@ -1170,20 +1181,14 @@ namespace Desktop_Fences
                             titleLabel.Foreground = System.Windows.Media.Brushes.White;
                         }
 
-                        double fontSize = 12;
-                        if (!string.IsNullOrEmpty(titleSize) && titleSize != "Default")
-                        {
-                            fontSize = titleSize switch
-                            {
-                                "Small" => 10,
-                                "Medium" => 12,
-                                "Large" => 14,
-                                _ => 12
-                            };
-                        }
+                        double fontSize = Utility.TitleSizeToPoints(string.IsNullOrEmpty(titleSize) || titleSize == "Default" ? "Medium" : titleSize);
                         titleLabel.FontSize = fontSize;
 
-                        titleLabel.FontWeight = boldTitle ? System.Windows.FontWeights.Bold : System.Windows.FontWeights.Normal;
+                        string fontName = GetDropdownValue(_cmbTitleFont);
+                        titleLabel.FontFamily = new System.Windows.Media.FontFamily(string.IsNullOrEmpty(fontName) || fontName == "Default" ? "Segoe UI" : fontName);
+                        titleLabel.FontWeight = boldTitle ? System.Windows.FontWeights.Bold : System.Windows.FontWeights.SemiBold;
+                        var bandGrid = Utility.FindTitleGrid(win);
+                        if (bandGrid != null) bandGrid.Background = Utility.GetTitleBarBrush(GetDropdownValue(_cmbCustomColor), GetDropdownValue(_cmbTitleBarColor));
 
                         LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Applied title font size {fontSize} and bold={boldTitle} to fence");
                     }

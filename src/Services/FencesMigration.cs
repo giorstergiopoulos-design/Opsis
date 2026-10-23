@@ -68,7 +68,8 @@ namespace MotionDesk.Services
                 if (portal)
                 {
                     fence["ItemsType"] = "Portal";
-                    fence["Items"] = s.PortalFolder;
+                    fence["Items"] = "";                      // portal fences keep their folder in "Path" (Items stays an empty string)
+                    fence["Path"] = s.PortalFolder;
                     fence["TabsEnabled"] = "false"; fence["CurrentTab"] = 0; fence["Tabs"] = new JsonArray();
                 }
                 else if (note)

@@ -209,8 +209,9 @@ namespace Desktop_Fences
         {
             TabItem t = new TabItem();
             StackPanel c = new StackPanel();
-            CreateSectionHeader(c, "Startup", _userAccentColor);
-            CreateCheckBox(c, "Start with Windows", "StartWithWindows", TrayManager.IsStartWithWindows);
+            // CreateSectionHeader(c, "Startup", _userAccentColor);
+            // Opsis: Opsis starts and stops this engine itself, so no separate "Start with Windows" entry.
+            // CreateCheckBox(c, "Start with Windows", "StartWithWindows", TrayManager.IsStartWithWindows);
             CreateSectionHeader(c, "Selections", _userAccentColor);
             CreateCheckBox(c, "Single Click to Launch", "SingleClickToLaunch", SettingsManager.SingleClickToLaunch);
             CreateCheckBox(c, "Enable Snap Near Fences", "EnableSnapNearFences", SettingsManager.IsSnapEnabled);
@@ -256,6 +257,7 @@ namespace Desktop_Fences
             CreateColorComboBox(c);
             CreateTitleBarColorComboBox(c);
             CreateSliderControl(c, "Title Bar Opacity", "TitleBarOpacitySlider", SettingsManager.TitleBarOpacity);
+            CreateSliderControl(c, "Title Bar Height", "TitleBarHeightSlider", SettingsManager.TitleBarHeight, 64);
             CreateLaunchEffectComboBox(c);
 
             CreateSectionHeader(c, "Icons", ColorStyle);
@@ -764,6 +766,7 @@ namespace Desktop_Fences
                         var col = g.Children.OfType<ComboBox>().FirstOrDefault(c => c.Name == "ColorComboBox"); if (col?.SelectedItem != null) SettingsManager.SelectedColor = col.SelectedItem.ToString();
                         var tbc = g.Children.OfType<ComboBox>().FirstOrDefault(c => c.Name == "TitleBarColorComboBox"); if (tbc?.SelectedItem != null) SettingsManager.TitleBarColor = tbc.SelectedItem.ToString();
                         var tbo = g.Children.OfType<Slider>().FirstOrDefault(s => s.Name == "TitleBarOpacitySlider"); if (tbo != null) SettingsManager.TitleBarOpacity = (int)tbo.Value;
+                        var tbh = g.Children.OfType<Slider>().FirstOrDefault(s => s.Name == "TitleBarHeightSlider"); if (tbh != null) SettingsManager.TitleBarHeight = Math.Clamp((int)tbh.Value, 24, 64);
                         var eff = g.Children.OfType<ComboBox>().FirstOrDefault(c => c.Name == "LaunchEffectComboBox"); if (eff != null) SettingsManager.LaunchEffect = (LaunchEffectsManager.LaunchEffect)eff.SelectedIndex;
                     }
                     else if (child is StackPanel sp)

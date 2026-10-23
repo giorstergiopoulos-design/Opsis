@@ -32,7 +32,7 @@ public sealed class FencesMigrationTests
         Assert.Equal("Work", (string)arr[1]!["Tabs"]![1]!["TabName"]!);
         Assert.Equal("Tabs", (string)arr[1]!["Tabs"]![0]!["TabName"]!); // unnamed first tab takes the container title
         Assert.Equal("Portal", (string)arr[2]!["ItemsType"]!);
-        Assert.Equal(@"C:\Docs", (string)arr[2]!["Items"]!);
+        Assert.Equal(@"C:\Docs", (string)arr[2]!["Path"]!);
         Assert.Equal("Note", (string)arr[3]!["ItemsType"]!);
         Assert.Equal("hello", (string)arr[3]!["NoteContent"]!);
     }

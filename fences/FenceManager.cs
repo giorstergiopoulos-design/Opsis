@@ -96,6 +96,61 @@ namespace Desktop_Fences
             }
         }
 
+        // Opsis: "Sort by" for Data fences (from the old DeskContainers). One-shot: reorders the stored items (current tab) and reloads.
+        internal static void SortFenceItems(string fenceId, string mode)
+        {
+            try
+            {
+                int idx = FenceDataManager.FenceData.FindIndex(f => f.Id?.ToString() == fenceId);
+                if (idx < 0) return;
+                JObject fence = FenceDataManager.FenceData[idx] as JObject ?? JObject.FromObject(FenceDataManager.FenceData[idx]);
+                if (fence["ItemsType"]?.ToString() != "Data") return;
+                JArray items = fence["Items"] as JArray;
+                if (string.Equals(fence["TabsEnabled"]?.ToString(), "true", StringComparison.OrdinalIgnoreCase) && fence["Tabs"] is JArray tabs)
+                {
+                    int ci = fence["CurrentTab"]?.ToObject<int>() ?? 0;
+                    if (ci >= 0 && ci < tabs.Count) items = tabs[ci]["Items"] as JArray ?? items;
+                }
+                if (items == null || items.Count < 2) return;
+
+                string P(JToken t) => t["Filename"]?.ToString() ?? "";
+                string Name(JToken t) => t["DisplayName"]?.ToString() is string d && d.Length > 0 ? d : System.IO.Path.GetFileNameWithoutExtension(P(t));
+                bool IsDir(JToken t) => t["IsFolder"]?.ToObject<bool>() == true;
+                DateTime When(JToken t) { try { string p = P(t); return IsDir(t) ? System.IO.Directory.GetLastWriteTime(p) : System.IO.File.GetLastWriteTime(p); } catch { return DateTime.MinValue; } }
+                long Size(JToken t) { try { return System.IO.File.Exists(P(t)) ? new System.IO.FileInfo(P(t)).Length : 0; } catch { return 0; } }
+
+                IEnumerable<JToken> ordered;
+                switch (mode)
+                {
+                    case "type": ordered = items.OrderByDescending(IsDir).ThenBy(t => System.IO.Path.GetExtension(P(t)), StringComparer.OrdinalIgnoreCase).ThenBy(Name, StringComparer.CurrentCultureIgnoreCase); break;
+                    case "date": ordered = items.OrderByDescending(When); break;
+                    case "size": ordered = items.OrderByDescending(Size); break;
+                    default: ordered = items.OrderBy(Name, StringComparer.CurrentCultureIgnoreCase); break;
+                }
+                var sorted = ordered.Select(t => t.DeepClone()).ToList();
+                items.Clear();
+                foreach (var t in sorted) items.Add(t);
+                FenceDataManager.FenceData[idx] = fence;
+                FenceDataManager.SaveFenceData();
+                ReloadFences();
+            }
+            catch (Exception ex) { LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.General, "SortFenceItems failed: " + ex.Message); }
+        }
+
+        // Opsis: a fence flagged "ExcludeFromAutoHide" stays visible when the idle auto-hide hides the others.
+        private static bool IsExcludedFromAutoHide(NonActivatingWindow w)
+        {
+            try
+            {
+                string id = w.Tag?.ToString();
+                var f = FenceDataManager.FenceData.FirstOrDefault(x => x.Id?.ToString() == id);
+                if (f == null) return false;
+                string v = Utility.FenceProp((object)f, "ExcludeFromAutoHide");
+                return string.Equals(v, "true", StringComparison.OrdinalIgnoreCase);
+            }
+            catch { return false; }
+        }
+
         // Opsis: F2 -> rename the fence currently under the mouse pointer.
         // Opsis: first-run welcome note (replaces the upstream "Desktop Fences+ Startup Tips").
         private static bool OpsisGreek => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "el";
@@ -306,7 +361,7 @@ namespace Desktop_Fences
             }
 
             var visibleFences = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>()
-                .Where(w => w.Visibility == Visibility.Visible)
+                .Where(w => w.Visibility == Visibility.Visible && !IsExcludedFromAutoHide(w))
                 .ToList();
 
             if (visibleFences.Count == 0) return;
@@ -2279,7 +2334,7 @@ namespace Desktop_Fences
                         else if (propertyName == "IsRolled")
                         {
                             bool isRolled = value?.ToLower() == "true";
-                            double targetHeight = isRolled ? 28 : Convert.ToDouble(actualFence.UnrolledHeight?.ToString() ?? "130"); //rolled height
+                            double targetHeight = isRolled ? SettingsManager.TitleBarHeight : Convert.ToDouble(actualFence.UnrolledHeight?.ToString() ?? "130"); //rolled height
                             var heightAnimation = new DoubleAnimation(win.Height, targetHeight, TimeSpan.FromSeconds(0.3))
                             {
                                 EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut }
@@ -4676,7 +4731,8 @@ namespace Desktop_Fences
             Grid titleGrid = new Grid
             {
                 Name = "FenceTitleGrid",
-                Background = Utility.GetTitleBarBrush(fence.CustomColor?.ToString())
+                MinHeight = SettingsManager.TitleBarHeight,
+                Background = Utility.GetTitleBarBrush(Utility.FenceProp((object)fence, "CustomColor"), Utility.FenceProp((object)fence, "TitleBarColor"))
             };
             titleGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(0, GridUnitType.Pixel) }); // Col 0: Spacer
             titleGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // Col 1: Title
@@ -4725,6 +4781,22 @@ namespace Desktop_Fences
                 // We'll modify the context menu after InitContent() is called
             }
             //Peek behind fence
+            // Opsis: Sort by (Data fences) and Exclude from auto-hide, ported from the old DeskContainers.
+            if (fence.ItemsType?.ToString() == "Data")
+            {
+                MenuItem miSortBy = new MenuItem { Header = "Sort by" };
+                foreach (var (label, key) in new[] { ("Name", "name"), ("Type", "type"), ("Date modified", "date"), ("Size", "size") })
+                {
+                    var sortItem = new MenuItem { Header = label };
+                    string capturedKey = key;
+                    sortItem.Click += (s, e) => SortFenceItems(win.Tag?.ToString(), capturedKey);
+                    miSortBy.Items.Add(sortItem);
+                }
+                CnMnFenceManager.Items.Add(miSortBy);
+            }
+            MenuItem miExcludeAutoHide = new MenuItem { Header = "Exclude from auto-hide", IsCheckable = true, IsChecked = IsExcludedFromAutoHide(win) };
+            miExcludeAutoHide.Click += (s, e) => UpdateFenceProperty(fence, "ExcludeFromAutoHide", miExcludeAutoHide.IsChecked ? "true" : "false", $"Auto-hide exclusion for '{fence.Title}'");
+            CnMnFenceManager.Items.Add(miExcludeAutoHide);
             MenuItem miPeekBehind = new MenuItem { Header = "Peek Behind" };
             CnMnFenceManager.Items.Add(miPeekBehind);
             miPeekBehind.Click += (s, e) =>
@@ -4912,7 +4984,7 @@ namespace Desktop_Fences
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation, $"Applied lock state for fence '{fence.Title}' on load: IsLocked={fence.IsLocked?.ToString().ToLower()}");
                 // Apply IsRolled state
                 bool isRolled = fence.IsRolled?.ToString().ToLower() == "true";
-                double targetHeight = 28; // Default for rolled-up state  //rolled height
+                double targetHeight = SettingsManager.TitleBarHeight; // Default for rolled-up state  //rolled height
                 if (!isRolled)
                 {
                     double unrolledHeight = (double)fence.Height; // Default to fence.Height
@@ -5021,7 +5093,7 @@ namespace Desktop_Fences
                     if (!isRolled)
                     {
 
-                        if (Math.Abs(newHeight - 28) > 5) // Only if height is significantly different from rolled-up height   //rolled height
+                        if (Math.Abs(newHeight - SettingsManager.TitleBarHeight) > 5) // Only if height is significantly different from rolled-up height   //rolled height
                         {
                             double heightDifference = Math.Abs(newHeight - oldUnrolledHeight);
                             // DebugLog("LOGIC", fenceId, $"Height difference from old UnrolledHeight: {heightDifference:F1}");
@@ -5218,19 +5290,7 @@ namespace Desktop_Fences
             double titleFontSize = 12; // Default Medium size
             try
             {
-                string titleSizeValue = fence.TitleTextSize?.ToString() ?? "Medium";
-                switch (titleSizeValue)
-                {
-                    case "Small":
-                        titleFontSize = 10;
-                        break;
-                    case "Large":
-                        titleFontSize = 16;
-                        break;
-                    default: // Medium
-                        titleFontSize = 12;
-                        break;
-                }
+                titleFontSize = Utility.TitleSizeToPoints(fence.TitleTextSize?.ToString() ?? "Medium");
             }
             catch
             {
@@ -5243,6 +5303,7 @@ namespace Desktop_Fences
                 HorizontalContentAlignment = HorizontalAlignment.Center,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 Cursor = Cursors.SizeAll,
+                FontFamily = new System.Windows.Media.FontFamily(string.IsNullOrEmpty(Utility.FenceProp((object)fence, "TitleFontFamily")) || Utility.FenceProp((object)fence, "TitleFontFamily") == "Default" ? "Segoe UI" : Utility.FenceProp((object)fence, "TitleFontFamily")),
                 FontWeight = isBoldTitle ? FontWeights.Bold : FontWeights.SemiBold,
                 FontSize = titleFontSize // Apply custom title text size
             };
@@ -5968,7 +6029,7 @@ namespace Desktop_Fences
                         FenceDataManager.SaveFenceData();
                         // DebugLog("SAVE", fenceId, $"Saved ROLLUP state | UnrolledHeight:{currentHeight:F1} | IsRolled:true");
                         // Roll up animation - starts from current height
-                        double targetHeight = 28;   //rolled height
+                        double targetHeight = SettingsManager.TitleBarHeight;   //rolled height
                         var heightAnimation = new DoubleAnimation(currentHeight, targetHeight, TimeSpan.FromSeconds(0.3))
                         {
                             EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut }

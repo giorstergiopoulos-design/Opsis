@@ -94,12 +94,33 @@ namespace Desktop_Fences
             var nb = new SolidColorBrush(Color.FromArgb(s.Color.A, _border.R, _border.G, _border.B)); nb.Freeze(); return nb;
         }
 
+        // Opsis look for the borderless settings windows: rounded outer frame with a thin Opsis border (like the Opsis dialogs) and the
+        // Opsis font, instead of the upstream square white card.
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Window, object> _chromed = new System.Runtime.CompilerServices.ConditionalWeakTable<Window, object>();
+
+        private static void ApplyChrome(Window w)
+        {
+            if (_chromed.TryGetValue(w, out _)) return;
+            _chromed.Add(w, new object());
+            w.FontFamily = new FontFamily("Segoe UI Variable Text, Segoe UI");
+            if (w.AllowsTransparency && w.Content is Border b)
+            {
+                w.Background = Brushes.Transparent;
+                b.CornerRadius = new CornerRadius(12);
+                b.BorderThickness = new Thickness(1);
+                b.BorderBrush = new SolidColorBrush(_border);
+                void Clip() { if (b.ActualWidth > 0 && b.ActualHeight > 0) b.Clip = new RectangleGeometry(new Rect(0, 0, b.ActualWidth, b.ActualHeight), 12, 12); }
+                b.SizeChanged += (_, _) => Clip();
+                Clip();
+            }
+        }
+
         private static void Recolor(DependencyObject root)
         {
             if (!(root is System.Windows.Media.Visual) && !(root is System.Windows.Media.Media3D.Visual3D)) return;
             switch (root)
             {
-                case Window w: w.Background = MapBack(w.Background); break;
+                case Window w: w.Background = MapBack(w.Background); ApplyChrome(w); break;
                 case Border b: b.Background = MapBack(b.Background); b.BorderBrush = MapBorder(b.BorderBrush); break;
                 case Panel p: p.Background = MapBack(p.Background); break;
                 case TextBlock t: t.Foreground = MapFore(t.Foreground); t.Background = MapBack(t.Background); break;
@@ -115,6 +136,17 @@ namespace Desktop_Fences
                 combo.Foreground = new SolidColorBrush(_text);
                 combo.Style = ComboStyle;
                 combo.ItemContainerStyle = ComboItemStyle;
+            }
+            if (root is Button sb && sb.Background is SolidColorBrush sbb && Sat(sbb.Color) > 0.45 && sbb.Color.A > 40)
+            {
+                var bc = sbb.Color;
+                bool danger = bc.G < bc.R * 0.45 && bc.B < bc.R * 0.6;                 // red stays red (Clear All Data...)
+                if (!danger)
+                {
+                    sb.Background = new SolidColorBrush(_hover);                    // the rainbow of green/blue/orange buttons becomes the Opsis button look
+                    sb.BorderBrush = new SolidColorBrush(_accent);
+                    sb.Foreground = new SolidColorBrush(_text);
+                }
             }
             if (root is Button button && button.ReadLocalValue(FrameworkElement.StyleProperty) == DependencyProperty.UnsetValue && !ReferenceEquals(button.Style, ButtonStyle))
                 button.Style = ButtonStyle;
