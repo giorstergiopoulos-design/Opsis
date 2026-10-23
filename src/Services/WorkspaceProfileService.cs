@@ -92,7 +92,7 @@ public static class WorkspaceProfileService
         // ΝΕΟ: τα DeskContainers τώρα θυμούνται/επαναφέρονται σε κάθε session ακριβώς όπως τα
         // widgets — ζητήθηκε ρητά ("widgets kai deskcontainers ... σε κάθε session του υπολογιστή
         // να θυμούνται τα windows"). Πριν, μόνο τα widgets ήταν μέρος του "Last Session" profile.
-        DeskContainerHostEngine.Instance.RestoreSnapshots(profile.DeskContainers ?? new List<DeskContainerSnapshot>());
+        if (!FencesEngine.Enabled)         DeskContainerHostEngine.Instance.RestoreSnapshots(profile.DeskContainers ?? new List<DeskContainerSnapshot>());
         // Τα DeskZones layouts ΔΕΝ είναι πλέον μέρος του workspace profile — ζουν ανεξάρτητα στο
         // δικό τους αρχείο (ZoneLayoutStore), ακριβώς όπως τα πραγματικά FancyZones layouts δεν
         // αλλάζουν όταν εναλλάσσεις "προφίλ" εργασίας.

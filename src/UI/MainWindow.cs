@@ -1191,6 +1191,22 @@ namespace MotionDesk.UI
             panel.Controls.Add(quickHideCheck);
             panel.Controls.Add(keepIconsBtn);
 
+            // DeskContainers engine: the bundled DesktopFences (MIT, THIRD_PARTY_NOTICES.md). When it is on, its own heart menu,
+            // Options and Customize windows manage the fences; the built-in legacy containers below are hidden.
+            if (FencesEngine.IsAvailable)
+            {
+                panel.Controls.Add(SettingsView.Checkbox(LdKeep("Χρήση της μηχανής DesktopFences για τα DeskContainers (προτεινόμενο)", "Use the DesktopFences engine for DeskContainers (recommended)"), AppSettings.Load().UseFencesEngine, v =>
+                {
+                    var a = AppSettings.Load(); a.UseFencesEngine = v; a.Save();
+                    if (v) { DeskContainerHostEngine.Instance.CloseAll(); FencesEngine.Start(); }
+                    else FencesEngine.Stop();
+                    _statusLabel.Text = LdKeep("Άνοιξε ξανά αυτή τη σελίδα για να δεις τα αντίστοιχα χειριστήρια.", "Reopen this page to see the matching controls.");
+                }));
+                AddIconButtonGrid(panel,
+                    ("Container", LdKeep("Έναρξη Fences", "Start Fences"), (_, _) => { FencesEngine.Start(); }),
+                    ("Close", LdKeep("Διακοπή Fences", "Stop Fences"), (_, _) => FencesEngine.Stop()));
+            }
+            if (!FencesEngine.Enabled) {
             AddIconButtonGrid(panel,
                 ("Container", LocalizationManager.T("DeskZones.NewContainerBtn"), (_, _) => DeskContainerHostEngine.Instance.SpawnContainer($"container{DateTime.Now.Ticks}", LocalizationManager.T("DeskZones.NewContainerDefaultTitle"), 360, 200, 360, 260)),
                 ("Close", LocalizationManager.T("DeskZones.CloseAllContainers"), (_, _) => DeskContainerHostEngine.Instance.CloseAll()));
@@ -1305,6 +1321,7 @@ namespace MotionDesk.UI
             containersRefreshTimer.Tick += (_, _) => RefreshActiveContainers();
             containersRefreshTimer.Start();
             panel.Disposed += (_, _) => containersRefreshTimer.Dispose();
+            }   // !FencesEngine.Enabled (legacy containers)
 
             // Applications that are never snapped (one process name per line, e.g. vlc, obs64)
             AddSection(panel, LocalizationManager.T("DeskZones.SectionExcludedApps"));

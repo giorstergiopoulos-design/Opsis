@@ -90,6 +90,8 @@ namespace MotionDesk.Services
         // συμπεριφορά να ΜΗΝ αλλάζει για όσους το χρησιμοποιούσαν ήδη χωρίς να το ξέρουν.
         public bool QuickHideDoubleClickEnabled { get; set; } = true;
         // v2.2.0 (ιδέες από το DesktopFences, MIT): γενικές ρυθμίσεις DeskContainers.
+        // true = DeskContainers are provided by the bundled DesktopFences engine (fencesOpsisFences.exe); false = the legacy built-in containers.
+        public bool UseFencesEngine { get; set; } = true;
         public bool ContainersAutoHide { get; set; } = false;          // κρύβονται μετά από αδράνεια χρήστη
         public int ContainersAutoHideSeconds { get; set; } = 20;
         public bool ContainersChameleon { get; set; } = false;         // χρώμα από το κυρίαρχο χρώμα του wallpaper

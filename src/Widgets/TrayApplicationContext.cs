@@ -153,6 +153,7 @@ namespace MotionDesk.Widgets
 
             if (!safeMode && AppSettings.Load().QuickHideDoubleClickEnabled) DesktopIconVisibilityEngine.Instance.Start();
             AppActivity.Start();
+            if (!safeMode && FencesEngine.Enabled) FencesEngine.Start();
 
             // Restore lightweight persistent preferences before showing the manager.
             var appSettings = AppSettings.Load();

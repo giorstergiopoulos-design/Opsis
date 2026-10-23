@@ -2,11 +2,12 @@
 
 ## DesktopFences ("Desktop Fences +")
 
-Opsis 2.2.0 reimplements several DeskContainers features in WinForms after the open-source
-Desktop Fences + project (https://github.com/limbo666/DesktopFences, WPF): Chameleon colour matching
-(32x32 dominant-colour quantisation), Peek Behind, inactivity auto-hide, daily backup/restore,
-container import/export, SpotSearch and "Run as administrator / different user" for items.
-The code is not copied verbatim (the original is WPF); the logic and algorithms are ported.
+Opsis 2.2.0 bundles the Desktop Fences + source code (https://github.com/limbo666/DesktopFences, WPF, version 2.6.6.234)
+under `fences/` as the separate companion app `OpsisFences.exe`, which provides the DeskContainers. Changes made for Opsis:
+retargeted to .NET 10, the COM shortcut interop replaced by a late-bound shim (`WshShim.cs`), all data moved to
+`%AppData%Opsisences` (`DataRoot.cs`), the upstream update/news check disabled, visible product name changed to "Opsis Fences",
+and the process exits together with Opsis. The earlier WinForms re-implementation of some of its features is still used when
+the engine is switched off.
 
 > MIT License
 >

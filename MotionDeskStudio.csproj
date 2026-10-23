@@ -53,6 +53,12 @@
          το μάζευε ΚΑΙ εδώ (το tests\ είναι κάτω από τη ρίζα του repo, όπως και το src\), προσπαθώντας
          να μεταγλωττίσει κώδικα xunit μέσα στο ίδιο το Opsis.exe. -->
     <Compile Remove="tests\**" />
+    <!-- fences\: DesktopFences (WPF, MIT) built as its own project (OpsisFences.csproj) and shipped next to Opsis.exe. -->
+    <Compile Remove="fences\**" />
+    <EmbeddedResource Remove="fences\**" />
+    <None Remove="fences\**" />
+    <Page Remove="fences\**" />
+    <ApplicationDefinition Remove="fences\**" />
   </ItemGroup>
 
   <!-- Plugin contract (Opsis - Desktop Customization plugin mechanism). Plugins live in "plugins\<name>\" folders
@@ -124,6 +130,17 @@
     <Reference Remove="PresentationFramework" />
   </ItemGroup>
 
+
+  <!-- The DesktopFences engine (WPF) is built as a companion app into "fences\" next to Opsis.exe, and copied into the publish folder. -->
+  <Target Name="BuildFences" AfterTargets="Build" Condition="'$(SkipFences)' != 'true'">
+    <Exec Command="dotnet build &quot;$(MSBuildProjectDirectory)\fences\OpsisFences.csproj&quot; -c $(Configuration) -o &quot;$(OutDir)fences&quot; -p:SkipFences=true --nologo -v:q" />
+  </Target>
+  <Target Name="CopyFencesToPublish" AfterTargets="Publish" Condition="'$(SkipFences)' != 'true'">
+    <ItemGroup>
+      <FencesFiles Include="$(OutDir)fences\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(FencesFiles)" DestinationFiles="@(FencesFiles->'$(PublishDir)fences\%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <Optimize>true</Optimize>
