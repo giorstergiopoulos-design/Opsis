@@ -31,7 +31,7 @@ namespace MotionDesk.Widgets
     // λειτουργίες του πραγματικού Stardock Fences (μετά από screenshots του χρήστη): Rename,
     // View (Roll-up/Exclude from quick-hide/Opacity/Copy&Edit color), Sort by (7 κριτήρια +
     // Organize > "Place new icons here by default"/"Manage sorting rules"), Configure…
-    public sealed class DeskContainerWindow : Form
+    public sealed partial class DeskContainerWindow : Form
     {
         private const int TitleBarHeight = 36;
         private readonly string _containerId;
@@ -62,7 +62,9 @@ namespace MotionDesk.Widgets
         public int IconPx { get; set; } = 32;                     // 16 / 24 / 32 / 48 / 64 (DesktopFences sizes, default 32)
         public bool ShowLabels { get; set; } = true;
         public bool IsPortal => _portalFolder != null;
-        internal IReadOnlyList<string> ItemPaths => _items.Select(i => i.Path).ToList();
+        internal IReadOnlyList<string> ItemPaths => _tabs.Count > 1
+            ? _tabs.SelectMany((t, i) => i == _activeTab ? _items : t.Items).Select(i => i.Path).Where(p => !IsSpacer(p)).ToList()
+            : _items.Select(i => i.Path).Where(p => !IsSpacer(p)).ToList();
 
         public string ContainerId => _containerId;
         public string ContainerTitle => _title;
@@ -221,6 +223,7 @@ namespace MotionDesk.Widgets
             Resize += (_, _) => { if (!IsRolledUp) { _expandedHeight = Height; QueueSave(); } };
 
             LoadState(x, y);
+            InitFeatures();
             lockLabel.ForeColor = IsLocked ? Color.FromArgb(255, 220, 50, 50) : Color.FromArgb(200, 255, 255, 255);
             RebuildGrid();
         }
@@ -295,7 +298,8 @@ namespace MotionDesk.Widgets
             }
             _grid.ResumeLayout();
             _grid.AutoScrollPosition = new Point(-savedScroll.X, -savedScroll.Y);
-            _titleBarRef?.Invalidate();       // the item count in the title follows the list
+            _titleBarRef?.Invalidate();
+            UpdateFeatureLayout();
             if (_backLabel != null) _backLabel.Visible = IsPortal && _portalCurrent != null && !string.Equals(_portalCurrent, _portalFolder, StringComparison.OrdinalIgnoreCase);
         }
 
@@ -660,7 +664,7 @@ namespace MotionDesk.Widgets
             filesStack.Controls.Add(Row(exportBtn));
             filesStack.Controls.Add(Row(findBtn, clearFindBtn));
 
-            tabs.TabPages.AddRange(new[] { tabGeneral, tabAppearance, tabSorting, tabFiles });
+            tabs.TabPages.AddRange(new[] { tabGeneral, tabAppearance, tabSorting, tabFiles, BuildFeaturesPage(dialog) });
             dialog.Controls.Add(tabs);
             // Ζητήθηκε ρητά "σκιασμένα popup" (MediaPlayerPro) — native DWM drop-shadow.
             dialog.HandleCreated += (_, _) => GlassBlur.ApplyWindowDropShadow(dialog.Handle);
@@ -937,7 +941,7 @@ namespace MotionDesk.Widgets
         // Το AccentColor αναμειγνύεται ελαφρά μέσα στο σκούρο γυάλινο φόντο (DWM blur) — ίδια
         // ιδέα με το accent-color tinting των πραγματικών Fences.
         // DesktopFences look: flat tint (default "Gray" #6E6E6E, TintValue 85%) at the container's opacity, no blur.
-        private void ApplyGlassBlur() => GlassBlur.ApplyTint(Handle, EffectiveAccent, (int)Math.Round(255 * 0.85 * _backgroundOpacity));
+        private void ApplyGlassBlur() => GlassBlur.ApplyTint(Handle, EffectiveAccent, (int)Math.Round(255 * 0.92 * _backgroundOpacity));
 
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -1009,7 +1013,7 @@ namespace MotionDesk.Widgets
         public int ClearDeadShortcuts()
         {
             if (IsPortal) return 0;
-            int removed = _items.RemoveAll(i => !File.Exists(i.Path) && !Directory.Exists(i.Path));
+            int removed = _items.RemoveAll(i => !IsSpacer(i.Path) && !File.Exists(i.Path) && !Directory.Exists(i.Path));
             if (removed > 0) { RebuildGrid(); QueueSave(); }
             return removed;
         }
@@ -1052,6 +1056,7 @@ namespace MotionDesk.Widgets
                     IconPx = IconPx,
                     ShowLabels = ShowLabels
                 };
+                SaveFeatureState(state);
                 MotionDesk.Services.AtomicFile.WriteAllText(path, JsonSerializer.Serialize(state));
             }
             catch (IOException) { }
@@ -1079,8 +1084,8 @@ namespace MotionDesk.Widgets
                         _title = state.Title ?? _title;
                         IsLocked = state.IsLocked;
                         ExcludeFromQuickHide = state.ExcludeFromQuickHide;
-                        TitleFontFamily = string.IsNullOrWhiteSpace(state.TitleFontFamily) ? "Segoe UI Semibold" : state.TitleFontFamily;
-                        TitleFontSize = state.TitleFontSize is >= 7f and <= 20f ? state.TitleFontSize : 10.5f;
+                        TitleFontFamily = string.IsNullOrWhiteSpace(state.TitleFontFamily) ? "Segoe UI" : state.TitleFontFamily;
+                        TitleFontSize = state.TitleFontSize is >= 7f and <= 20f ? state.TitleFontSize : 12f;
                         AccentColor = Color.FromArgb(state.AccentColorArgb == 0 ? Color.FromArgb(0, 170, 255).ToArgb() : state.AccentColorArgb);
                         _backgroundOpacity = state.WindowOpacity is > 0 and <= 1 ? state.WindowOpacity : 1.0;
                         Enum.TryParse(state.SortMode, out _sortMode);
@@ -1092,6 +1097,7 @@ namespace MotionDesk.Widgets
                         // (το επόμενο save τα έσβηνε). Μένουν ως εικονίδιο που ο χρήστης αφαιρεί χειροκίνητα.
                         if (state.Items != null) _items = state.Items.ToList();
                         else if (state.Paths != null) _items = state.Paths.Where(p => File.Exists(p) || Directory.Exists(p)).Select(p => new ContainerItem { Path = p }).ToList();
+                        LoadFeatureState(state);
                         if (state.PlaceNewIconsHereByDefault) DeskContainerHostEngine.Instance.DefaultContainerId = _containerId;
                         if (state.IsRolledUp)
                         {
@@ -1142,6 +1148,7 @@ namespace MotionDesk.Widgets
         private readonly bool _isPortal;
         private readonly Action? _onRemoveSelected;
         private bool _hover;
+        private readonly bool _isSpacer;
         private Point _downAt; private bool _dragArmed;
 
         public ContainerIconTile(string path, Action<string> onRemove, Action onOpen, int iconPx, bool showLabels, Func<string, bool> isSelected,
@@ -1156,7 +1163,8 @@ namespace MotionDesk.Widgets
             Cursor = Cursors.Hand;
             TabStop = true;
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.Selectable, true);
-            _icon = LoadLargeIcon(path);
+            _isSpacer = DeskContainerWindow.IsSpacer(path);
+            _icon = _isSpacer ? null : LoadLargeIcon(path);
             MouseEnter += (_, _) => { _hover = true; Invalidate(); };
             MouseLeave += (_, _) => { _hover = false; Invalidate(); };
             DoubleClick += (_, _) => OpenSelf();
@@ -1166,7 +1174,7 @@ namespace MotionDesk.Widgets
                 Focus();
                 bool additive = (ModifierKeys & Keys.Control) != 0;
                 if (!_isSelected(_path) || additive) _onSelect(_path, additive);
-                if (e.Button == MouseButtons.Left) { _downAt = e.Location; _dragArmed = !additive; }
+                if (e.Button == MouseButtons.Left) { _downAt = e.Location; _dragArmed = !additive && !_isSpacer; }
             };
             MouseMove += (_, e) =>
             {
@@ -1187,6 +1195,7 @@ namespace MotionDesk.Widgets
             // Space = Quick Look · Enter = άνοιγμα · Delete = αφαίρεση επιλεγμένων · Ctrl+A = επιλογή όλων
             KeyDown += (_, e) =>
             {
+                if (_isSpacer) { if (e.KeyCode == Keys.Delete) { _onRemoveSelected?.Invoke(); e.Handled = true; } return; }
                 if (e.KeyCode == Keys.Space) { QuickLookPreview.Show(_path); e.Handled = true; }
                 else if (e.KeyCode == Keys.Enter) { OpenSelf(); e.Handled = true; }
                 else if (e.KeyCode == Keys.Delete && !_isPortal) { _onRemoveSelected?.Invoke(); e.Handled = true; }
@@ -1200,6 +1209,13 @@ namespace MotionDesk.Widgets
         {
             string Ld(string el, string en) => LocalizationManager.CurrentLanguage == "el" ? el : en;
             var menu = new ContextMenuStrip();
+            if (_isSpacer)
+            {
+                menu.Items.Add(LocalizationManager.T("DCMenu.Remove"), null, (_, _) => _onRemove(_path));
+                menu.Closed += (_, _) => menu.Dispose();
+                menu.Show(this, at);
+                return;
+            }
             menu.Items.Add(LocalizationManager.T("DCMenu.Open"), null, (_, _) => OpenSelf());
             menu.Items.Add(Ld("Άνοιγμα τοποθεσίας αρχείου", "Open file location"), null, (_, _) =>
             {
@@ -1234,6 +1250,7 @@ namespace MotionDesk.Widgets
 
         private void OpenSelf()
         {
+            if (_isSpacer) return;
             if (_onNavigate != null && Directory.Exists(_path)) { _onNavigate(_path); return; }
             LaunchSelf();
         }
@@ -1261,6 +1278,7 @@ namespace MotionDesk.Widgets
                 g.FillPath(bg, path);
                 if (selected) { using var pen = new Pen(Color.FromArgb(150, 80, 190, 255)); g.DrawPath(pen, path); }
             }
+            if (_isSpacer) return;
             if (_icon != null) g.DrawIcon(_icon, new Rectangle((Width - _iconPx) / 2, 4, _iconPx, _iconPx));
 
             if (_showLabels)
@@ -1346,6 +1364,11 @@ namespace MotionDesk.Widgets
         public string? PortalFolder { get; set; }
         public int IconPx { get; set; } = 32;
         public bool ShowLabels { get; set; } = true;
+        // Tabs / note fence (DesktopFences). Tabs stays null for a single-tab container.
+        public List<ContainerTabState>? Tabs { get; set; }
+        public int ActiveTab { get; set; }
+        public bool IsNote { get; set; }
+        public string? NoteText { get; set; }
     }
 
     // Snapshot ενός DeskContainer για αποθήκευση μέσα σε ένα WorkspaceProfile (π.χ. "Last
@@ -1496,6 +1519,7 @@ namespace MotionDesk.Widgets
             }
 
             if (_globalTick == 5 || _globalTick % 3600 == 0) DeskContainerExtras.DailyBackupIfDue();
+            if (_globalTick % 5 == 0) DeskContainerProfiles.CheckAutomation();
         }
 
         public DeskContainerWindow SpawnContainer(string containerId, string title, int x, int y, int width, int height)

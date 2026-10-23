@@ -1194,6 +1194,46 @@ namespace MotionDesk.UI
             AddIconButtonGrid(panel,
                 ("Container", LocalizationManager.T("DeskZones.NewContainerBtn"), (_, _) => DeskContainerHostEngine.Instance.SpawnContainer($"container{DateTime.Now.Ticks}", LocalizationManager.T("DeskZones.NewContainerDefaultTitle"), 360, 200, 360, 260)),
                 ("Close", LocalizationManager.T("DeskZones.CloseAllContainers"), (_, _) => DeskContainerHostEngine.Instance.CloseAll()));
+            AddIconButtonGrid(panel,
+                ("Container", LdKeep("Νέα σημείωση (note fence)", "New note fence"), (_, _) =>
+                    DeskContainerHostEngine.Instance.SpawnContainer($"container{DateTime.Now.Ticks}", LdKeep("Σημείωση", "Note"), 400, 220, 300, 240).SetNote(true)));
+
+            // Profiles (DesktopFences): named container layouts + automatic switch when a display layout appears.
+            AddSection(panel, LdKeep("Προφίλ containers", "Container profiles"));
+            var profileCombo = new FlatComboBox { Width = 260, Margin = new Padding(0, 0, 0, 10) };
+            void RefreshProfiles(string? select = null) { var names = DeskContainerProfiles.List().ToArray(); profileCombo.SetItems(names, select ?? (names.Length > 0 ? names[0] : "")); }
+            RefreshProfiles();
+            panel.Controls.Add(profileCombo);
+            string? AskName()
+            {
+                using var f = new Form { Text = LdKeep("Όνομα προφίλ", "Profile name"), StartPosition = FormStartPosition.CenterParent, ClientSize = new Size(360, 110), FormBorderStyle = FormBorderStyle.FixedDialog, MaximizeBox = false, MinimizeBox = false, BackColor = UiTheme.Surface, ForeColor = UiTheme.TextPrimary };
+                var box = new TextBox { Location = new Point(14, 14), Width = 332 };
+                var ok = new Button { Text = "OK", DialogResult = DialogResult.OK, Location = new Point(176, 62), Size = new Size(80, 30) };
+                var cancel = new Button { Text = LdKeep("Άκυρο", "Cancel"), DialogResult = DialogResult.Cancel, Location = new Point(266, 62), Size = new Size(80, 30) };
+                f.Controls.AddRange(new Control[] { box, ok, cancel }); f.AcceptButton = ok; f.CancelButton = cancel;
+                return f.ShowDialog(this) == DialogResult.OK && box.Text.Trim().Length > 0 ? box.Text.Trim() : null;
+            }
+            AddIconButtonGrid(panel,
+                ("Save", LdKeep("Αποθήκευση τρεχόντων ως προφίλ…", "Save current layout as profile…"), (_, _) =>
+                {
+                    var n = AskName(); if (n == null) return;
+                    _statusLabel.Text = DeskContainerProfiles.Save(n) ? LdKeep("Αποθηκεύτηκε το προφίλ: ", "Profile saved: ") + n : LdKeep("Η αποθήκευση απέτυχε.", "Saving failed.");
+                    RefreshProfiles(n);
+                }),
+                ("Restore", LdKeep("Εφαρμογή επιλεγμένου προφίλ", "Apply selected profile"), (_, _) =>
+                {
+                    if (profileCombo.SelectedItem is { Length: > 0 } n) _statusLabel.Text = string.Format(LdKeep("Εφαρμόστηκε το προφίλ ({0} containers).", "Profile applied ({0} containers)."), DeskContainerProfiles.Apply(n));
+                }),
+                ("Close", LdKeep("Διαγραφή επιλεγμένου προφίλ", "Delete selected profile"), (_, _) =>
+                {
+                    if (profileCombo.SelectedItem is { Length: > 0 } n) { DeskContainerProfiles.Delete(n); RefreshProfiles(); }
+                }),
+                ("Container", LdKeep("Αυτόματη εφαρμογή στη τωρινή διάταξη οθονών", "Auto-apply on this display layout"), (_, _) =>
+                {
+                    if (profileCombo.SelectedItem is not { Length: > 0 } n) return;
+                    var a = AppSettings.Load(); a.ContainerProfileByDisplay[DeskContainerProfiles.DisplaySignature()] = n; a.Save();
+                    _statusLabel.Text = LdKeep("Το προφίλ θα εφαρμόζεται αυτόματα όταν εμφανίζεται αυτή η διάταξη οθονών.", "The profile will apply automatically whenever this display layout appears.");
+                }));
 
             // v2.2.0 - ρυθμίσεις DeskContainers εμπνευσμένες από το DesktopFences (MIT).
             void SaveContainerSetting(Action<AppSettings> set) { var a = AppSettings.Load(); set(a); a.Save(); DeskContainerHostEngine.Instance.ApplyGlobalSettings(); }

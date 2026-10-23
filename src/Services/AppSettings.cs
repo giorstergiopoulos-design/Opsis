@@ -94,7 +94,9 @@ namespace MotionDesk.Services
         public int ContainersAutoHideSeconds { get; set; } = 20;
         public bool ContainersChameleon { get; set; } = false;         // χρώμα από το κυρίαρχο χρώμα του wallpaper
         public bool ContainersDailyBackup { get; set; } = true;        // καθημερινό backup των ρυθμίσεων/περιεχομένων
-        public bool ContainersSpotSearch { get; set; } = false;        // Ctrl+` : γρήγορη αναζήτηση/εκκίνηση (ισχύει μετά από επανεκκίνηση)
+        // Profile (named container layout) that applies itself when a given display layout appears; key = DeskContainerProfiles.DisplaySignature().
+        public Dictionary<string, string> ContainerProfileByDisplay { get; set; } = new();
+        public bool ContainersSpotSearch { get; set; } = false;       // Ctrl+` : γρήγορη αναζήτηση/εκκίνηση (ισχύει μετά από επανεκκίνηση)
         // Ποια εικονίδια ΜΕΝΟΥΝ ορατά όταν το διπλό κλικ κρύβει την επιφάνεια εργασίας. Προεπιλογή: Ο Υπολογιστής μου, ο φάκελος του χρήστη,
         // ο Πίνακας Ελέγχου και ο Κάδος Ανακύκλωσης· μπορείς να τα αλλάξεις/να προσθέσεις ό,τι θέλεις (QuickHideExtraKept = ονόματα εικονιδίων).
         public bool QuickHideKeepThisPc { get; set; } = true;
