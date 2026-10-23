@@ -40,7 +40,7 @@ runtime.
 |---|---|
 | 🏠 Πίνακας Ελέγχου | Ζωντανή σύνοψη συστήματος/επιφάνειας εργασίας/wallpaper, γρήγορη εκκίνηση, εναλλαγή προφίλ χώρου εργασίας |
 | 🧩 Widgets | Ρολόι, Δίκτυο, Ήχος, Καιρός, Δίσκοι, Παρακολούθηση Συστήματος, Γρήγορες Ρυθμίσεις (ένταση/φωτεινότητα/σχέδιο ενέργειας), Αναπαραγωγή (media), Ειδοποιήσεις, Ημερολόγιο, Bluetooth — native, πάντα-από-πάνω, με δικό τους resize/θέμα |
-| 🗂️ DeskZones | Στοίχιση παραθύρων τύπου FancyZones (πλέγμα, σειρές, στήλες, custom διατάξεις ανά οθόνη) + DeskContainers στυλ Fences για ομαδοποίηση εικονιδίων |
+| 🗂️ DeskZones | Στοίχιση παραθύρων τύπου FancyZones (πλέγμα, σειρές, στήλες, custom διατάξεις ανά οθόνη) + DeskContainers (ενσωματωμένο Desktop Fences, MIT) για ομαδοποίηση εικονιδίων |
 | 🖼️ Wallpaper | Μηχανή ζωντανού wallpaper: procedural "Opsis Waves" (θέμα-aware, wind-reactive κύματα, πραγματική βροχή σε τζάμι) ή video/playlist (.mp4, αυτόματη μετατροπή .wmv μέσω FFmpeg), ζωντανό overlay καιρού, performance modes με αυτόματη εξοικονόμηση μπαταρίας |
 | ⚡ Απόδοση | CPU/RAM/GPU/δίκτυο/διεργασίες σε πραγματικό χρόνο, ειδοποιήσεις υψηλής χρήσης |
 | ⚙️ Ρυθμίσεις | Θέμα (ανοιχτό/σκούρο/ακολούθηση Windows + Midnight/Forest/Dawn/High contrast), γλώσσα, στοίχιση σε πλέγμα, διαφάνεια παραθύρου, αυτόματη εκκίνηση |
@@ -132,7 +132,7 @@ bundled in.
 |---|---|
 | 🏠 Dashboard | Live system/desktop/wallpaper summary, quick launch, workspace profile switching |
 | 🧩 Widgets | Clock, Network, Audio, Weather, Disk, System Monitor, Quick Settings (volume/brightness/power plan), Now Playing, Notifications, Calendar, Bluetooth — native, always-on-top, each with its own resize/theme |
-| 🗂️ DeskZones | FancyZones-style window snapping (grid, rows, columns, per-monitor custom layouts) + Fences-style DeskContainers for icon grouping |
+| 🗂️ DeskZones | FancyZones-style window snapping (grid, rows, columns, per-monitor custom layouts) + DeskContainers powered by the bundled Desktop Fences engine (MIT) for icon grouping |
 | 🖼️ Wallpaper | Live wallpaper engine: procedural "Opsis Waves" (theme-aware, wind-reactive waves, real rain-on-glass) or video/playlist (`.mp4`, `.wmv` auto-converted via FFmpeg), live weather overlay, performance modes with automatic battery saving |
 | ⚡ Performance | Real-time CPU/RAM/GPU/network/process monitoring, high-usage alerts |
 | ⚙️ Settings | Theme (light/dark/follow Windows + Midnight/Forest/Dawn/High contrast), language, grid snap, window opacity, startup with Windows |

@@ -63,6 +63,39 @@ namespace Desktop_Fences
             _hoverRollTimer.Start();
         }
 
+        // Opsis: Left/Right arrow keys scroll the contents of the fence under the mouse (the mouse wheel already scrolls natively).
+        // The fences never take keyboard focus, so this comes from the global keyboard hook; it only acts when the pointer is over a fence
+        // that no application window covers.
+        internal static readonly System.Collections.Generic.Dictionary<string, ScrollViewer> ContentScrollers = new System.Collections.Generic.Dictionary<string, ScrollViewer>();
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
+        [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint pid);
+        [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)] private static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder sb, int max);
+
+        private static bool DesktopOrFenceIsForeground()
+        {
+            IntPtr h = GetForegroundWindow();
+            if (h == IntPtr.Zero) return true;
+            GetWindowThreadProcessId(h, out uint pid);
+            if (pid == (uint)System.Diagnostics.Process.GetCurrentProcess().Id) return true;
+            var sb = new System.Text.StringBuilder(64);
+            GetClassName(h, sb, 64);
+            string cls = sb.ToString();
+            return cls == "Progman" || cls == "WorkerW" || cls == "Shell_TrayWnd";
+        }
+
+        public static void ScrollHoveredFence(int direction)
+        {
+            if (System.Windows.Application.Current == null) return;   // IsMouseOver below already means no application window covers the fence at the pointer
+            foreach (var w in System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>())
+            {
+                if (!w.IsMouseOver || !(w.Tag is string id) || !ContentScrollers.TryGetValue(id, out var sv)) continue;
+                double step = 70;                                                   // about one row of icons
+                sv.ScrollToVerticalOffset(Math.Max(0, Math.Min(sv.ScrollableHeight, sv.VerticalOffset + direction * step)));
+                return;
+            }
+        }
+
         // Opsis: F2 -> rename the fence currently under the mouse pointer.
         // Opsis: first-run welcome note (replaces the upstream "Desktop Fences+ Startup Tips").
         private static bool OpsisGreek => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "el";
@@ -6204,6 +6237,7 @@ namespace Desktop_Fences
                 // HorizontalScrollBarVisibility = SettingsManager.DisableFenceScrollbars ? ScrollBarVisibility.Hidden : ScrollBarVisibility.Auto
             };
 
+            if (fence.Id != null) ContentScrollers[fence.Id.ToString()] = wpcontscr;
             // --- PERFORMANCE TWEAK: Hardware Acceleration & Safe UI Culling ---
             IconManager.OptimizeFencePanel(wpcont, wpcontscr);
 

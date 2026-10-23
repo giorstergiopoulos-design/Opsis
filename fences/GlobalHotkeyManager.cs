@@ -169,6 +169,13 @@ namespace Desktop_Fences
                     bool isKeyDown = (wParam == (IntPtr)WM_KEYDOWN || wParam == (IntPtr)WM_SYSKEYDOWN);
                     bool isKeyUp = (wParam == (IntPtr)WM_KEYUP || wParam == (IntPtr)WM_SYSKEYUP);
 
+                    // Opsis: Left/Right arrows scroll the contents of the fence under the mouse.
+                    if ((vkCode == 0x25 || vkCode == 0x27) && isKeyDown)
+                    {
+                        int dir = vkCode == 0x27 ? 1 : -1;
+                        System.Windows.Application.Current?.Dispatcher.BeginInvoke(new Action(() => FenceManager.ScrollHoveredFence(dir)));
+                    }
+
                     // Opsis: F2 renames the fence under the mouse.
                     if (vkCode == 0x71 && isKeyDown)
                     {
