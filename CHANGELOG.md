@@ -2,6 +2,12 @@
 
 Πλήρες ιστορικό εκδόσεων του Opsis (πρώην MotionDesk Studio). Στα Ελληνικά — δείτε και μέσα στην εφαρμογή (Σχετικά -> Ιστορικό εκδόσεων) ή σε άλλη γλώσσα από τα locale αρχεία.
 
+## 2.2.0
+
+- DeskContainers: λειτουργίες που μεταφέρθηκαν από το ανοιχτού κώδικα Desktop Fences + (MIT, βλ. THIRD_PARTY_NOTICES.md): αυτόματη απόκρυψη μετά από αδράνεια, Chameleon (χρώμα από το wallpaper), καθημερινό αυτόματο backup με επαναφορά, εισαγωγή/εξαγωγή container, Peek Behind (10 δευτ.), καθαρισμός νεκρών συντομεύσεων, «Εκτέλεση ως διαχειριστής / ως άλλος χρήστης» στο μενού στοιχείου, προαιρετικό SpotSearch (Ctrl+`).
+- Νέα ενότητα DeskContainers στη σελίδα DeskZones για τις γενικές ρυθμίσεις (αδράνεια, Chameleon, backup, SpotSearch, εισαγωγή/backup/επαναφορά).
+- Το DesktopFences είναι WPF, οπότε μεταφέρθηκε η λογική και όχι ο κώδικας αυτούσιος. Δεν μεταφέρθηκαν: tabs, note fences, αυτόματα profiles, blank spacers.
+
 ## 2.1.3
 
 - Widgets (Clock, Network, Weather, Disk, Quick Settings, Calendar…): το κείμενο ζωγραφίζεται πλέον με δικό του διάφανο-φιλικό control (γκρι anti-aliasing + διακριτική σκιά) αντί για τα Label των Windows που άφηναν μαύρα κρόσσια πάνω στην πλήρη διαφάνεια.

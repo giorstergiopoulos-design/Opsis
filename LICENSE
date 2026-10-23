@@ -46,6 +46,11 @@ This app also includes the following open-source libraries, each under its own l
 - .NET / Windows Forms runtime
   MIT License, (c) .NET Foundation and contributors.
 
+- DesktopFences / Desktop Fences + (github.com/limbo666/DesktopFences)
+  MIT License, (c) 2025 LIMBO666 (includes code originally by HakanKokcu, BirdyFences, MIT). DeskContainers
+  features such as Chameleon, Peek Behind, auto-hide, backup, import/export and SpotSearch are ported from it.
+  Full notice: THIRD_PARTY_NOTICES.md
+
 ----------------------------------------------------------------------
 
 Weather data is fetched at runtime from the free Open-Meteo API (open-meteo.com) and, as a fallback,

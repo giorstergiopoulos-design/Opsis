@@ -1195,6 +1195,36 @@ namespace MotionDesk.UI
                 ("Container", LocalizationManager.T("DeskZones.NewContainerBtn"), (_, _) => DeskContainerHostEngine.Instance.SpawnContainer($"container{DateTime.Now.Ticks}", LocalizationManager.T("DeskZones.NewContainerDefaultTitle"), 360, 200, 360, 260)),
                 ("Close", LocalizationManager.T("DeskZones.CloseAllContainers"), (_, _) => DeskContainerHostEngine.Instance.CloseAll()));
 
+            // v2.2.0 - ρυθμίσεις DeskContainers εμπνευσμένες από το DesktopFences (MIT).
+            void SaveContainerSetting(Action<AppSettings> set) { var a = AppSettings.Load(); set(a); a.Save(); DeskContainerHostEngine.Instance.ApplyGlobalSettings(); }
+            var cs = AppSettings.Load();
+            panel.Controls.Add(SettingsView.Checkbox(LdKeep("Αυτόματη απόκρυψη containers μετά από αδράνεια", "Auto-hide containers after inactivity"), cs.ContainersAutoHide, v => SaveContainerSetting(a => a.ContainersAutoHide = v)));
+            panel.Controls.Add(SettingsView.NumericRow(LdKeep("Αδράνεια", "Idle time"), Math.Clamp(cs.ContainersAutoHideSeconds, 3, 3600), 3, 3600, v => SaveContainerSetting(a => a.ContainersAutoHideSeconds = v), unit: LdKeep("δευτ.", "sec")));
+            panel.Controls.Add(SettingsView.Checkbox(LdKeep("Chameleon: χρώμα containers από το wallpaper", "Chameleon: match container color to the wallpaper"), cs.ContainersChameleon, v => SaveContainerSetting(a => a.ContainersChameleon = v)));
+            panel.Controls.Add(SettingsView.Checkbox(LdKeep("Καθημερινό αυτόματο backup των containers", "Daily automatic backup of containers"), cs.ContainersDailyBackup, v => SaveContainerSetting(a => a.ContainersDailyBackup = v)));
+            panel.Controls.Add(SettingsView.Checkbox(LdKeep("SpotSearch: Ctrl+` για αναζήτηση/εκκίνηση στοιχείων (μετά από επανεκκίνηση)", "SpotSearch: Ctrl+` to search/launch items (after restart)"), cs.ContainersSpotSearch, v => SaveContainerSetting(a => a.ContainersSpotSearch = v)));
+            AddIconButtonGrid(panel,
+                ("Restore", LdKeep("Εισαγωγή container…", "Import container…"), (_, _) =>
+                {
+                    using var ofd = new OpenFileDialog { Filter = "Opsis container (*.opsiscontainer.json)|*.opsiscontainer.json|JSON (*.json)|*.json" };
+                    if (ofd.ShowDialog(this) != DialogResult.OK) return;
+                    if (!DeskContainerExtras.ImportContainer(ofd.FileName, out var msg))
+                        MessageBox.Show(this, msg, "Opsis", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }),
+                ("Save", LdKeep("Backup τώρα", "Back up now"), (_, _) =>
+                {
+                    var dest = DeskContainerExtras.BackupNow();
+                    _statusLabel.Text = dest != null ? LdKeep("Backup: ", "Backup: ") + dest : LdKeep("Δεν υπάρχει τίποτα για backup.", "Nothing to back up.");
+                }),
+                ("Restore", LdKeep("Επαναφορά από backup…", "Restore from backup…"), (_, _) =>
+                {
+                    Directory.CreateDirectory(DeskContainerExtras.BackupRoot);
+                    using var fb = new FolderBrowserDialog { SelectedPath = DeskContainerExtras.BackupRoot, Description = LdKeep("Διάλεξε φάκελο backup (yyyyMMdd-HHmmss).", "Pick a backup folder (yyyyMMdd-HHmmss).") };
+                    if (fb.ShowDialog(this) != DialogResult.OK) return;
+                    int n = DeskContainerExtras.Restore(fb.SelectedPath);
+                    _statusLabel.Text = n > 0 ? string.Format(LdKeep("Επαναφέρθηκαν {0} containers.", "Restored {0} containers."), n) : LdKeep("Ο φάκελος δεν περιέχει backup containers.", "That folder holds no container backup.");
+                }));
+
             var activeContainersList = new FlowLayoutPanel { AutoSize = true, FlowDirection = FlowDirection.TopDown, WrapContents = false };
             panel.Controls.Add(activeContainersList);
 
@@ -2741,7 +2771,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
         // έπιασε ζωντανά ("το ιστορικό μένει στην 1.9.0"). Πρόσθεσε ΚΑΙ εδώ τη νέα έκδοση.
         private static readonly (string Version, string Date)[] VersionHistory =
         {
-            ("2.1.3", "2026-10"), ("2.1.2", "2026-10"), ("2.1.1", "2026-10"), ("2.1.0", "2026-10"), ("2.0.0", "2026-10"), ("1.9.12", "2026-10"), ("1.9.11", "2026-10"), ("1.9.10", "2026-10"), ("1.9.9", "2026-10"), ("1.9.8", "2026-10"), ("1.9.7", "2026-10"), ("1.9.6", "2026-10"), ("1.9.5", "2026-10"), ("1.9.4", "2026-10"), ("1.9.3", "2026-10"), ("1.9.2", "2026-10"), ("1.9.1", "2026-10"), ("1.9.0", "2026-10"), ("1.8.9", "2026-10"), ("1.8.8", "2026-10"), ("1.8.7", "2026-10"), ("1.8.6", "2026-10"), ("1.8.5", "2026-10"), ("1.7.8", "2026-10"), ("1.7.6", "2026-10"), ("1.7.5", "2026-10"), ("1.6.8", "2026-10"), ("1.6.2", "2026-10"), ("1.6.1", "2026-10"), ("1.6.0", "2026-09"), ("1.5.0", "2026-09"), ("1.4.1", "2026-09"), ("1.4.0", "2026-09"), ("1.3.0", "2026-09"), ("1.2.9", "2026-09"), ("1.2.8", "2026-09"), ("1.2.7", "2026-09"), ("1.2.6", "2026-09"), ("1.2.5", "2026-09"), ("1.2.4", "2026-09"), ("1.2.3", "2026-09"), ("1.2.2", "2026-09"), ("1.2.1", "2026-09"), ("1.2.0", "2026-09"), ("1.1.2", "2026-09"), ("1.1.1", "2026-09"), ("1.1.0", "2026-09"), ("1.0.0", "2026-09")
+            ("2.2.0", "2026-10"), ("2.1.3", "2026-10"), ("2.1.2", "2026-10"), ("2.1.1", "2026-10"), ("2.1.0", "2026-10"), ("2.0.0", "2026-10"), ("1.9.12", "2026-10"), ("1.9.11", "2026-10"), ("1.9.10", "2026-10"), ("1.9.9", "2026-10"), ("1.9.8", "2026-10"), ("1.9.7", "2026-10"), ("1.9.6", "2026-10"), ("1.9.5", "2026-10"), ("1.9.4", "2026-10"), ("1.9.3", "2026-10"), ("1.9.2", "2026-10"), ("1.9.1", "2026-10"), ("1.9.0", "2026-10"), ("1.8.9", "2026-10"), ("1.8.8", "2026-10"), ("1.8.7", "2026-10"), ("1.8.6", "2026-10"), ("1.8.5", "2026-10"), ("1.7.8", "2026-10"), ("1.7.6", "2026-10"), ("1.7.5", "2026-10"), ("1.6.8", "2026-10"), ("1.6.2", "2026-10"), ("1.6.1", "2026-10"), ("1.6.0", "2026-09"), ("1.5.0", "2026-09"), ("1.4.1", "2026-09"), ("1.4.0", "2026-09"), ("1.3.0", "2026-09"), ("1.2.9", "2026-09"), ("1.2.8", "2026-09"), ("1.2.7", "2026-09"), ("1.2.6", "2026-09"), ("1.2.5", "2026-09"), ("1.2.4", "2026-09"), ("1.2.3", "2026-09"), ("1.2.2", "2026-09"), ("1.2.1", "2026-09"), ("1.2.0", "2026-09"), ("1.1.2", "2026-09"), ("1.1.1", "2026-09"), ("1.1.0", "2026-09"), ("1.0.0", "2026-09")
         };
 
 
@@ -4533,14 +4563,14 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                 return row;
             }
 
-            internal static FlowLayoutPanel NumericRow(string label, int value, int min, int max, Action<int> onChange, int marginLeft = 0)
+            internal static FlowLayoutPanel NumericRow(string label, int value, int min, int max, Action<int> onChange, int marginLeft = 0, string unit = "px")
             {
                 var row = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(marginLeft, 2, 0, 4) };
                 row.Controls.Add(new Label { Text = label + ":", AutoSize = true, ForeColor = UiTheme.TextSecondary, Font = UiTheme.FontBody, Padding = new Padding(0, 6, 8, 0) });
                 var numeric = new NumericUpDown { Minimum = min, Maximum = max, Value = value, Width = 80 };
                 numeric.ValueChanged += (_, _) => onChange((int)numeric.Value);
                 row.Controls.Add(numeric);
-                row.Controls.Add(new Label { Text = "px", AutoSize = true, ForeColor = UiTheme.TextMuted, Font = UiTheme.FontBody, Padding = new Padding(8, 6, 0, 0) });
+                row.Controls.Add(new Label { Text = unit, AutoSize = true, ForeColor = UiTheme.TextMuted, Font = UiTheme.FontBody, Padding = new Padding(8, 6, 0, 0) });
                 return row;
             }
         }

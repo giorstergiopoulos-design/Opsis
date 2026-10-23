@@ -137,6 +137,9 @@ namespace MotionDesk.Widgets
             _updateCheckTimer.Start();
 
             _hotkeys.RegisterCtrlAlt('F', () => DeskFlipEngine.Show());
+            // v2.2.0 (DesktopFences SpotSearch): Ctrl+` - προαιρετικό (προεπιλογή ΚΛΕΙΣΤΟ) γιατί είναι
+            // παγκόσμιο και συγκρούεται με π.χ. το τερματικό του VS Code.
+            if (AppSettings.Load().ContainersSpotSearch) _hotkeys.RegisterCtrl(Keys.Oemtilde, () => DeskContainerSpotSearch.Open());
 
             // Fences-style: διπλό-κλικ σε κενό σημείο της επιφάνειας εργασίας κρύβει/επαναφέρει
             // όλα τα εικονίδια εκτός του Ο Υπολογιστής μου/φάκελος χρήστη/Πίνακας Ελέγχου/Κάδος

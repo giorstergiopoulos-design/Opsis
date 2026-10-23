@@ -44,6 +44,9 @@ namespace MotionDesk.Widgets
         // εδώ δεν πατιέται Alt.
         public bool RegisterCtrlShift(Keys key, Action onPressed) => Register(MOD_CONTROL | MOD_SHIFT, (uint)key, onPressed);
 
+        // Μόνο Ctrl (π.χ. Ctrl+` για το SpotSearch των DeskContainers).
+        public bool RegisterCtrl(Keys key, Action onPressed) => Register(MOD_CONTROL, (uint)key, onPressed);
+
         // Handoff Φάση 5 ("conflict handling: hotkey ήδη πιασμένο -> UI μήνυμα"): πριν, η επιστρεφόμενη
         // τιμή του RegisterHotKey αγνοούνταν εντελώς — μια σύγκρουση (π.χ. ο οδηγός γραφικών, βλ.
         // σχόλιο Ctrl+Alt+βελάκι παραπάνω) περνούσε τελείως απαρατήρητη. Τώρα η αποτυχία καταγράφεται

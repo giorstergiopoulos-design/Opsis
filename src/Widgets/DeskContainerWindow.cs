@@ -138,7 +138,7 @@ namespace MotionDesk.Widgets
                 // Γραμμή τίτλου με ΔΙΚΗ ΤΗΣ απόχρωση (σκούρο με τόνο του accent, ημιδιαφανές) ώστε να ξεχωρίζει από το υπόλοιπο
                 // παράθυρο, όπως στα Fences.
                 var header = Color.FromArgb(185,
-                    (int)(AccentColor.R * 0.35 + 8), (int)(AccentColor.G * 0.35 + 10), (int)(AccentColor.B * 0.35 + 16));
+                    (int)(EffectiveAccent.R * 0.35 + 8), (int)(EffectiveAccent.G * 0.35 + 10), (int)(EffectiveAccent.B * 0.35 + 16));
                 using (var headerBrush = new SolidBrush(header)) e.Graphics.FillRectangle(headerBrush, 0, 0, titleBar.Width, TitleBarHeight);
                 using var titleBrush = new SolidBrush(Color.White);
                 using var font = new Font(TitleFontFamily, TitleFontSize, FontStyle.Bold);
@@ -157,7 +157,7 @@ namespace MotionDesk.Widgets
                 e.Graphics.DrawString(_title, font, titleBrush, titleRect, leftSf);
                 using var countBrush = new SolidBrush(Color.FromArgb(150, 255, 255, 255));
                 e.Graphics.DrawString(count, countFont, countBrush, new RectangleF(titleRect.Right + 10, textRect.Y, countSize.Width + 2, textRect.Height), leftSf);
-                using var separator = new Pen(Color.FromArgb(160, AccentColor), 2f);
+                using var separator = new Pen(Color.FromArgb(160, EffectiveAccent), 2f);
                 e.Graphics.DrawLine(separator, 0, TitleBarHeight - 1, titleBar.Width, TitleBarHeight - 1);
             };
             titleBar.Resize += (_, _) => titleBar.Invalidate();
@@ -648,6 +648,26 @@ namespace MotionDesk.Widgets
             stopPortalBtn.Click += (_, _) => { SetPortal(null); _items = new List<ContainerItem>(); RebuildGrid(); stopPortalBtn.Enabled = false; };
             filesStack.Controls.Add(Row(portalBtn));
             filesStack.Controls.Add(Row(stopPortalBtn));
+
+            // v2.2.0 - εμπνευσμένα από το DesktopFences (MIT): Peek Behind, Clear Dead Shortcuts, Export.
+            var peekBtn = new Button { Text = Ld("Peek Behind (εξαφάνιση για 10\")", "Peek Behind (hide for 10 s)"), AutoSize = true };
+            peekBtn.Click += (_, _) => { dialog.Close(); PeekBehind(); };
+            var clearDeadBtn = new Button { Text = Ld("Καθαρισμός νεκρών συντομεύσεων", "Clear dead shortcuts"), AutoSize = true, Enabled = !IsPortal };
+            clearDeadBtn.Click += (_, _) =>
+            {
+                int n = ClearDeadShortcuts();
+                MessageBox.Show(dialog, n == 0 ? Ld("Δεν βρέθηκαν νεκρές συντομεύσεις.", "No dead shortcuts found.") : string.Format(Ld("Αφαιρέθηκαν {0} νεκρές συντομεύσεις.", "Removed {0} dead shortcuts."), n), _title, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            };
+            var exportBtn = new Button { Text = Ld("Εξαγωγή container…", "Export container…"), AutoSize = true };
+            exportBtn.Click += (_, _) =>
+            {
+                using var sfd = new SaveFileDialog { Filter = "Opsis container (*.opsiscontainer.json)|*.opsiscontainer.json", FileName = _title + ".opsiscontainer.json" };
+                if (sfd.ShowDialog(dialog) == DialogResult.OK && !ExportTo(sfd.FileName))
+                    MessageBox.Show(dialog, Ld("Η εξαγωγή απέτυχε.", "Export failed."), _title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            };
+            filesStack.Controls.Add(Row(peekBtn));
+            filesStack.Controls.Add(Row(clearDeadBtn));
+            filesStack.Controls.Add(Row(exportBtn));
             filesStack.Controls.Add(Row(findBtn, clearFindBtn));
 
             tabs.TabPages.AddRange(new[] { tabGeneral, tabAppearance, tabSorting, tabFiles });
@@ -926,7 +946,79 @@ namespace MotionDesk.Widgets
 
         // Το AccentColor αναμειγνύεται ελαφρά μέσα στο σκούρο γυάλινο φόντο (DWM blur) — ίδια
         // ιδέα με το accent-color tinting των πραγματικών Fences.
-        private void ApplyGlassBlur() => GlassBlur.Apply(Handle, AccentColor, _backgroundOpacity);
+        private void ApplyGlassBlur() => GlassBlur.Apply(Handle, EffectiveAccent, _backgroundOpacity);
+
+        // ---- v2.2.0: χαρακτηριστικά εμπνευσμένα από το DesktopFences (MIT) - βλ. DeskContainerExtras.cs ----
+        private Color? _chameleon;
+        private static readonly int DefaultAccentArgb = Color.FromArgb(0, 170, 255).ToArgb();
+        // Chameleon: τα containers που ΔΕΝ έχουν προσαρμοσμένο χρώμα παίρνουν το κυρίαρχο χρώμα του wallpaper.
+        public Color EffectiveAccent => _chameleon != null && AccentColor.ToArgb() == DefaultAccentArgb ? _chameleon.Value : AccentColor;
+
+        public void SetChameleon(Color? color)
+        {
+            if (_chameleon == color) return;
+            _chameleon = color;
+            if (IsHandleCreated) { ApplyGlassBlur(); Invalidate(true); }
+        }
+
+        public void SaveNow() { _saveTimer.Stop(); SaveState(); }
+
+        private System.Windows.Forms.Timer? _fadeTimer;
+        private bool _peeking;
+        public bool AutoHidden { get; private set; }
+
+        public void FadeTo(double target, int ms)
+        {
+            _fadeTimer?.Stop(); _fadeTimer?.Dispose();
+            if (ms <= 0) { Opacity = target; return; }
+            double start = Opacity; int steps = Math.Max(1, ms / 16); int i = 0;
+            _fadeTimer = new System.Windows.Forms.Timer { Interval = 16 };
+            _fadeTimer.Tick += (_, _) =>
+            {
+                i++;
+                double t = Math.Min(1.0, i / (double)steps);
+                if (!IsDisposed) Opacity = start + (target - start) * (1 - (1 - t) * (1 - t));
+                if (t >= 1.0 || IsDisposed) { _fadeTimer?.Stop(); _fadeTimer?.Dispose(); _fadeTimer = null; }
+            };
+            _fadeTimer.Start();
+        }
+
+        // Auto-hide αδράνειας: κρύβει/δείχνει με fade, χωρίς να πειράζει το quick-hide ή το Visible.
+        public void SetAutoHidden(bool hidden)
+        {
+            if (_peeking || AutoHidden == hidden) return;
+            AutoHidden = hidden;
+            FadeTo(hidden ? 0.0 : 1.0, hidden ? 400 : 250);
+        }
+
+        // "Peek Behind": το container εξαφανίζεται για 10" για να φανεί ό,τι υπάρχει πίσω του.
+        public void PeekBehind(int seconds = 10)
+        {
+            if (_peeking) return;
+            _peeking = true;
+            FadeTo(0.0, 300);
+            DeskContainerExtras.ShowCountdown(Bounds, seconds, () =>
+            {
+                _peeking = false;
+                if (!IsDisposed) FadeTo(AutoHidden ? 0.0 : 1.0, 800);
+            });
+        }
+
+        // "Clear Dead Shortcuts": αφαιρεί στοιχεία που δεν υπάρχουν πια (όχι σε portal - εκεί το περιεχόμενο είναι ζωντανό).
+        public int ClearDeadShortcuts()
+        {
+            if (IsPortal) return 0;
+            int removed = _items.RemoveAll(i => !File.Exists(i.Path) && !Directory.Exists(i.Path));
+            if (removed > 0) { RebuildGrid(); QueueSave(); }
+            return removed;
+        }
+
+        public bool ExportTo(string file)
+        {
+            try { SaveState(); File.Copy(GetConfigFilePath(), file, true); return true; }
+            catch (IOException) { return false; }
+            catch (UnauthorizedAccessException) { return false; }
+        }
 
         private string GetConfigFilePath() =>
             Path.Combine(AppPaths.AppDataFolder, "deskcontainers", $"{_containerId}_config.json");
@@ -1111,6 +1203,18 @@ namespace MotionDesk.Widgets
             {
                 try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", $"/select,\"{_path}\"") { UseShellExecute = true }); } catch { }
             });
+            // v2.2.0 (DesktopFences): εκκίνηση ως διαχειριστής / ως άλλος χρήστης για εκτελέσιμα και συντομεύσεις.
+            if (File.Exists(_path) && Path.GetExtension(_path).ToLowerInvariant() is ".exe" or ".lnk" or ".bat" or ".cmd")
+            {
+                menu.Items.Add(Ld("Εκτέλεση ως διαχειριστής", "Run as administrator"), null, (_, _) =>
+                {
+                    try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(_path) { UseShellExecute = true, Verb = "runas" }); } catch { }
+                });
+                menu.Items.Add(Ld("Εκτέλεση ως άλλος χρήστης", "Run as different user"), null, (_, _) =>
+                {
+                    try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(_path) { UseShellExecute = true, Verb = "runasuser" }); } catch { }
+                });
+            }
             menu.Items.Add(Ld("Αντιγραφή διαδρομής", "Copy path"), null, (_, _) => { try { Clipboard.SetText(_path); } catch { } });
             menu.Items.Add(LocalizationManager.T("DCMenu.QuickLook"), null, (_, _) => QuickLookPreview.Show(_path));
             menu.Items.Add(Ld("Ιδιότητες", "Properties"), null, (_, _) =>
@@ -1333,6 +1437,60 @@ namespace MotionDesk.Widgets
             });
         }
 
+        // ---- v2.2.0: γενικές υπηρεσίες (auto-hide αδράνειας, Chameleon, καθημερινό backup) - DesktopFences ----
+        private System.Windows.Forms.Timer? _globalTimer;
+        private int _globalTick;
+        private string _chameleonStamp = "";
+        private Color? _chameleonColor;
+
+        public void ApplyGlobalSettings()
+        {
+            _chameleonStamp = "";   // ξαναϋπολογισμός στο επόμενο tick
+            if (_globalTimer == null)
+            {
+                _globalTimer = new System.Windows.Forms.Timer { Interval = 1000 };
+                _globalTimer.Tick += (_, _) => GlobalTick();
+                _globalTimer.Start();
+            }
+            GlobalTick();
+        }
+
+        private void GlobalTick()
+        {
+            var s = AppSettings.Load();
+            _globalTick++;
+
+            // Auto-hide: όλα τα containers (εκτός όσων έχουν "Exclude from quick-hide") κρύβονται μετά από N δευτ. αδράνειας.
+            bool shouldHide = s.ContainersAutoHide && s.ContainersAutoHideSeconds > 0 && DeskContainerExtras.IdleSeconds() >= s.ContainersAutoHideSeconds;
+            foreach (var c in _active.ToArray())
+            {
+                if (c.IsDisposed) continue;
+                if (c.ExcludeFromQuickHide) { if (c.AutoHidden) c.SetAutoHidden(false); continue; }
+                c.SetAutoHidden(shouldHide);
+            }
+
+            // Chameleon: κάθε ~30" έλεγχος αν άλλαξε το wallpaper· ο υπολογισμός γίνεται μόνο όταν αλλάξει.
+            if (_chameleonStamp.Length == 0 || _globalTick % 30 == 0)
+            {
+                Color? color = null;
+                string stamp = "off";
+                if (s.ContainersChameleon)
+                {
+                    var wp = DeskContainerExtras.ActiveWallpaperPath();
+                    stamp = wp == null ? "none" : wp + File.GetLastWriteTimeUtc(wp).Ticks;
+                    if (stamp == _chameleonStamp) color = _chameleonColor;
+                    else color = wp != null ? DeskContainerExtras.DominantColor(wp) : null;
+                }
+                if (stamp != _chameleonStamp || color != _chameleonColor)
+                {
+                    _chameleonStamp = stamp; _chameleonColor = color;
+                    foreach (var c in _active.ToArray()) if (!c.IsDisposed) c.SetChameleon(color);
+                }
+            }
+
+            if (_globalTick == 5 || _globalTick % 3600 == 0) DeskContainerExtras.DailyBackupIfDue();
+        }
+
         public DeskContainerWindow SpawnContainer(string containerId, string title, int x, int y, int width, int height)
         {
             var existing = _active.Find(c => c.Tag as string == containerId);
@@ -1346,6 +1504,7 @@ namespace MotionDesk.Widgets
             EnsureDesktopWatchers();
             container.FormClosed += (s, e) => _active.Remove(container);
             container.Show();
+            ApplyGlobalSettings();
             return container;
         }
     }

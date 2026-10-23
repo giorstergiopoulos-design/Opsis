@@ -23,9 +23,9 @@
          είχε κανένα πρακτικό αποτέλεσμα, μόνο θα πρόσθετε ~35+ άσχετα attributes σε custom controls.
          Βλ. https://aka.ms/winforms-warnings/wfo1000 -->
     <NoWarn>$(NoWarn);WFO1000</NoWarn>
-    <Version>2.1.3</Version>
-    <AssemblyVersion>2.1.3.0</AssemblyVersion>
-    <FileVersion>2.1.3.0</FileVersion>
+    <Version>2.2.0</Version>
+    <AssemblyVersion>2.2.0.0</AssemblyVersion>
+    <FileVersion>2.2.0.0</FileVersion>
     <Product>Opsis - Desktop Customization</Product>
     <!-- Ζητήθηκε ρητά "η εφαρμογή να μην περνά ως false positive". Πραγματική, εγγυημένη λύση
          είναι μόνο ένα πληρωμένο code-signing certificate (βλ. PROJECT_STATE.md — παραλείφθηκε
@@ -108,6 +108,10 @@
     <None Include="LICENSE">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>LICENSE</Link>
+    </None>
+    <None Include="THIRD_PARTY_NOTICES.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>THIRD_PARTY_NOTICES.md</Link>
     </None>
   </ItemGroup>
 
