@@ -256,7 +256,7 @@ namespace Desktop_Fences
 
             CreateSectionHeader(c, "Icons", ColorStyle);
             c.Children.Add(new TextBlock { Text = "Menu Icon", FontWeight = FontWeights.SemiBold, Margin = new Thickness(15, 5, 0, 5) });
-            CreateIconRadioButtonGroup(c, "MenuIconGroup", new Dictionary<string, int> { { "♥", 0 }, { "☰", 1 }, { "≣", 2 }, { "𓃑", 3 } }, SettingsManager.MenuIcon);
+            CreateIconRadioButtonGroup(c, "MenuIconGroup", new Dictionary<string, int> { { "⋯", 0 }, { "☰", 1 }, { "≣", 2 }, { "𓃑", 3 } }, SettingsManager.MenuIcon);
             c.Children.Add(new TextBlock { Text = "Lock Icon", FontWeight = FontWeights.SemiBold, Margin = new Thickness(15, 10, 0, 5) });
             CreateIconRadioButtonGroup(c, "LockIconGroup", new Dictionary<string, int> { { "🛡️", 0 }, { "🔑", 1 }, { "🔐", 2 }, { "🔒", 3 } }, SettingsManager.LockIcon);
 

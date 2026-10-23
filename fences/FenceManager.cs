@@ -28,6 +28,16 @@ namespace Desktop_Fences
 {
     public static class FenceManager
     {
+        internal static readonly System.Collections.Generic.Dictionary<string, Action> RenameStarters = new System.Collections.Generic.Dictionary<string, Action>();
+
+        // Opsis: F2 -> rename the fence currently under the mouse pointer.
+        public static void RenameHoveredFence()
+        {
+            if (System.Windows.Application.Current == null) return;
+            foreach (var w in System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>())
+                if (w.IsMouseOver && w.Tag is string id && RenameStarters.TryGetValue(id, out var start)) { start(); return; }
+        }
+
 
         // --- NEW: Centralized Presets ---
         private static readonly Dictionary<string, string> _standardPresets = new Dictionary<string, string>
@@ -4223,9 +4233,9 @@ namespace Desktop_Fences
                     NoteContent = "WELCOME TO DESKTOP FENCES +\r\n" +
                                   "---------------------------\r\n" +
                                   "• Roll Up/Down: Double-click the fence title bar.\r\n" +
-                                  "• Rename: Ctrl + Click the title bar (Enter to save).\r\n" +
+                                  "• Rename: F2 over a fence (or Ctrl + Click the title bar), Enter to save.\r\n" +
                                   "• Search (SpotSearch): Press Ctrl + ` (Tilde) to find any icon instantly.\r\n" +
-                                  "• Options: Click the '♥' menu icon (top-left).\r\n" +
+                                  "• Options: Click the ⋯ menu icon (top-left).\r\n" +
                                   "• Reorder Icons on a Fence: Ctrl + Drag icon to new position.\r\n" +
                                   "• Context Menu: Right-click icons or Fences for more options.\r\n" +
                                   " \r\n" +
@@ -4350,11 +4360,11 @@ namespace Desktop_Fences
 
 
             //  Add heart symbol in top-left corner
-            string MenuSymbol = "♥";
+            string MenuSymbol = "⋯";
 
             if (SettingsManager.MenuIcon == 0)
             {
-                MenuSymbol = "♥";
+                MenuSymbol = "⋯";
               
             }
             else if (SettingsManager.MenuIcon == 1)
@@ -4376,7 +4386,7 @@ namespace Desktop_Fences
 
                 Name = "FenceMenuIcon", // New! Name
                 Text = MenuSymbol,
-                FontSize = 22,
+                FontSize = 18,
                 Foreground = System.Windows.Media.Brushes.White, // Match title and icon text color
                 Margin = new Thickness(5, -3, 0, 0), // Position top-left, aligned with title
                 HorizontalAlignment = HorizontalAlignment.Left,
@@ -4499,7 +4509,7 @@ namespace Desktop_Fences
                 VerticalAlignment = VerticalAlignment.Top,
                 Cursor = Cursors.Hand,
                 ToolTip = fence.IsLocked?.ToString().ToLower() == "true" ? "Fence is locked (click to unlock)" : "Fence is unlocked (click to lock)",
-                Opacity = (double)SettingsManager.MenuTintValue / 100 // 0.3 // Lower tint by default
+                Opacity = fence.IsLocked?.ToString().ToLower() == "true" ? (double)SettingsManager.MenuTintValue / 100 : 0.0 // Opsis: like Stardock Fences the shield only shows while locked (or hovered)
             };
 
   
@@ -4513,7 +4523,7 @@ namespace Desktop_Fences
 
             lockIcon.MouseLeave += (s, e) =>
             {
-                double targetOpacity = (double)SettingsManager.MenuTintValue / 100;
+                double targetOpacity = object.ReferenceEquals(lockIcon.Foreground, System.Windows.Media.Brushes.Red) ? (double)SettingsManager.MenuTintValue / 100 : 0.0;
 
                 DoubleAnimation fadeBack = new DoubleAnimation
                 {
@@ -5147,7 +5157,7 @@ namespace Desktop_Fences
                 HorizontalContentAlignment = HorizontalAlignment.Center,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 Cursor = Cursors.SizeAll,
-                FontWeight = isBoldTitle ? FontWeights.Bold : FontWeights.Normal,
+                FontWeight = isBoldTitle ? FontWeights.Bold : FontWeights.SemiBold,
                 FontSize = titleFontSize // Apply custom title text size
             };
             Grid.SetColumn(titlelabel, 1);
@@ -5804,6 +5814,16 @@ namespace Desktop_Fences
                 return;
             }
             bool isLocked = currentFence.IsLocked?.ToString().ToLower() == "true";
+            // Opsis: F2 renames the fence under the mouse (same inline edit as Ctrl+Click on the title).
+            RenameStarters[fenceId] = () =>
+            {
+                var rw = FindVisualParent<NonActivatingWindow>(titlelabel);
+                if (rw == null || titletb.IsVisible) return;
+                titletb.Text = titlelabel.Content.ToString();
+                titlelabel.Visibility = Visibility.Collapsed;
+                titletb.Visibility = Visibility.Visible;
+                rw.BeginKeyboardInteractiveEdit(titletb);
+            };
             titlelabel.MouseDown += (sender, e) =>
             {
                 // FIX: Directly call CommitRename logic

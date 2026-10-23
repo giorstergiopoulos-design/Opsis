@@ -240,7 +240,7 @@ namespace Desktop_Fences
                 "White" => (Color)ColorConverter.ConvertFromString("#F1F1F6"),
                 "Beige" => (Color)ColorConverter.ConvertFromString("#C8AD7E"),
                 "Gray" => (Color)ColorConverter.ConvertFromString("#6E6E6E"),
-                "Black" => (Color)ColorConverter.ConvertFromString("#0b0b0c"),
+                "Black" => (Color)ColorConverter.ConvertFromString("#1F1D1C"),   // Opsis: warm charcoal like Stardock Fences
                 "Purple" => (Color)ColorConverter.ConvertFromString("#3a0b50"),
                 "Fuchsia" => (Color)ColorConverter.ConvertFromString("#5F093d"),
                 "Yellow" => (Color)ColorConverter.ConvertFromString("#C1C708"),
@@ -251,7 +251,7 @@ namespace Desktop_Fences
                 // "Blue" => (Color)ColorConverter.ConvertFromString("#012162"),
                 //  "White" => (Color)ColorConverter.ConvertFromString("#fdfdff"),
                 //  "Gray" => (Color)ColorConverter.ConvertFromString("#3d3d3f"),
-                //  "Black" => (Color)ColorConverter.ConvertFromString("#0b0b0c"),
+                //  "Black" => (Color)ColorConverter.ConvertFromString("#1F1D1C"),   // Opsis: warm charcoal like Stardock Fences
                 // "Purple" => (Color)ColorConverter.ConvertFromString("#3a0b50"),
                 //  "Yellow" => (Color)ColorConverter.ConvertFromString("#d8da1f"),
                 //  _ => Colors.Transparent, 
@@ -266,7 +266,7 @@ namespace Desktop_Fences
             System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
                 // 1. Prepare Symbols
-                string[] menuSymbols = { "♥", "☰", "≣", "𓃑" };
+                string[] menuSymbols = { "⋯", "☰", "≣", "𓃑" };
                 string[] lockSymbols = { "🛡️", "🔑", "🔐", "🔒" };
 
                 int menuIdx = SettingsManager.MenuIcon;

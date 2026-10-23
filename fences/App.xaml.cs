@@ -20,6 +20,7 @@ namespace Desktop_Fences
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
+            OpsisTheme.Init();
             // Opsis integration: exit together with the Opsis process that started this engine.
             if (int.TryParse(Environment.GetEnvironmentVariable("OPSIS_PARENT_PID"), out int parentPid))
             {

@@ -169,6 +169,12 @@ namespace Desktop_Fences
                     bool isKeyDown = (wParam == (IntPtr)WM_KEYDOWN || wParam == (IntPtr)WM_SYSKEYDOWN);
                     bool isKeyUp = (wParam == (IntPtr)WM_KEYUP || wParam == (IntPtr)WM_SYSKEYUP);
 
+                    // Opsis: F2 renames the fence under the mouse.
+                    if (vkCode == 0x71 && isKeyDown)
+                    {
+                        System.Windows.Application.Current?.Dispatcher.BeginInvoke(new Action(() => FenceManager.RenameHoveredFence()));
+                    }
+
                     // ============================================================
                     // ============================================================
                     // 1. PROFILE SWITCHING (Dynamic Customizable Modifiers)

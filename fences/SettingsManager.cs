@@ -27,11 +27,11 @@ namespace Desktop_Fences
         public static bool UseRecycleBin { get; set; } = true;
         public static bool ShowInTray { get; set; } = true;
         public static bool EnableSounds { get; set; } = true;
-        public static int TintValue { get; set; } = 85;
+        public static int TintValue { get; set; } = 80;
         public static int MenuTintValue { get; set; } = 30;
-        public static int MenuIcon { get; set; } = 0;
+        public static int MenuIcon { get; set; } = 1;
         public static int LockIcon { get; set; } = 0;
-        public static string SelectedColor { get; set; } = "Gray";
+        public static string SelectedColor { get; set; } = "Black";
         public static bool IsLogEnabled { get; set; } = false;
         public static int MaxDisplayNameLength { get; set; } = 20;
         public static int PortalBackgroundOpacity { get; set; } = 30;

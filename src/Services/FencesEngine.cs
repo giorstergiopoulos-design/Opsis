@@ -24,11 +24,16 @@ namespace MotionDesk.Services
         public static void Start()
         {
             if (!IsAvailable || IsRunning) return;
+            FencesMigration.MigrateLegacyContainers();     // first start only: brings the old DeskContainers over
             if (!_exitHooked) { _exitHooked = true; Application.ApplicationExit += (_, _) => Stop(); }
             try
             {
                 var psi = new ProcessStartInfo(ExePath) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(ExePath)! };
                 psi.Environment["OPSIS_PARENT_PID"] = Environment.ProcessId.ToString();
+                // Opsis palette for the Fences settings windows (see fences\OpsisTheme.cs).
+                var pal = MotionDesk.UI.ThemeManager.Current;
+                string Hx(System.Drawing.Color c) => $"{c.R:X2}{c.G:X2}{c.B:X2}";
+                psi.Environment["OPSIS_THEME"] = string.Join(";", pal.IsDark ? "1" : "0", Hx(pal.Background), Hx(pal.Surface), Hx(pal.SurfaceHover), Hx(pal.Border), Hx(pal.TextPrimary), Hx(pal.TextSecondary), Hx(pal.TextMuted), Hx(pal.AccentCyan));
                 Process.Start(psi);
             }
             catch (Exception ex) { RotatingLogger.Write($"Fences engine failed to start: {ex.Message}"); }

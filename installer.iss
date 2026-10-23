@@ -361,6 +361,9 @@ Source: "bin\Release\net10.0-windows10.0.19041.0\win-x64\publish\*"; DestDir: "{
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
+[UninstallRun]
+Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM OpsisFences.exe"; Flags: runhidden; RunOnceId: "StopOpsisFences"
+
 [Registry]
 ; Αυτόματη εκκίνηση μέσω Registry (αν επιλεχθεί στο wizard)
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{#MyAppName}"; ValueData: """{app}\{#MyAppExeName}"""; Tasks: autostart; Flags: uninsdeletevalue
@@ -570,4 +573,13 @@ begin
       end;
     end;
   end;
+end;
+
+// The Fences engine (fences\OpsisFences.exe) keeps its files locked while it runs: stop it before files are replaced.
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  ResultCode: Integer;
+begin
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM OpsisFences.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Result := '';
 end;
