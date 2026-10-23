@@ -4424,7 +4424,7 @@ namespace Desktop_Fences
             };
 
 
-            dp.Children.Add(heart);
+            // Opsis: the menu icon now lives inside the title grid (see below) so the title band spans the whole fence width.
             Panel.SetZIndex(heart, 100); // Ensure heart is above titleGrid to receive clicks
 
             // Store heart TextBlock reference for this fence
@@ -4590,7 +4590,8 @@ namespace Desktop_Fences
             // Create a Grid for the titlebar - move here to ensure it is created before mouse handler
             Grid titleGrid = new Grid
             {
-                Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(20, 0, 0, 0))
+                Name = "FenceTitleGrid",
+                Background = Utility.GetTitleBarBrush(fence.CustomColor?.ToString())
             };
             titleGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(0, GridUnitType.Pixel) }); // Col 0: Spacer
             titleGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // Col 1: Title
@@ -5785,6 +5786,8 @@ namespace Desktop_Fences
             Grid.SetColumn(lockIcon, 3); // Moved to Column 3
             Grid.SetRow(lockIcon, 0);
             titleGrid.Children.Add(lockIcon);
+            Grid.SetColumnSpan(heart, 4);
+            titleGrid.Children.Add(heart);
             // Add the titleGrid to the DockPanel
             DockPanel.SetDock(titleGrid, Dock.Top);
             dp.Children.Add(titleGrid);

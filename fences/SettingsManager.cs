@@ -28,8 +28,11 @@ namespace Desktop_Fences
         public static bool ShowInTray { get; set; } = true;
         public static bool EnableSounds { get; set; } = true;
         public static int TintValue { get; set; } = 80;
-        public static int MenuTintValue { get; set; } = 30;
+        public static int MenuTintValue { get; set; } = 85;
         public static int MenuIcon { get; set; } = 1;
+        // Title bar band (Stardock-style): "Auto" = a darker shade of the fence colour, otherwise a named colour; opacity 0-100.
+        public static string TitleBarColor { get; set; } = "Auto";
+        public static int TitleBarOpacity { get; set; } = 90;
         public static int LockIcon { get; set; } = 0;
         public static string SelectedColor { get; set; } = "Black";
         public static bool IsLogEnabled { get; set; } = false;
@@ -169,6 +172,8 @@ namespace Desktop_Fences
                 TintValue,
                 MenuTintValue,
                 MenuIcon,
+                TitleBarColor,
+                TitleBarOpacity,
                 LockIcon,
                 SelectedColor,
                 IsLogEnabled,
@@ -233,8 +238,10 @@ namespace Desktop_Fences
             try { EnableSounds = data.EnableSounds ?? true; } catch { EnableSounds = true; }
             try { UseRecycleBin = data.UseRecycleBin ?? true; } catch { UseRecycleBin = true; }
             try { TintValue = data.TintValue ?? 85; } catch { TintValue = 85; }
-            try { MenuTintValue = data.MenuTintValue ?? 30; } catch { MenuTintValue = 30; }
+            try { MenuTintValue = data.MenuTintValue ?? 85; } catch { MenuTintValue = 85; }
             try { MenuIcon = data.MenuIcon ?? 0; } catch { MenuIcon = 0; }
+            try { TitleBarColor = data.TitleBarColor ?? "Auto"; } catch { TitleBarColor = "Auto"; }
+            try { TitleBarOpacity = data.TitleBarOpacity ?? 90; } catch { TitleBarOpacity = 90; }
             try { LockIcon = data.LockIcon ?? 0; } catch { LockIcon = 0; }
             try { SelectedColor = data.SelectedColor ?? "Gray"; } catch { SelectedColor = "Gray"; }
             try { IsLogEnabled = data.IsLogEnabled ?? false; } catch { IsLogEnabled = false; }

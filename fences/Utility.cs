@@ -197,6 +197,37 @@ namespace Desktop_Fences
             );
         }
 
+        // Opsis: title bar band colour (Settings > Appearance > Title Bar).
+        public static Brush GetTitleBarBrush(string fenceColorName)
+        {
+            string name = SettingsManager.TitleBarColor;
+            Color c;
+            if (string.IsNullOrEmpty(name) || name == "Auto")
+            {
+                var b = GetColorFromName(string.IsNullOrEmpty(fenceColorName) || fenceColorName == "Default" ? SettingsManager.SelectedColor : fenceColorName);
+                c = Color.FromRgb((byte)(b.R * 0.45), (byte)(b.G * 0.45), (byte)(b.B * 0.45));
+            }
+            else c = GetColorFromName(name);
+            byte a = (byte)Math.Clamp(SettingsManager.TitleBarOpacity * 2.55, 0, 255);
+            var br = new SolidColorBrush(Color.FromArgb(a, c.R, c.G, c.B));
+            br.Freeze();
+            return br;
+        }
+
+        private static Grid FindTitleGrid(DependencyObject root)
+        {
+            if (root == null) return null;
+            int n = VisualTreeHelper.GetChildrenCount(root);
+            for (int i = 0; i < n; i++)
+            {
+                var ch = VisualTreeHelper.GetChild(root, i);
+                if (ch is Grid g && g.Name == "FenceTitleGrid") return g;
+                var r = FindTitleGrid(ch);
+                if (r != null) return r;
+            }
+            return null;
+        }
+
         public static void ApplyTintAndColorToFence(Window fence, string colorName = null)
         {
             var fenceControl = fence.Content as Border; // Matches your structure
@@ -211,6 +242,9 @@ namespace Desktop_Fences
             fenceControl.Background = SettingsManager.TintValue > 0
                 ? new SolidColorBrush(GetColorFromName(effectiveColor)) { Opacity = SettingsManager.TintValue / 100.0 }
                 : Brushes.Transparent;
+
+            var titleGridToTint = FindTitleGrid(fence);
+            if (titleGridToTint != null) titleGridToTint.Background = GetTitleBarBrush(effectiveColor);
 
             // TABS FEATURE: Refresh tab colors when fence color changes
             if (fence is NonActivatingWindow fenceWindow)

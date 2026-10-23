@@ -252,6 +252,8 @@ namespace Desktop_Fences
             CreateSliderControl(c, "Fence Tint", "TintSlider", SettingsManager.TintValue);
             CreateSliderControl(c, "Menu Tint", "MenuTintSlider", SettingsManager.MenuTintValue);
             CreateColorComboBox(c);
+            CreateTitleBarColorComboBox(c);
+            CreateSliderControl(c, "Title Bar Opacity", "TitleBarOpacitySlider", SettingsManager.TitleBarOpacity);
             CreateLaunchEffectComboBox(c);
 
             CreateSectionHeader(c, "Icons", ColorStyle);
@@ -613,6 +615,19 @@ namespace Desktop_Fences
             Grid.SetColumn(cb, 1); g.Children.Add(cb); p.Children.Add(g);
         }
 
+        private static void CreateTitleBarColorComboBox(StackPanel p)
+        {
+            Grid g = new Grid { Margin = new Thickness(0, 10, 0, 10) };
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) });
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
+            g.Children.Add(new TextBlock { Text = "Title Bar", FontSize = 13, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 0, 10, 0) });
+            ComboBox cb = new ComboBox { Name = "TitleBarColorComboBox", Height = 25, FontSize = 13, VerticalAlignment = VerticalAlignment.Center, ToolTip = "Auto = a darker shade of the fence colour" };
+            foreach (string c in new[] { "Auto", "Black", "Gray", "White", "Beige", "Green", "Purple", "Fuchsia", "Yellow", "Orange", "Red", "Blue", "Bismark", "Teal" }) cb.Items.Add(c);
+            cb.SelectedItem = SettingsManager.TitleBarColor;
+            if (cb.SelectedItem == null) cb.SelectedIndex = 0;
+            Grid.SetColumn(cb, 1); g.Children.Add(cb); p.Children.Add(g);
+        }
+
         private static void CreateLaunchEffectComboBox(StackPanel p)
         {
             Grid g = new Grid { Margin = new Thickness(0, 10, 0, 10) };
@@ -746,6 +761,8 @@ namespace Desktop_Fences
                     {
                         var tint = g.Children.OfType<Slider>().FirstOrDefault(s => s.Name == "TintSlider"); if (tint != null) SettingsManager.TintValue = (int)tint.Value; var mtint = g.Children.OfType<Slider>().FirstOrDefault(s => s.Name == "MenuTintSlider"); if (mtint != null) SettingsManager.MenuTintValue = (int)mtint.Value;
                         var col = g.Children.OfType<ComboBox>().FirstOrDefault(c => c.Name == "ColorComboBox"); if (col?.SelectedItem != null) SettingsManager.SelectedColor = col.SelectedItem.ToString();
+                        var tbc = g.Children.OfType<ComboBox>().FirstOrDefault(c => c.Name == "TitleBarColorComboBox"); if (tbc?.SelectedItem != null) SettingsManager.TitleBarColor = tbc.SelectedItem.ToString();
+                        var tbo = g.Children.OfType<Slider>().FirstOrDefault(s => s.Name == "TitleBarOpacitySlider"); if (tbo != null) SettingsManager.TitleBarOpacity = (int)tbo.Value;
                         var eff = g.Children.OfType<ComboBox>().FirstOrDefault(c => c.Name == "LaunchEffectComboBox"); if (eff != null) SettingsManager.LaunchEffect = (LaunchEffectsManager.LaunchEffect)eff.SelectedIndex;
                     }
                     else if (child is StackPanel sp)
