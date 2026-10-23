@@ -148,6 +148,10 @@ namespace Desktop_Fences
                     sb.Foreground = new SolidColorBrush(_text);
                 }
             }
+            if (root is CheckBox cbx && cbx.ReadLocalValue(FrameworkElement.StyleProperty) == DependencyProperty.UnsetValue) cbx.Style = CheckStyle;
+            else if (root is RadioButton rdo && rdo.ReadLocalValue(FrameworkElement.StyleProperty) == DependencyProperty.UnsetValue) rdo.Style = RadioStyle;
+            else if (root is Slider sld && sld.ReadLocalValue(FrameworkElement.StyleProperty) == DependencyProperty.UnsetValue && sld.Orientation == Orientation.Horizontal) sld.Style = SliderStyle;
+            else if (root is TextBox txt && txt.ReadLocalValue(FrameworkElement.StyleProperty) == DependencyProperty.UnsetValue && !(txt.TemplatedParent is ComboBox)) txt.Style = TextStyle;
             if (root is Button button && button.ReadLocalValue(FrameworkElement.StyleProperty) == DependencyProperty.UnsetValue && !ReferenceEquals(button.Style, ButtonStyle))
                 button.Style = ButtonStyle;
             // applying a style re-creates the template, so the child count is read only now and re-checked on every step
@@ -207,6 +211,75 @@ namespace Desktop_Fences
     </Setter.Value>
   </Setter>
 </Style>".Replace("#TEXT", ToHex(_text)).Replace("#HOVER", ToHex(_hover)));
+
+        // ---- Opsis-style CheckBox / RadioButton / Slider / TextBox (the upstream controls are stock WPF) ----
+        private static Style Build(string xaml) => (Style)XamlReader.Parse(xaml
+            .Replace("#TEXT", ToHex(_text)).Replace("#MUTED", ToHex(_muted)).Replace("#ACCENT", ToHex(_accent))
+            .Replace("#BORDER", ToHex(_border)).Replace("#HOVER", ToHex(_hover)).Replace("#SURFACE", ToHex(_surface)));
+
+        private const string Ns = "xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'";
+
+        private static Style? _checkStyle, _radioStyle, _sliderStyle, _textStyle;
+
+        private static Style CheckStyle => _checkStyle ??= Build(@"<Style " + Ns + @" TargetType='CheckBox'>
+  <Setter Property='Foreground' Value='#TEXT'/><Setter Property='Cursor' Value='Hand'/>
+  <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='CheckBox'>
+    <StackPanel Orientation='Horizontal' Background='Transparent'>
+      <Border x:Name='bx' Width='18' Height='18' CornerRadius='5' BorderThickness='1.5' BorderBrush='#MUTED' Background='Transparent' VerticalAlignment='Center'>
+        <Path x:Name='ck' Data='M 3.5 9 L 7 12.5 L 14 4.5' Stroke='#0B0B0C' StrokeThickness='2' Visibility='Collapsed' StrokeStartLineCap='Round' StrokeEndLineCap='Round'/>
+      </Border>
+      <ContentPresenter Margin='8,0,0,0' VerticalAlignment='Center' RecognizesAccessKey='True'/>
+    </StackPanel>
+    <ControlTemplate.Triggers>
+      <Trigger Property='IsChecked' Value='True'><Setter TargetName='bx' Property='Background' Value='#ACCENT'/><Setter TargetName='bx' Property='BorderBrush' Value='#ACCENT'/><Setter TargetName='ck' Property='Visibility' Value='Visible'/></Trigger>
+      <Trigger Property='IsMouseOver' Value='True'><Setter TargetName='bx' Property='BorderBrush' Value='#ACCENT'/></Trigger>
+      <Trigger Property='IsEnabled' Value='False'><Setter Property='Opacity' Value='0.45'/></Trigger>
+    </ControlTemplate.Triggers>
+  </ControlTemplate></Setter.Value></Setter>
+</Style>");
+
+        private static Style RadioStyle => _radioStyle ??= Build(@"<Style " + Ns + @" TargetType='RadioButton'>
+  <Setter Property='Foreground' Value='#TEXT'/><Setter Property='Cursor' Value='Hand'/>
+  <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='RadioButton'>
+    <StackPanel Orientation='Horizontal' Background='Transparent'>
+      <Grid Width='18' Height='18' VerticalAlignment='Center'>
+        <Ellipse x:Name='ring' Stroke='#MUTED' StrokeThickness='1.5' Fill='Transparent'/>
+        <Ellipse x:Name='dot' Width='8' Height='8' Fill='#ACCENT' Visibility='Collapsed'/>
+      </Grid>
+      <ContentPresenter Margin='7,0,0,0' VerticalAlignment='Center' RecognizesAccessKey='True'/>
+    </StackPanel>
+    <ControlTemplate.Triggers>
+      <Trigger Property='IsChecked' Value='True'><Setter TargetName='dot' Property='Visibility' Value='Visible'/><Setter TargetName='ring' Property='Stroke' Value='#ACCENT'/></Trigger>
+      <Trigger Property='IsMouseOver' Value='True'><Setter TargetName='ring' Property='Stroke' Value='#ACCENT'/></Trigger>
+    </ControlTemplate.Triggers>
+  </ControlTemplate></Setter.Value></Setter>
+</Style>");
+
+        private static Style SliderStyle => _sliderStyle ??= Build(@"<Style " + Ns + @" TargetType='Slider'>
+  <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='Slider'>
+    <Grid Height='20' Background='Transparent'>
+      <Border Height='4' CornerRadius='2' Background='#BORDER' VerticalAlignment='Center'/>
+      <Track x:Name='PART_Track'>
+        <Track.DecreaseRepeatButton><RepeatButton Command='Slider.DecreaseLarge' Focusable='False'><RepeatButton.Template><ControlTemplate TargetType='RepeatButton'><Border Height='4' CornerRadius='2' Background='#ACCENT' VerticalAlignment='Center'/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.DecreaseRepeatButton>
+        <Track.Thumb><Thumb Width='16' Height='16' Focusable='False'><Thumb.Template><ControlTemplate TargetType='Thumb'><Ellipse Fill='#TEXT' Stroke='#ACCENT' StrokeThickness='2'/></ControlTemplate></Thumb.Template></Thumb></Track.Thumb>
+        <Track.IncreaseRepeatButton><RepeatButton Command='Slider.IncreaseLarge' Focusable='False'><RepeatButton.Template><ControlTemplate TargetType='RepeatButton'><Border Background='Transparent'/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.IncreaseRepeatButton>
+      </Track>
+    </Grid>
+  </ControlTemplate></Setter.Value></Setter>
+</Style>");
+
+        private static Style TextStyle => _textStyle ??= Build(@"<Style " + Ns + @" TargetType='TextBox'>
+  <Setter Property='Foreground' Value='#TEXT'/><Setter Property='Background' Value='#HOVER'/><Setter Property='BorderBrush' Value='#BORDER'/>
+  <Setter Property='CaretBrush' Value='#TEXT'/><Setter Property='SelectionBrush' Value='#ACCENT'/><Setter Property='Padding' Value='6,4'/>
+  <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='TextBox'>
+    <Border x:Name='bd' Background='{TemplateBinding Background}' BorderBrush='{TemplateBinding BorderBrush}' BorderThickness='1' CornerRadius='6' Padding='{TemplateBinding Padding}'>
+      <ScrollViewer x:Name='PART_ContentHost'/>
+    </Border>
+    <ControlTemplate.Triggers>
+      <Trigger Property='IsKeyboardFocused' Value='True'><Setter TargetName='bd' Property='BorderBrush' Value='#ACCENT'/></Trigger>
+    </ControlTemplate.Triggers>
+  </ControlTemplate></Setter.Value></Setter>
+</Style>");
 
         private static Style ButtonStyle => _buttonStyle ??= BuildButtonStyle();
 
