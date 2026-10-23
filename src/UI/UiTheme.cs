@@ -260,6 +260,23 @@ namespace MotionDesk.UI
         // συμπαγές μπλοκ αντί να γίνει πραγματική τρύπα διαφάνειας. Λύση: απενεργοποίηση εντελώς της
         // accent policy (AccentState=0) όσο είναι ενεργή η Πλήρης διαφάνεια, ώστε το color-key να
         // δουλέψει χωρίς παρέμβαση του DWM blur.
+        // DesktopFences-style (MIT) fence background: a flat tint colour at a given opacity over the desktop, no blur
+        // (ACCENT_ENABLE_TRANSPARENTGRADIENT). alpha is 0..255.
+        public static void ApplyTint(IntPtr handle, Color color, int alpha)
+        {
+            int gradientColor = (Math.Clamp(alpha, 0, 255) << 24) | (color.B << 16) | (color.G << 8) | color.R;   // ABGR
+            var accent = new ACCENT_POLICY { AccentState = 2, AccentFlags = 2, GradientColor = gradientColor };
+            int size = Marshal.SizeOf(accent);
+            IntPtr accentPtr = Marshal.AllocHGlobal(size);
+            try
+            {
+                Marshal.StructureToPtr(accent, accentPtr, false);
+                var data = new WINDOWCOMPOSITIONATTRIBDATA { Attribute = 19, SizeOfData = size, Data = accentPtr };
+                SetWindowCompositionAttribute(handle, ref data);
+            }
+            finally { Marshal.FreeHGlobal(accentPtr); }
+        }
+
         public static void Disable(IntPtr handle)
         {
             var accent = new ACCENT_POLICY { AccentState = 0, GradientColor = 0 };

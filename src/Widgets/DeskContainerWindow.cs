@@ -59,7 +59,7 @@ namespace MotionDesk.Widgets
         private System.Windows.Forms.Timer? _portalDebounce;
         private Label? _backLabel;
         private readonly HashSet<string> _selected = new(StringComparer.OrdinalIgnoreCase);
-        public int IconPx { get; set; } = 48;                     // 32 / 48 / 64
+        public int IconPx { get; set; } = 32;                     // 16 / 24 / 32 / 48 / 64 (DesktopFences sizes, default 32)
         public bool ShowLabels { get; set; } = true;
         public bool IsPortal => _portalFolder != null;
         internal IReadOnlyList<string> ItemPaths => _items.Select(i => i.Path).ToList();
@@ -71,8 +71,8 @@ namespace MotionDesk.Widgets
         public bool ExcludeFromQuickHide { get; set; }
         public Color AccentColor { get; set; } = Color.FromArgb(0, 170, 255);
         // Ζητήθηκε ρητά "να μπορεί να αλλαχθεί το μέγεθος και η γραμματοσειρά του τίτλου".
-        public string TitleFontFamily { get; set; } = "Segoe UI Semibold";
-        public float TitleFontSize { get; set; } = 10.5f;
+        public string TitleFontFamily { get; set; } = "Segoe UI";
+        public float TitleFontSize { get; set; } = 12f;
 
         public DeskContainerWindow(string containerId, string title, int x, int y, int width, int height)
         {
@@ -135,30 +135,13 @@ namespace MotionDesk.Widgets
             // (Διπλό-κλικ στη γραμμή τίτλου = μετονομασία, στυλ Fences — βλ. MouseDown παραπάνω.)
             titleBar.Paint += (_, e) =>
             {
-                // Γραμμή τίτλου με ΔΙΚΗ ΤΗΣ απόχρωση (σκούρο με τόνο του accent, ημιδιαφανές) ώστε να ξεχωρίζει από το υπόλοιπο
-                // παράθυρο, όπως στα Fences.
-                var header = Color.FromArgb(185,
-                    (int)(EffectiveAccent.R * 0.35 + 8), (int)(EffectiveAccent.G * 0.35 + 10), (int)(EffectiveAccent.B * 0.35 + 16));
-                using (var headerBrush = new SolidBrush(header)) e.Graphics.FillRectangle(headerBrush, 0, 0, titleBar.Width, TitleBarHeight);
+                // DesktopFences (MIT): no header band — just the centred white title on the tinted fence.
+                e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
                 using var titleBrush = new SolidBrush(Color.White);
-                using var font = new Font(TitleFontFamily, TitleFontSize, FontStyle.Bold);
-                // Κεντραρισμένος τίτλος: συμμετρική δέσμευση χώρου 2 κουμπιών αριστερά/δεξιά ώστε το κέντρο να είναι το κέντρο του παραθύρου.
+                using var font = new Font(TitleFontFamily, TitleFontSize, FontStyle.Regular);
                 var textRect = new RectangleF(TitleBarHeight * 2, 0, Math.Max(20, titleBar.Width - TitleBarHeight * 4), TitleBarHeight);
                 using var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap };
-                // title + item count ("Projects  12", or "3 / 12" while a search is active) — the count in a quieter colour
-                string count = _filter.Length > 0 ? $"{_grid.Controls.Count} / {_items.Count}" : _items.Count.ToString();
-                var titleSize = e.Graphics.MeasureString(_title, font, (int)textRect.Width, sf);
-                using var countFont = new Font("Segoe UI", 9f);
-                var countSize = e.Graphics.MeasureString(count, countFont);
-                float totalW = Math.Min(textRect.Width, titleSize.Width + 10 + countSize.Width);
-                float startX = textRect.X + (textRect.Width - totalW) / 2f;
-                var titleRect = new RectangleF(startX, textRect.Y, Math.Max(10, totalW - 10 - countSize.Width), textRect.Height);
-                using var leftSf = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap };
-                e.Graphics.DrawString(_title, font, titleBrush, titleRect, leftSf);
-                using var countBrush = new SolidBrush(Color.FromArgb(150, 255, 255, 255));
-                e.Graphics.DrawString(count, countFont, countBrush, new RectangleF(titleRect.Right + 10, textRect.Y, countSize.Width + 2, textRect.Height), leftSf);
-                using var separator = new Pen(Color.FromArgb(160, EffectiveAccent), 2f);
-                e.Graphics.DrawLine(separator, 0, TitleBarHeight - 1, titleBar.Width, TitleBarHeight - 1);
+                e.Graphics.DrawString(_title, font, titleBrush, textRect, sf);
             };
             titleBar.Resize += (_, _) => titleBar.Invalidate();
 
@@ -167,8 +150,9 @@ namespace MotionDesk.Widgets
             closeLabel.MouseLeave += (_, _) => closeLabel.ForeColor = Color.FromArgb(200, 255, 255, 255);
             closeLabel.Click += (_, _) => Close();
 
-            var lockLabel = new Label { Text = "🔓", AutoSize = false, Size = new Size(TitleBarHeight, TitleBarHeight), Dock = DockStyle.Right, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(200, 255, 255, 255), BackColor = Color.Transparent, Font = new Font("Segoe UI", 9), Cursor = Cursors.Hand };
-            lockLabel.Click += (_, _) => { IsLocked = !IsLocked; lockLabel.Text = IsLocked ? "🔒" : "🔓"; QueueSave(); };
+            // DesktopFences (MIT): 🛡 lock indicator top-right (red when locked), ♥ menu icon top-left.
+            var lockLabel = new Label { Text = "🛡", AutoSize = false, Size = new Size(TitleBarHeight, TitleBarHeight), Dock = DockStyle.Right, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(200, 255, 255, 255), BackColor = Color.Transparent, Font = new Font("Segoe UI Emoji", 11), Cursor = Cursors.Hand };
+            lockLabel.Click += (_, _) => { IsLocked = !IsLocked; lockLabel.ForeColor = IsLocked ? Color.FromArgb(255, 220, 50, 50) : Color.FromArgb(200, 255, 255, 255); QueueSave(); };
             _lockLabelRef = lockLabel;
 
             var menuLabel = new Label { Text = "☰", AutoSize = false, Size = new Size(TitleBarHeight, TitleBarHeight), Dock = DockStyle.Left, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(200, 255, 255, 255), BackColor = Color.Transparent, Font = new Font("Segoe UI", 10), Cursor = Cursors.Hand };
@@ -176,10 +160,9 @@ namespace MotionDesk.Widgets
             menuLabel.MouseLeave += (_, _) => menuLabel.ForeColor = Color.FromArgb(200, 255, 255, 255);
             menuLabel.Click += (_, _) => ShowContainerSettingsDialog();
 
-            // Ίδια σειρά προσθήκης με το ήδη-σωστό CreateNativePanel των widgets: lockLabel πριν
-            // το closeLabel ώστε το ✕ να καταλήξει στην ακριανή δεξιά θέση.
-            titleBar.Controls.Add(lockLabel);
+            // closeLabel first so the 🛡 lock ends up at the far right edge.
             titleBar.Controls.Add(closeLabel);
+            titleBar.Controls.Add(lockLabel);
             titleBar.Controls.Add(menuLabel);
             // Κουμπί "πίσω" για Folder Portal όταν έχεις μπει σε υποφάκελο.
             _backLabel = new Label { Text = "⬅", AutoSize = false, Size = new Size(TitleBarHeight, TitleBarHeight), Dock = DockStyle.Left, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(220, 255, 255, 255), BackColor = Color.Transparent, Font = new Font("Segoe UI", 11), Cursor = Cursors.Hand, Visible = false };
@@ -199,7 +182,7 @@ namespace MotionDesk.Widgets
             // αναλύσεις/DPI. Αυξήθηκε σε 18px για καθαρό, αδιαμφισβήτητο κενό κάτω από τη γραμμή τίτλου.
             // Ζητήθηκε ρητά (ξανά) "μετακίνησε ακόμα πιο κάτω... τα εικονίδια" — το προηγούμενο
             // πέρασμα αυτής της συνεδρίας ανέβασε το top padding 12px -> 18px, προφανώς όχι αρκετό.
-            _grid = new FlowLayoutPanel { Dock = DockStyle.Fill, BackColor = Color.Transparent, FlowDirection = FlowDirection.LeftToRight, WrapContents = true, AutoScroll = true, Padding = new Padding(8, 28, 8, 8), AllowDrop = true };
+            _grid = new FlowLayoutPanel { Dock = DockStyle.Fill, BackColor = Color.Transparent, FlowDirection = FlowDirection.LeftToRight, WrapContents = true, AutoScroll = true, Padding = new Padding(6, 4, 6, 6), AllowDrop = true };
             // Τα DeskContainers είναι πάντα σκούρο γυαλί (dark glass), ανεξάρτητα από το θέμα της
             // εφαρμογής — το scrollbar ακολουθεί πάντα το σκούρο στυλ.
             GlassBlur.ApplyScrollbarTheme(_grid, dark: true);
@@ -220,9 +203,16 @@ namespace MotionDesk.Widgets
             // Windows compositor αντί για χειροκίνητο MouseMove tracking.
             var resizeGrip = new Label
             {
-                Text = "⤡", AutoSize = false, Size = new Size(18, 18), Anchor = AnchorStyles.Bottom | AnchorStyles.Right,
-                TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(140, 255, 255, 255), BackColor = Color.Transparent,
-                Font = new Font("Segoe UI", 9), Cursor = Cursors.SizeNWSE
+                Text = "", AutoSize = false, Size = new Size(16, 16), Anchor = AnchorStyles.Bottom | AnchorStyles.Right,
+                BackColor = Color.Transparent, Cursor = Cursors.SizeNWSE
+            };
+            // DesktopFences (MIT): dotted triangle grip bottom-right.
+            resizeGrip.Paint += (_, e) =>
+            {
+                using var dot = new SolidBrush(Color.FromArgb(170, 255, 255, 255));
+                for (int row = 0; row < 3; row++)
+                    for (int col = 0; col <= row; col++)
+                        e.Graphics.FillRectangle(dot, 14 - col * 4 - 2, 14 - (2 - row) * 4 - 2 + 0, 2, 2);
             };
             resizeGrip.Location = new Point(Width - resizeGrip.Width - 2, Height - resizeGrip.Height - 2);
             resizeGrip.MouseDown += (_, e) => { if (e.Button == MouseButtons.Left && !IsLocked) { ReleaseCapture(); SendMessage(Handle, WM_NCLBUTTONDOWN, HTBOTTOMRIGHT, 0); } };
@@ -231,7 +221,7 @@ namespace MotionDesk.Widgets
             Resize += (_, _) => { if (!IsRolledUp) { _expandedHeight = Height; QueueSave(); } };
 
             LoadState(x, y);
-            lockLabel.Text = IsLocked ? "🔒" : "🔓";
+            lockLabel.ForeColor = IsLocked ? Color.FromArgb(255, 220, 50, 50) : Color.FromArgb(200, 255, 255, 255);
             RebuildGrid();
         }
 
@@ -534,7 +524,7 @@ namespace MotionDesk.Widgets
             renameBtn.Click += (_, _) => { var t = nameBox.Text.Trim(); if (t.Length > 0 && t != _title) { _title = t; _titleBarRef?.Invalidate(); QueueSave(); } };
 
             var lockCheck = new FlatCheckBox { Text = LocalizationManager.T("DCMenu.Lock"), Checked = IsLocked, AutoSize = true, BackColor = UiTheme.Surface };
-            lockCheck.CheckedChanged += (_, _) => { IsLocked = lockCheck.Checked; if (_lockLabelRef != null) _lockLabelRef.Text = IsLocked ? "🔒" : "🔓"; QueueSave(); };
+            lockCheck.CheckedChanged += (_, _) => { IsLocked = lockCheck.Checked; if (_lockLabelRef != null) _lockLabelRef.ForeColor = IsLocked ? Color.FromArgb(255, 220, 50, 50) : Color.FromArgb(200, 255, 255, 255); QueueSave(); };
 
             var excludeCheck = new FlatCheckBox { Text = LocalizationManager.T("DCMenu.ExcludeQuickHide"), Checked = ExcludeFromQuickHide, AutoSize = true, BackColor = UiTheme.Surface };
             excludeCheck.CheckedChanged += (_, _) => { ExcludeFromQuickHide = excludeCheck.Checked; QueueSave(); };
@@ -587,7 +577,7 @@ namespace MotionDesk.Widgets
             appearanceStack.Controls.Add(Row(titleFontCombo, titleSizeUpDown));
             string Ld(string el, string en) => LocalizationManager.CurrentLanguage == "el" ? el : en;
             var iconCombo = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 180 };
-            var iconChoices = new[] { (Ld("Μικρά (32)", "Small (32)"), 32), (Ld("Μεσαία (48)", "Medium (48)"), 48), (Ld("Μεγάλα (64)", "Large (64)"), 64) };
+            var iconChoices = new[] { (Ld("Μικροσκοπικά (16)", "Tiny (16)"), 16), (Ld("Πολύ μικρά (24)", "Small (24)"), 24), (Ld("Μικρά (32)", "Small (32)"), 32), (Ld("Μεσαία (48)", "Medium (48)"), 48), (Ld("Μεγάλα (64)", "Large (64)"), 64) };
             foreach (var c in iconChoices) iconCombo.Items.Add(c.Item1);
             iconCombo.SelectedIndex = Math.Max(0, Array.FindIndex(iconChoices, c => c.Item2 == IconPx));
             iconCombo.SelectedIndexChanged += (_, _) => { IconPx = iconChoices[iconCombo.SelectedIndex].Item2; RebuildGrid(); QueueSave(); };
@@ -925,7 +915,7 @@ namespace MotionDesk.Widgets
         // ακτίνα στρογγυλέματος ανά container.
         private void ApplyRoundedCorners()
         {
-            if (Width > 0 && Height > 0) UiTheme.ApplyRoundedRegion(this, 10);
+            if (Width > 0 && Height > 0) UiTheme.ApplyRoundedRegion(this, 6);
         }
 
         protected override void OnResize(EventArgs e)
@@ -946,13 +936,24 @@ namespace MotionDesk.Widgets
 
         // Το AccentColor αναμειγνύεται ελαφρά μέσα στο σκούρο γυάλινο φόντο (DWM blur) — ίδια
         // ιδέα με το accent-color tinting των πραγματικών Fences.
-        private void ApplyGlassBlur() => GlassBlur.Apply(Handle, EffectiveAccent, _backgroundOpacity);
+        // DesktopFences look: flat tint (default "Gray" #6E6E6E, TintValue 85%) at the container's opacity, no blur.
+        private void ApplyGlassBlur() => GlassBlur.ApplyTint(Handle, EffectiveAccent, (int)Math.Round(255 * 0.85 * _backgroundOpacity));
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            using var pen = new Pen(Color.FromArgb(100, 0, 0, 0), 1f);
+            using var path = MotionDesk.UI.UiTheme.RoundedPath(new Rectangle(0, 0, Width - 1, Height - 1), 6);
+            e.Graphics.DrawPath(pen, path);
+        }
 
         // ---- v2.2.0: χαρακτηριστικά εμπνευσμένα από το DesktopFences (MIT) - βλ. DeskContainerExtras.cs ----
         private Color? _chameleon;
         private static readonly int DefaultAccentArgb = Color.FromArgb(0, 170, 255).ToArgb();
         // Chameleon: τα containers που ΔΕΝ έχουν προσαρμοσμένο χρώμα παίρνουν το κυρίαρχο χρώμα του wallpaper.
-        public Color EffectiveAccent => _chameleon != null && AccentColor.ToArgb() == DefaultAccentArgb ? _chameleon.Value : AccentColor;
+        internal static readonly Color DefaultFenceColor = Color.FromArgb(0x6E, 0x6E, 0x6E);
+        public Color EffectiveAccent => AccentColor.ToArgb() == DefaultAccentArgb ? (_chameleon ?? DefaultFenceColor) : AccentColor;
 
         public void SetChameleon(Color? color)
         {
@@ -1084,7 +1085,7 @@ namespace MotionDesk.Widgets
                         _backgroundOpacity = state.WindowOpacity is > 0 and <= 1 ? state.WindowOpacity : 1.0;
                         Enum.TryParse(state.SortMode, out _sortMode);
                         AutoCollectExtensions = state.AutoCollectExtensions ?? "";
-                        IconPx = state.IconPx is 32 or 48 or 64 ? state.IconPx : 48;
+                        IconPx = state.IconPx is 16 or 24 or 32 or 48 or 64 ? state.IconPx : 32;
                         ShowLabels = state.ShowLabels;
                         if (!string.IsNullOrWhiteSpace(state.PortalFolder) && Directory.Exists(state.PortalFolder)) { _portalFolder = _portalCurrent = state.PortalFolder; WatchPortal(); }
                         // ΔΕΝ φιλτράρουμε τα στοιχεία που λείπουν: ένας offline δίσκος/USB/δικτυακός πόρος εξαφάνιζε μόνιμα τα στοιχεία του
@@ -1149,8 +1150,9 @@ namespace MotionDesk.Widgets
             _path = path; _onRemove = onRemove; _onOpen = onOpen; _iconPx = Math.Clamp(iconPx, 24, 96); _showLabels = showLabels;
             _isSelected = isSelected; _onSelect = onSelect; _getDragPaths = getDragPaths; _containerId = containerId;
             _onNavigate = onNavigate; _isPortal = isPortal; _onRemoveSelected = onRemoveSelected;
-            Size = new Size(Math.Max(_iconPx + 36, showLabels ? 84 : _iconPx + 20), _iconPx + (showLabels ? 52 : 24));
-            Margin = new Padding(3);
+            // DesktopFences (MIT) cell: 60px wide, icon on top, 10pt shadowed white label wrapping below (max 60px).
+            Size = new Size(Math.Max(60, _iconPx + 12), _iconPx + (showLabels ? 48 : 12));
+            Margin = new Padding(2);
             Cursor = Cursors.Hand;
             TabStop = true;
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.Selectable, true);
@@ -1259,16 +1261,21 @@ namespace MotionDesk.Widgets
                 g.FillPath(bg, path);
                 if (selected) { using var pen = new Pen(Color.FromArgb(150, 80, 190, 255)); g.DrawPath(pen, path); }
             }
-            if (_icon != null) g.DrawIcon(_icon, new Rectangle((Width - _iconPx) / 2, 8, _iconPx, _iconPx));
+            if (_icon != null) g.DrawIcon(_icon, new Rectangle((Width - _iconPx) / 2, 4, _iconPx, _iconPx));
 
             if (_showLabels)
             {
-                string name = Path.GetFileName(_path);
+                string name = Path.GetFileNameWithoutExtension(_path);
+                if (name.Length == 0) name = Path.GetFileName(_path);
                 if (name.Length == 0) name = _path;
-                using var font = new Font("Segoe UI", 8f);
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+                using var font = new Font("Segoe UI", 10f * 0.8f);        // 10pt WPF = 10 DIP ≈ 7.5pt GDI
                 using var textBrush = new SolidBrush(Color.White);
-                var textRect = new RectangleF(2, 8 + _iconPx + 4, Width - 4, Height - (8 + _iconPx + 6));
-                using var sf = new StringFormat { Alignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.LineLimit };
+                using var shadowBrush = new SolidBrush(Color.FromArgb(190, 0, 0, 0));
+                var textRect = new RectangleF(0, 4 + _iconPx + 2, Width, Height - (4 + _iconPx + 3));
+                var shadowRect = textRect; shadowRect.Offset(1, 1);
+                using var sf = new StringFormat { Alignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter };
+                g.DrawString(name, font, shadowBrush, shadowRect, sf);
                 g.DrawString(name, font, textBrush, textRect, sf);
             }
         }
@@ -1334,10 +1341,10 @@ namespace MotionDesk.Widgets
         public string SortMode { get; set; } = "None";
         // File types (extensions, comma-separated) that are collected automatically from the desktop into this container
         public string AutoCollectExtensions { get; set; } = "";
-        public string TitleFontFamily { get; set; } = "Segoe UI Semibold";
-        public float TitleFontSize { get; set; } = 10.5f;
+        public string TitleFontFamily { get; set; } = "Segoe UI";
+        public float TitleFontSize { get; set; } = 12f;
         public string? PortalFolder { get; set; }
-        public int IconPx { get; set; } = 48;
+        public int IconPx { get; set; } = 32;
         public bool ShowLabels { get; set; } = true;
     }
 
