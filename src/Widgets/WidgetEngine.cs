@@ -667,7 +667,7 @@ namespace MotionDesk.Widgets
             // δεν γινόταν ποτέ διαφανές. Τώρα διατηρείται μόνο στη λειτουργία Πλήρης διαφάνεια.
             bool fullyTransparent = UiTheme.IsFullyTransparent;
             BackColor = fullyTransparent ? Color.Black : UiTheme.Background;
-            TransparencyKey = fullyTransparent ? Color.Black : default;
+            TransparencyKey = UiTheme.IsColorKey ? Color.Black : default;
 
             var panel = new Panel { Dock = DockStyle.Fill, BackColor = UiTheme.SurfaceGlass, Padding = new Padding(14) };
             _themedPanel = panel;
@@ -678,8 +678,8 @@ namespace MotionDesk.Widgets
             closeLabel.MouseLeave += (_, _) => closeLabel.ForeColor = UiTheme.TextSecondary;
             closeLabel.Click += (_, _) => Close();
 
-            var lockLabel = new GlassLabel { Text = IsLocked ? "🔒" : "🔓", AutoSize = false, Size = new Size(22, 22), Dock = DockStyle.Right, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextSecondary, Font = new Font("Segoe UI", 9), Cursor = Cursors.Hand };
-            lockLabel.Click += (_, _) => { IsLocked = !IsLocked; lockLabel.Text = IsLocked ? "🔒" : "🔓"; SaveWidgetState(); };
+            var lockLabel = new LockGlyph { Locked = IsLocked, Size = new Size(22, 22), Dock = DockStyle.Right, ForeColor = UiTheme.TextSecondary };
+            lockLabel.Click += (_, _) => { IsLocked = !IsLocked; lockLabel.Locked = IsLocked; SaveWidgetState(); };
 
             var menuLabel = new GlassLabel { Text = "☰", AutoSize = false, Size = new Size(22, 22), Dock = DockStyle.Left, TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiTheme.TextSecondary, Font = new Font("Segoe UI", 10), Cursor = Cursors.Hand };
             menuLabel.MouseEnter += (_, _) => menuLabel.ForeColor = UiTheme.TextPrimary;
@@ -730,7 +730,7 @@ namespace MotionDesk.Widgets
                 if (IsDisposed) return;
                 panel.BackColor = UiTheme.SurfaceGlass;
                 BackColor = UiTheme.IsFullyTransparent ? Color.Black : UiTheme.Background;
-                TransparencyKey = UiTheme.IsFullyTransparent ? Color.Black : default;
+                TransparencyKey = UiTheme.IsColorKey ? Color.Black : default;
                 closeLabel.ForeColor = UiTheme.TextSecondary;
                 lockLabel.ForeColor = UiTheme.TextSecondary;
                 menuLabel.ForeColor = UiTheme.TextSecondary;
@@ -762,7 +762,12 @@ namespace MotionDesk.Widgets
         // να μην υπάρχει συμπαγές μαύρο/λευκό πλαίσιο αλλά ένα πολύ ελαφρύ, σχεδόν άχρωμο θόλωμα.
         private void ApplyGlassBlur()
         {
-            if (UiTheme.IsFullyTransparent) { GlassBlur.Disable(Handle); return; }
+            if (UiTheme.IsFullyTransparent)
+            {
+                // colour-key = pure see-through; with a tint the widget is a translucent coloured surface like the DeskContainers
+                if (UiTheme.IsColorKey) GlassBlur.Disable(Handle); else GlassBlur.ApplyTint(Handle, UiTheme.TintColor, (int)Math.Round(UiTheme.TintAlpha * _backgroundOpacity));
+                return;
+            }
             GlassBlur.Apply(Handle, UiTheme.AccentCyan, _backgroundOpacity);
         }
 

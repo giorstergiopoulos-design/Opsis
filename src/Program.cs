@@ -84,7 +84,10 @@ namespace MotionDesk
 
             // Single-instance: δύο ταυτόχρονες εκτελέσεις θα πάλευαν για τα ίδια global hotkeys,
             // θα έφτιαχναν διπλά wallpaper windows/tray icons και θα έγραφαν τα ίδια config αρχεία.
-            using var singleInstance = new System.Threading.Mutex(true, @"Local\Opsis.SingleInstance", out bool isFirst);
+            // An isolated data folder (OPSIS_APPDATA, used by automated tests) gets its own mutex, so a test run never collides with the user's real instance.
+            string isolatedData = Environment.GetEnvironmentVariable("OPSIS_APPDATA") ?? "";
+            string mutexName = isolatedData.Length == 0 ? @"Local\Opsis.SingleInstance" : @"Local\Opsis.SingleInstance." + (uint)isolatedData.ToLowerInvariant().GetHashCode();
+            using var singleInstance = new System.Threading.Mutex(true, mutexName, out bool isFirst);
             if (!isFirst) return;
 
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);

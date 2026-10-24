@@ -108,7 +108,7 @@ namespace Desktop_Fences
                     var updateMsg = new RemoteAnnouncement
                     {
                         Id = $"UPDATE_{remoteVer}", // Unique ID ensures they see it once/max count
-                        Title = "Update Available",
+                        Title = Loc.T("Update Available"),
                         Body = $"A new version ({remoteVer}) is available.\nYou are currently using {currentVer}.",
                         Type = meta.CriticalUpdate ? "Alert" : "Info",
                         Link = !string.IsNullOrEmpty(meta.DownloadUrl) ? meta.DownloadUrl : "https://github.com/limbo666/DesktopFences/releases",

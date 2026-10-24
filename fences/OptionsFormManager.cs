@@ -35,7 +35,7 @@ namespace Desktop_Fences
 
                 _optionsWindow = new Window
                 {
-                    Title = "Opsis Fences Options",
+                    Title = Loc.T("Opsis Fences Options"),
                     Width = 800,
                     Height = 850,
                     WindowStartupLocation = WindowStartupLocation.CenterScreen,
@@ -77,7 +77,7 @@ namespace Desktop_Fences
 
                 TextBlock titleBlock = new TextBlock
                 {
-                    Text = "Options",
+                    Text = Loc.T("Options"),
                     FontFamily = new FontFamily("Segoe UI"),
                     FontSize = 16,
                     FontWeight = FontWeights.Bold,
@@ -88,7 +88,7 @@ namespace Desktop_Fences
 
                 Button closeButton = new Button
                 {
-                    Content = "✕",
+                    Content = Loc.T("✕"),
                     Width = 32,
                     Height = 32,
                     Foreground = Brushes.White,
@@ -96,7 +96,7 @@ namespace Desktop_Fences
                     BorderThickness = new Thickness(0),
                     Cursor = Cursors.Hand
                 };
-                closeButton.Click += (s, e) => _optionsWindow.Close();
+                closeButton.Click += (s, e) => _optionsWindow?.Close();
 
                 Grid.SetColumn(titleBlock, 0); headerGrid.Children.Add(titleBlock);
                 Grid.SetColumn(closeButton, 1); headerGrid.Children.Add(closeButton);
@@ -111,7 +111,7 @@ namespace Desktop_Fences
                 mainGrid.Children.Add(headerBorder);
                 mainBorder.Child = mainGrid;
                 _optionsWindow.Content = mainBorder;
-                _optionsWindow.KeyDown += (s, e) => { if (e.Key == Key.Enter) SaveOptions(); else if (e.Key == Key.Escape) _optionsWindow.Close(); };
+                _optionsWindow.KeyDown += (s, e) => { if (e.Key == Key.Enter) SaveOptions(); else if (e.Key == Key.Escape) _optionsWindow?.Close(); };
                 // Add Pause Here:
                 AutoOrganizeManager.Pause();
 
@@ -249,7 +249,7 @@ namespace Desktop_Fences
 
             // --- CHAMELEON TOGGLE ---
             var chamCb = CreateCheckBoxReturn(c, "Enable Chameleon Mode (Auto-match Wallpaper Color)", "EnableChameleon", SettingsManager.EnableChameleonMode);
-            chamCb.ToolTip = "Fences will automatically change color to blend perfectly with your desktop background.";
+            chamCb.ToolTip = Loc.T("Fences will automatically change color to blend perfectly with your desktop background.");
 
             CreateCheckBox(c, "Auto roll-up (fences roll up when the mouse leaves and expand on hover)", "AutoRollUpOnHover", SettingsManager.AutoRollUpOnHover);
             CreateSliderControl(c, "Fence Tint", "TintSlider", SettingsManager.TintValue);
@@ -261,7 +261,7 @@ namespace Desktop_Fences
             CreateLaunchEffectComboBox(c);
 
             CreateSectionHeader(c, "Icons", ColorStyle);
-            c.Children.Add(new TextBlock { Text = "Menu Icon", FontWeight = FontWeights.SemiBold, Margin = new Thickness(15, 5, 0, 5) });
+            c.Children.Add(new TextBlock { Text = Loc.T("Menu Icon"), FontWeight = FontWeights.SemiBold, Margin = new Thickness(15, 5, 0, 5) });
             CreateIconRadioButtonGroup(c, "MenuIconGroup", new Dictionary<string, int> { { "⋯", 0 }, { "☰", 1 }, { "≣", 2 }, { "𓃑", 3 } }, SettingsManager.MenuIcon);
 
             t.Content = new ScrollViewer { Content = c, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
@@ -321,7 +321,7 @@ namespace Desktop_Fences
             else
             {
                 btnBound.Opacity = 0.90;
-                btnBound.ToolTip = "Auto-reposition is active (Hidden Setting). Fences are already managed automatically.";
+                btnBound.ToolTip = Loc.T("Auto-reposition is active (Hidden Setting). Fences are already managed automatically.");
             }
 
             c.Children.Add(btnBound);
@@ -331,7 +331,7 @@ namespace Desktop_Fences
             CreateSectionHeader(c, "Reset", Colors.Red);
             Button r1 = CreateStyledButton("Reset Styles", Color.FromRgb(108, 117, 125));
             r1.Width = 255; r1.Height = 45; r1.Margin = new Thickness(0, 0, 0, 15);
-            r1.Click += (s, e) => { if (MessageBoxesManager.ShowCustomYesNoMessageBox("Reset all visual customizations?", "Reset")) { FenceManager.ResetAllCustomizations(); _optionsWindow.Close(); } };
+            r1.Click += (s, e) => { if (MessageBoxesManager.ShowCustomYesNoMessageBox("Reset all visual customizations?", "Reset")) { FenceManager.ResetAllCustomizations(); _optionsWindow?.Close(); } };
 
             Button r2 = CreateStyledButton("Clear All Data", Color.FromRgb(220, 53, 69));
             r2.Width = 255; r2.Height = 45;
@@ -375,7 +375,7 @@ namespace Desktop_Fences
             CheckBox autoCb = new CheckBox
             {
                 Name = "EnableProfileAutomation",
-                Content = "Enable Profile Automation",
+                Content = Loc.T("Enable Profile Automation"),
                 IsChecked = SettingsManager.EnableProfileAutomation,
                 FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 13,
@@ -432,7 +432,7 @@ namespace Desktop_Fences
 
             TextBlock infoText = new TextBlock
             {
-                Text = "Note: Changes to Global Hotkeys require an application restart to take effect.",
+                Text = Loc.T("Note: Changes to Global Hotkeys require an application restart to take effect."),
                 FontStyle = FontStyles.Italic,
                 Foreground = Brushes.Gray,
                 Margin = new Thickness(15, 20, 0, 0)
@@ -456,10 +456,10 @@ namespace Desktop_Fences
 
             string curModLower = (currentMod ?? "").ToLower();
 
-            CheckBox chkCtrl = new CheckBox { Name = namePrefix + "Ctrl", Content = "Ctrl", IsChecked = curModLower.Contains("ctrl") || curModLower.Contains("control"), Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Center };
-            CheckBox chkAlt = new CheckBox { Name = namePrefix + "Alt", Content = "Alt", IsChecked = curModLower.Contains("alt"), Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Center };
-            CheckBox chkShift = new CheckBox { Name = namePrefix + "Shift", Content = "Shift", IsChecked = curModLower.Contains("shift"), Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Center };
-            CheckBox chkWin = new CheckBox { Name = namePrefix + "Win", Content = "Win", IsChecked = curModLower.Contains("win"), Margin = new Thickness(0, 0, 15, 0), VerticalAlignment = VerticalAlignment.Center };
+            CheckBox chkCtrl = new CheckBox { Name = namePrefix + "Ctrl", Content = Loc.T("Ctrl"), IsChecked = curModLower.Contains("ctrl") || curModLower.Contains("control"), Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Center };
+            CheckBox chkAlt = new CheckBox { Name = namePrefix + "Alt", Content = Loc.T("Alt"), IsChecked = curModLower.Contains("alt"), Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Center };
+            CheckBox chkShift = new CheckBox { Name = namePrefix + "Shift", Content = Loc.T("Shift"), IsChecked = curModLower.Contains("shift"), Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Center };
+            CheckBox chkWin = new CheckBox { Name = namePrefix + "Win", Content = Loc.T("Win"), IsChecked = curModLower.Contains("win"), Margin = new Thickness(0, 0, 15, 0), VerticalAlignment = VerticalAlignment.Center };
 
             spMods.Children.Add(chkCtrl);
             spMods.Children.Add(chkAlt);
@@ -468,7 +468,7 @@ namespace Desktop_Fences
 
             if (hasKeySelector)
             {
-                spMods.Children.Add(new TextBlock { Text = "+", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 0) });
+                spMods.Children.Add(new TextBlock { Text = Loc.T("+"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 0) });
                 ComboBox cmb = new ComboBox { Name = namePrefix + "Key", Width = 100, VerticalAlignment = VerticalAlignment.Center };
                 foreach (var kvp in AvailableKeys)
                 {
@@ -503,7 +503,7 @@ namespace Desktop_Fences
             // NEW: Live Rule Statistics (Horizontal Layout)
             StackPanel statsPanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(15, 15, 0, 15) };
             TextBlock txtTotalRules = new TextBlock { Text = $"Total number of rules: {AutoOrganizeManager.Rules.Count}", FontFamily = new FontFamily("Segoe UI"), FontSize = 13, FontWeight = FontWeights.Medium };
-            TextBlock txtSeparator = new TextBlock { Text = "   -   ", FontFamily = new FontFamily("Segoe UI"), FontSize = 13, FontWeight = FontWeights.Medium, Foreground = Brushes.Gray };
+            TextBlock txtSeparator = new TextBlock { Text = Loc.T("   -   "), FontFamily = new FontFamily("Segoe UI"), FontSize = 13, FontWeight = FontWeights.Medium, Foreground = Brushes.Gray };
             TextBlock txtEnabledRules = new TextBlock { Text = $"Enabled: {AutoOrganizeManager.Rules.Count(r => r.IsEnabled)}", FontFamily = new FontFamily("Segoe UI"), FontSize = 13, FontWeight = FontWeights.Bold, Foreground = new SolidColorBrush(Color.FromRgb(34, 139, 34)) };
             statsPanel.Children.Add(txtTotalRules);
             statsPanel.Children.Add(txtSeparator);
@@ -542,7 +542,7 @@ namespace Desktop_Fences
 
             TextBlock infoText = new TextBlock
             {
-                Text = "Note: Auto-Organize continuously monitors your Desktop for new files. When a file matches an enabled rule's conditions, it is automatically and physically moved to your target Portal Fence or Folder. Use this to keep your Desktop permanently clean and automatically route downloads to their proper locations.",
+                Text = Loc.T("Note: Auto-Organize continuously monitors your Desktop for new files. When a file matches an enabled rule's conditions, it is automatically and physically moved to your target Portal Fence or Folder. Use this to keep your Desktop permanently clean and automatically route downloads to their proper locations."),
                 FontStyle = FontStyles.Italic,
                 Foreground = Brushes.Gray,
                 Margin = new Thickness(15, 20, 0, 0),
@@ -610,7 +610,7 @@ namespace Desktop_Fences
             Grid g = new Grid { Margin = new Thickness(0, 10, 0, 10) };
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) });
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
-            g.Children.Add(new TextBlock { Text = "Color", FontSize = 13, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 0, 10, 0) });
+            g.Children.Add(new TextBlock { Text = Loc.T("Color"), FontSize = 13, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 0, 10, 0) });
             ComboBox cb = new ComboBox { Name = "ColorComboBox", Height = 25, FontSize = 13, VerticalAlignment = VerticalAlignment.Center };
             foreach (string c in new[] { "Gray", "Black", "White", "Beige", "Green", "Purple", "Fuchsia", "Yellow", "Orange", "Red", "Blue", "Bismark" }) cb.Items.Add(c);
             cb.SelectedItem = SettingsManager.SelectedColor;
@@ -622,8 +622,8 @@ namespace Desktop_Fences
             Grid g = new Grid { Margin = new Thickness(0, 10, 0, 10) };
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) });
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
-            g.Children.Add(new TextBlock { Text = "Title Bar", FontSize = 13, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 0, 10, 0) });
-            ComboBox cb = new ComboBox { Name = "TitleBarColorComboBox", Height = 25, FontSize = 13, VerticalAlignment = VerticalAlignment.Center, ToolTip = "Auto = a darker shade of the fence colour" };
+            g.Children.Add(new TextBlock { Text = Loc.T("Title Bar"), FontSize = 13, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 0, 10, 0) });
+            ComboBox cb = new ComboBox { Name = "TitleBarColorComboBox", Height = 25, FontSize = 13, VerticalAlignment = VerticalAlignment.Center, ToolTip = Loc.T("Auto = a darker shade of the fence colour") };
             foreach (string c in new[] { "Auto", "Black", "Gray", "White", "Beige", "Green", "Purple", "Fuchsia", "Yellow", "Orange", "Red", "Blue", "Bismark", "Teal" }) cb.Items.Add(c);
             cb.SelectedItem = SettingsManager.TitleBarColor;
             if (cb.SelectedItem == null) cb.SelectedIndex = 0;
@@ -635,7 +635,7 @@ namespace Desktop_Fences
             Grid g = new Grid { Margin = new Thickness(0, 10, 0, 10) };
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) });
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
-            g.Children.Add(new TextBlock { Text = "Effect", FontSize = 13, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 0, 10, 0) });
+            g.Children.Add(new TextBlock { Text = Loc.T("Effect"), FontSize = 13, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 0, 10, 0) });
             ComboBox cb = new ComboBox { Name = "LaunchEffectComboBox", Height = 25, FontSize = 13, VerticalAlignment = VerticalAlignment.Center };
             foreach (string e in new[] { "Zoom", "Bounce", "FadeOut", "SlideUp", "Rotate", "Agitate", "GrowAndFly", "Pulse", "Elastic", "Flip3D", "Spiral", "Shockwave", "Matrix", "Supernova", "Teleport" }) cb.Items.Add(e);
             cb.SelectedIndex = (int)SettingsManager.LaunchEffect;
@@ -649,7 +649,7 @@ namespace Desktop_Fences
             Grid g = new Grid { Margin = new Thickness(0, 10, 0, 10) };
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(120) });
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(120) });
-            g.Children.Add(new TextBlock { Text = "Minimum Log Level", FontSize = 13, VerticalAlignment = VerticalAlignment.Center });
+            g.Children.Add(new TextBlock { Text = Loc.T("Minimum Log Level"), FontSize = 13, VerticalAlignment = VerticalAlignment.Center });
             ComboBox cb = new ComboBox { Name = "LogLevelComboBox", Height = 25, FontSize = 13, VerticalAlignment = VerticalAlignment.Center };
             foreach (var l in new[] { "Debug", "Info", "Warn", "Error" }) cb.Items.Add(l);
             cb.SelectedItem = SettingsManager.MinLogLevel.ToString();
@@ -914,7 +914,7 @@ namespace Desktop_Fences
                 TrayManager.Instance?.UpdateTrayIcon();
                 Utility.UpdateFenceVisuals();
 
-                _optionsWindow.Close();
+                _optionsWindow?.Close();
             }
             catch (Exception ex)
             {
@@ -929,10 +929,10 @@ namespace Desktop_Fences
             Grid.SetRow(f, 2);
             StackPanel sp = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
 
-            Button c = new Button { Content = "Cancel", Width = 100, Height = 34, FontWeight = FontWeights.Bold, Background = Brushes.White, BorderBrush = new SolidColorBrush(Color.FromRgb(218, 220, 224)), BorderThickness = new Thickness(1), Margin = new Thickness(0, 0, 10, 0), Cursor = Cursors.Hand };
-            c.Click += (s, e) => _optionsWindow.Close();
+            Button c = new Button { Content = Loc.T("Cancel"), Width = 100, Height = 34, FontWeight = FontWeights.Bold, Background = Brushes.White, BorderBrush = new SolidColorBrush(Color.FromRgb(218, 220, 224)), BorderThickness = new Thickness(1), Margin = new Thickness(0, 0, 10, 0), Cursor = Cursors.Hand };
+            c.Click += (s, e) => _optionsWindow?.Close();
 
-            Button sv = new Button { Content = "Save", Width = 100, Height = 34, FontWeight = FontWeights.Bold, Background = new SolidColorBrush(_userAccentColor), Foreground = Brushes.White, BorderThickness = new Thickness(0), Cursor = Cursors.Hand };
+            Button sv = new Button { Content = Loc.T("Save"), Width = 100, Height = 34, FontWeight = FontWeights.Bold, Background = new SolidColorBrush(_userAccentColor), Foreground = Brushes.White, BorderThickness = new Thickness(0), Cursor = Cursors.Hand };
             sv.Click += (s, e) => SaveOptions();
 
             sp.Children.Add(c); sp.Children.Add(sv); f.Child = sp; mainGrid.Children.Add(f);
@@ -943,13 +943,13 @@ namespace Desktop_Fences
             Border d = new Border { Background = new SolidColorBrush(Color.FromRgb(255, 248, 225)), BorderBrush = new SolidColorBrush(Color.FromRgb(255, 193, 7)), BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(20) };
             Grid.SetRow(d, 3);
             StackPanel sp = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-            sp.Children.Add(new TextBlock { Text = "Support the Maintenance and Enhancement of This Project by Donating", FontSize = 13, Foreground = new SolidColorBrush(Color.FromRgb(102, 77, 3)), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 15, 0) });
-            Button b = new Button { Content = "♥ Donate via PayPal", FontSize = 14, Background = new SolidColorBrush(Color.FromRgb(255, 193, 7)), Foreground = Brushes.White, BorderThickness = new Thickness(0), Padding = new Thickness(15, 6, 15, 6), Cursor = Cursors.Hand };
+            sp.Children.Add(new TextBlock { Text = Loc.T("Support the Maintenance and Enhancement of This Project by Donating"), FontSize = 13, Foreground = new SolidColorBrush(Color.FromRgb(102, 77, 3)), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 15, 0) });
+            Button b = new Button { Content = Loc.T("♥ Donate via PayPal"), FontSize = 14, Background = new SolidColorBrush(Color.FromRgb(255, 193, 7)), Foreground = Brushes.White, BorderThickness = new Thickness(0), Padding = new Thickness(15, 6, 15, 6), Cursor = Cursors.Hand };
             b.Click += (s, e) => { try { Process.Start(new ProcessStartInfo { FileName = "https://www.paypal.com/donate/?hosted_button_id=M8H4M4R763RBE", UseShellExecute = true }); } catch { } };
             sp.Children.Add(b); d.Child = sp; mainGrid.Children.Add(d);
         }
 
-        private static void RestoreBackup()
+        internal static void RestoreBackup()
         {
             try
             {
@@ -962,7 +962,7 @@ namespace Desktop_Fences
                     if (d.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                     {
                         BackupManager.RestoreFromBackup(d.SelectedPath);
-                        _optionsWindow.Close();
+                        _optionsWindow?.Close();
                         TrayManager.reloadAllFences();
                     }
                 }
@@ -978,7 +978,7 @@ namespace Desktop_Fences
             BackupManager.OpenBackupsFolder();
         }
 
-        private static void OpenLogFile()
+        internal static void OpenLogFile()
         {
             try
             {
@@ -989,7 +989,7 @@ namespace Desktop_Fences
             catch { }
         }
 
-        private static void PerformFullFactoryReset()
+        internal static void PerformFullFactoryReset()
         {
             if (MessageBoxesManager.ShowCustomYesNoMessageBox("WARNING: This will delete ALL fences, shortcuts, and settings for the CURRENT PROFILE!\n\nAre you sure you want to proceed?", "Factory Reset"))
             {
@@ -1025,7 +1025,7 @@ namespace Desktop_Fences
                     // 4. Reload to apply the "Empty" state
                     SettingsManager.LoadSettings();
                     FenceManager.ReloadFences();
-                    _optionsWindow.Close();
+                    _optionsWindow?.Close();
                 }
                 catch (Exception ex)
                 {

@@ -16,7 +16,7 @@ namespace Desktop_Fences
         public ProfileManagerForm()
         {
             // Window Setup
-            Title = "Profile Manager";
+            Title = Loc.T("Profile Manager");
             Width = 480;
             Height = 720; // Height increased to prevent footer cutoff
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
@@ -66,10 +66,10 @@ namespace Desktop_Fences
             headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
             StackPanel titleStack = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-            titleStack.Children.Add(new TextBlock { Text = "Profile Manager", FontSize = 18, FontWeight = FontWeights.Bold, Foreground = Brushes.White });
+            titleStack.Children.Add(new TextBlock { Text = Loc.T("Profile Manager"), FontSize = 18, FontWeight = FontWeights.Bold, Foreground = Brushes.White });
             // Subtitle removed or kept small to fit clean header style
 
-            Button closeBtn = new Button { Content = "✕", Background = Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = Brushes.White, FontSize = 16, Cursor = System.Windows.Input.Cursors.Hand, VerticalAlignment = VerticalAlignment.Center };
+            Button closeBtn = new Button { Content = Loc.T("✕"), Background = Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = Brushes.White, FontSize = 16, Cursor = System.Windows.Input.Cursors.Hand, VerticalAlignment = VerticalAlignment.Center };
             closeBtn.Click += (s, e) => Close();
 
             headerGrid.Children.Add(titleStack);
@@ -98,7 +98,7 @@ namespace Desktop_Fences
 
             Button btnAdd = new Button
             {
-                Content = "Create",
+                Content = Loc.T("Create"),
                 Height = 34,
                 Width = 100,
                 Margin = new Thickness(10, 0, 0, 0),
@@ -138,7 +138,7 @@ namespace Desktop_Fences
             };
             Button btnClose = new Button
             {
-                Content = "Close",
+                Content = Loc.T("Close"),
                 Width = 100,
                 Height = 34,
                 HorizontalAlignment = HorizontalAlignment.Right,
@@ -217,7 +217,7 @@ namespace Desktop_Fences
                 if (isActive)
                 {
                     Border badge = new Border { Background = new SolidColorBrush(Color.FromRgb(220, 255, 220)), CornerRadius = new CornerRadius(0), Margin = new Thickness(10, 0, 0, 0), Padding = new Thickness(5, 1, 5, 1) };
-                    badge.Child = new TextBlock { Text = "Active", FontSize = 10, Foreground = Brushes.Green };
+                    badge.Child = new TextBlock { Text = Loc.T("Active"), FontSize = 10, Foreground = Brushes.Green };
                     nameStack.Children.Add(badge);
                 }
                 Grid.SetColumn(nameStack, 1);

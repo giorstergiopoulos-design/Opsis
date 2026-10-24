@@ -25,7 +25,7 @@ namespace Desktop_Fences
                 // 1. Window Setup (Matches ItemMoveDialog)
                 var importWindow = new Window
                 {
-                    Title = "Import Tab",
+                    Title = Loc.T("Import Tab"),
                     Width = 480,
                     Height = 600,
                     WindowStartupLocation = WindowStartupLocation.CenterScreen,
@@ -71,7 +71,7 @@ namespace Desktop_Fences
                 StackPanel titlePanel = new StackPanel();
                 TextBlock mainTitle = new TextBlock
                 {
-                    Text = "Import Tab",
+                    Text = Loc.T("Import Tab"),
                     FontSize = 16,
                     FontWeight = FontWeights.SemiBold,
                     Foreground = System.Windows.Media.Brushes.White,
@@ -89,7 +89,7 @@ namespace Desktop_Fences
 
                 Button closeButton = new Button
                 {
-                    Content = "✕",
+                    Content = Loc.T("✕"),
                     Width = 30,
                     Height = 30,
                     FontSize = 16,
@@ -118,7 +118,7 @@ namespace Desktop_Fences
                 StackPanel contentStack = new StackPanel();
                 contentStack.Children.Add(new TextBlock
                 {
-                    Text = "Select a source fence or tab to import:",
+                    Text = Loc.T("Select a source fence or tab to import:"),
                     FontSize = 13,
                     FontWeight = FontWeights.Medium,
                     Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(95, 99, 104)),
@@ -157,7 +157,7 @@ namespace Desktop_Fences
 
                 Button cancelButton = new Button
                 {
-                    Content = "Cancel",
+                    Content = Loc.T("Cancel"),
                     Width = 100,
                     Height = 36,
                     FontSize = 13,
@@ -227,7 +227,7 @@ namespace Desktop_Fences
                         Padding = new Thickness(12, 8, 12, 8)
                     };
                     StackPanel headerStack = new StackPanel { Orientation = Orientation.Horizontal };
-                    headerStack.Children.Add(new TextBlock { Text = "📂", FontSize = 16, Margin = new Thickness(0, 0, 10, 0) });
+                    headerStack.Children.Add(new TextBlock { Text = Loc.T("📂"), FontSize = 16, Margin = new Thickness(0, 0, 10, 0) });
                     headerStack.Children.Add(new TextBlock
                     {
                         Text = fenceTitle,
@@ -266,7 +266,7 @@ namespace Desktop_Fences
             {
                 targetsPanel.Children.Add(new TextBlock
                 {
-                    Text = "No other Data Fences found to import.",
+                    Text = Loc.T("No other Data Fences found to import."),
                     Foreground = Brushes.Gray,
                     FontStyle = FontStyles.Italic,
                     Margin = new Thickness(5)

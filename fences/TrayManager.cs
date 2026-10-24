@@ -240,16 +240,16 @@ namespace Desktop_Fences
             }
 
             var trayMenu = new ContextMenuStrip();
-            trayMenu.Items.Add("About...", null, (s, e) => AboutFormManager.ShowAboutForm());
-            trayMenu.Items.Add("Options...", null, (s, e) => OptionsFormManager.ShowOptionsForm());
+            trayMenu.Items.Add(Loc.T("About..."), null, (s, e) => AboutFormManager.ShowAboutForm());
+            trayMenu.Items.Add(Loc.T("Options..."), null, (s, e) => OpsisBridge.OpenOpsisSettings());
             trayMenu.Items.Add(new ToolStripSeparator());
 
             // Profiles Submenu
-            _profilesMenuItem = new ToolStripMenuItem("Profiles");
+            _profilesMenuItem = new ToolStripMenuItem(Loc.T("Profiles"));
             trayMenu.Items.Add(_profilesMenuItem);
 
             // Standalone Automation Toggle with explicit Save
-            _automationMenuItem = new ToolStripMenuItem("Enable Profile Automation") { CheckOnClick = true };
+            _automationMenuItem = new ToolStripMenuItem(Loc.T("Enable Profile Automation")) { CheckOnClick = true };
             _automationMenuItem.Checked = SettingsManager.EnableProfileAutomation;
             _automationMenuItem.Click += (s, e) => {
                 SettingsManager.EnableProfileAutomation = _automationMenuItem.Checked;
@@ -261,7 +261,7 @@ namespace Desktop_Fences
             trayMenu.Items.Add(new ToolStripSeparator());
 
             // --- SMART DESKTOP OPTIONS ---
-            trayMenu.Items.Add("Smart Desktop Rules...", null, (s, e) =>
+            trayMenu.Items.Add(Loc.T("Smart Desktop Rules..."), null, (s, e) =>
             {
                 System.Windows.Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
                 {
@@ -269,7 +269,7 @@ namespace Desktop_Fences
                 }));
             });
 
-            _autoOrganizeMenuItem = new ToolStripMenuItem("Enable Auto-Organize") { CheckOnClick = true };
+            _autoOrganizeMenuItem = new ToolStripMenuItem(Loc.T("Enable Auto-Organize")) { CheckOnClick = true };
             _autoOrganizeMenuItem.Checked = SettingsManager.EnableAutoOrganize;
             _autoOrganizeMenuItem.Click += (s, e) =>
             {
@@ -286,11 +286,11 @@ namespace Desktop_Fences
             trayMenu.Items.Add(new ToolStripSeparator());
             // --- END SMART DESKTOP OPTIONS ---
 
-            trayMenu.Items.Add("Reload All Fences", null, async (s, e) => { await reloadAllFences(); });
+            trayMenu.Items.Add(Loc.T("Reload All Fences"), null, async (s, e) => { await reloadAllFences(); });
 
             trayMenu.Items.Add(new ToolStripSeparator());
 
-            _showHiddenFencesItem = new ToolStripMenuItem("Show Hidden Fences") { Enabled = false };
+            _showHiddenFencesItem = new ToolStripMenuItem(Loc.T("Show Hidden Fences")) { Enabled = false };
             trayMenu.Items.Add(_showHiddenFencesItem);
 
             string focusHotkeyStr = GetFocusFenceHotkeyString();
@@ -304,7 +304,7 @@ namespace Desktop_Fences
             });
 
             trayMenu.Items.Add(new ToolStripSeparator());
-            trayMenu.Items.Add("Exit", null, (s, e) => System.Windows.Application.Current.Shutdown());
+            trayMenu.Items.Add(Loc.T("Exit"), null, (s, e) => System.Windows.Application.Current.Shutdown());
 
             _trayIcon.ContextMenuStrip = trayMenu;
 
@@ -318,7 +318,7 @@ namespace Desktop_Fences
         {
             var waitWindow = new System.Windows.Window
             {
-                Title = "Opsis Fences",
+                Title = Loc.T("Opsis Fences"),
                 Width = 300,
                 Height = 150,
                 WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen,
@@ -352,7 +352,7 @@ namespace Desktop_Fences
 
             var titleText = new System.Windows.Controls.TextBlock
             {
-                Text = "Opsis Fences",
+                Text = Loc.T("Opsis Fences"),
                 FontFamily = new System.Windows.Media.FontFamily("Segoe UI"),
                 FontSize = 16,
                 FontWeight = System.Windows.FontWeights.Medium,
@@ -413,7 +413,7 @@ namespace Desktop_Fences
 
             var waitText = new System.Windows.Controls.TextBlock
             {
-                Text = "Reloading all fences, please wait...",
+                Text = Loc.T("Reloading all fences, please wait..."),
                 FontFamily = new System.Windows.Media.FontFamily("Segoe UI"),
                 FontSize = 12,
                 Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(95, 99, 104)),
@@ -564,7 +564,7 @@ namespace Desktop_Fences
             _profilesMenuItem.DropDownItems.Add(new ToolStripSeparator());
 
             // 2. Quick Action: Create New Profile (Keep this for speed)
-            var createItem = new ToolStripMenuItem("Create New Profile...");
+            var createItem = new ToolStripMenuItem(Loc.T("Create New Profile..."));
             createItem.Click += (s, e) =>
             {
                 string newName = Microsoft.VisualBasic.Interaction.InputBox("Enter name for new profile:", "New Profile");
@@ -585,7 +585,7 @@ namespace Desktop_Fences
             _profilesMenuItem.DropDownItems.Add(createItem);
 
             // 3. Full UI: Manage Profiles (The new form)
-            var manageItem = new ToolStripMenuItem("Manage Profiles...");
+            var manageItem = new ToolStripMenuItem(Loc.T("Manage Profiles..."));
             manageItem.Click += (s, e) =>
             {
                 // Open the new Manager Window

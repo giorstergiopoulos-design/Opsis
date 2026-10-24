@@ -20,6 +20,14 @@ namespace Desktop_Fences
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
+            if (e.Args.Any(a => a.Equals("--unhide-desktop", StringComparison.OrdinalIgnoreCase)))
+            {
+                DesktopOriginals.UnhideAllStandalone();     // used by the uninstaller
+                Shutdown();
+                return;
+            }
+            Exit += (s, ev) => DesktopOriginals.ShowAll();     // a normal exit gives the desktop icons back
+
             OpsisTheme.Init();
             // Opsis integration: exit together with the Opsis process that started this engine.
             if (int.TryParse(Environment.GetEnvironmentVariable("OPSIS_PARENT_PID"), out int parentPid))
@@ -50,7 +58,9 @@ namespace Desktop_Fences
 
             // --- 2. SINGLE INSTANCE PROTECTION START ---
             bool isNewInstance;
-            _mutex = new Mutex(true, UNIQUE_APP_NAME, out isNewInstance);
+            // Opsis: an isolated data folder (automated tests) gets its own mutex so it never collides with the user's real engine.
+            string isolated = Environment.GetEnvironmentVariable("OPSIS_APPDATA") ?? "";
+            _mutex = new Mutex(true, isolated.Length == 0 ? UNIQUE_APP_NAME : UNIQUE_APP_NAME + "_" + (uint)isolated.ToLowerInvariant().GetHashCode(), out isNewInstance);
 
             // Only exit if it's not a new instance AND the user hasn't explicitly disabled the check
             if (!isNewInstance && !SettingsManager.DisableSingleInstance)
@@ -130,6 +140,8 @@ namespace Desktop_Fences
 
                     // Load fences (Now loads from Profile/fences.json)
                     FenceManager.LoadAndCreateFences(_targetChecker);
+                    OpsisBridge.Start();
+                    DesktopOriginals.HideAll();
 
                     // --- PRODUCTION START LOGIC ---
                     if (SettingsManager.EnableProfileAutomation)

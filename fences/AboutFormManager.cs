@@ -26,7 +26,7 @@ namespace Desktop_Fences
             {
                 var aboutWindow = new Window
                 {
-                    Title = "About Desktop Fences +",
+                    Title = Loc.T("About Desktop Fences +"),
                     Width = 480,
                     Height = 620,
                     WindowStartupLocation = WindowStartupLocation.CenterScreen,
@@ -179,7 +179,7 @@ namespace Desktop_Fences
 
             TextBlock titleText = new TextBlock
             {
-                Text = "Opsis Fences",
+                Text = Loc.T("Opsis Fences"),
                 FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 22, // Your improved font size
                 FontWeight = FontWeights.Bold,
@@ -201,7 +201,7 @@ namespace Desktop_Fences
             // Close Button
             Button closeButton = new Button
             {
-                Content = "✕",
+                Content = Loc.T("✕"),
                 Width = 32,
                 Height = 32,
                 FontSize = 22, // Your improved font size
@@ -318,7 +318,7 @@ namespace Desktop_Fences
             // Title
             TextBlock titleBlock = new TextBlock
             {
-                Text = "Original project",
+                Text = Loc.T("Original project"),
                 FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 18, // Your improved font size
                 FontWeight = FontWeights.Bold,
@@ -337,7 +337,7 @@ namespace Desktop_Fences
             // Donate Button
             Button donateButton = new Button
             {
-                Content = "♥ Donate via PayPal",
+                Content = Loc.T("♥ Donate via PayPal"),
                 Height = 36,
                 Padding = new Thickness(16, 0, 16, 0),
                 FontFamily = new FontFamily("Segoe UI"),
@@ -372,7 +372,7 @@ namespace Desktop_Fences
             // GitHub Button
             Button githubButton = new Button
             {
-                Content = "⚡ Visit GitHub repository",
+                Content = Loc.T("⚡ Visit GitHub repository"),
                 Height = 36,
                 Padding = new Thickness(16, 0, 16, 0),
                 FontFamily = new FontFamily("Segoe UI"),
@@ -422,7 +422,7 @@ namespace Desktop_Fences
             // MIT License
             TextBlock licenseBlock = new TextBlock
             {
-                Text = "⚖ MIT License",
+                Text = Loc.T("⚖ MIT License"),
                 FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 14, // Your improved font size
                 Foreground = new SolidColorBrush(Color.FromRgb(95, 99, 104)),
@@ -502,7 +502,7 @@ namespace Desktop_Fences
             // Hand Water Pump text
             TextBlock hwpText = new TextBlock
             {
-                Text = "Hand Water Pump",
+                Text = Loc.T("Hand Water Pump"),
                 FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 18,
                 FontWeight = FontWeights.Bold,
@@ -549,7 +549,7 @@ namespace Desktop_Fences
             {
                 var easterWindow = new Window
                 {
-                    Title = "It is great to have you here",
+                    Title = Loc.T("It is great to have you here"),
                     Width = 400,
                     Height = 520, // Taller to accommodate image
                     WindowStartupLocation = WindowStartupLocation.CenterScreen,
@@ -603,7 +603,7 @@ namespace Desktop_Fences
                 // Dynamic title text
                 TextBlock titleText = new TextBlock
                 {
-                    Text = "It is great to have you here",
+                    Text = Loc.T("It is great to have you here"),
                     FontFamily = new FontFamily("Segoe UI"),
                     FontSize = 16,
                     FontWeight = FontWeights.Bold,
@@ -614,7 +614,7 @@ namespace Desktop_Fences
               
                 Button closeButton = new Button
                 {
-                    Content = "✕",
+                    Content = Loc.T("✕"),
                     Width = 28,
                     Height = 28,
                     FontSize = 16,
@@ -671,7 +671,7 @@ namespace Desktop_Fences
                 
                 TextBlock messageText = new TextBlock
                 {
-                    Text = "Don't feed the dragons",
+                    Text = Loc.T("Don't feed the dragons"),
                     FontFamily = new FontFamily("Segoe UI"),
                     FontSize = 18,
                     FontWeight = FontWeights.Bold,
@@ -689,7 +689,7 @@ namespace Desktop_Fences
 
                 Button donateButton = new Button
                 {
-                    Content = "Donate 999,00 €",
+                    Content = Loc.T("Donate 999,00 €"),
                     Height = 40, 
                     MinWidth = 160,
                     FontFamily = new FontFamily("Segoe UI"),
@@ -737,17 +737,17 @@ namespace Desktop_Fences
                         hasClickedCloseOnce = true;
 
               
-                        titleText.Text = "What!?";
+                        titleText.Text = Loc.T("What!?");
                         headerBorder.Background = new LinearGradientBrush(
                             Color.FromRgb(180, 20, 60), // Dramatic red
                             Color.FromRgb(120, 10, 40),
                             0);
 
                      
-                        messageText.Text = "Are you sure? Think again!";
+                        messageText.Text = Loc.T("Are you sure? Think again!");
 
                     
-                        donateButton.Content = "Please donate";
+                        donateButton.Content = Loc.T("Please donate");
                         donateButton.Background = new SolidColorBrush(Color.FromRgb(220, 20, 60)); // Crimson
 
                    
@@ -806,7 +806,7 @@ namespace Desktop_Fences
                         }
 
                        
-                        closeButton.Content = "✕✕";
+                        closeButton.Content = Loc.T("✕✕");
                         closeButton.Foreground = new SolidColorBrush(Color.FromRgb(255, 200, 200)); // Light red tint
                     }
                     else

@@ -36,7 +36,7 @@ namespace Desktop_Fences
 
         private void InitializeWindow()
         {
-            Title = "Select Icon";
+            Title = Loc.T("Select Icon");
             Width = 400;
             Height = 300;
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
@@ -86,7 +86,7 @@ namespace Desktop_Fences
             // Title with white text (same as CustomizeFenceForm)
             TextBlock titleText = new TextBlock
             {
-                Text = "Select Icon",
+                Text = Loc.T("Select Icon"),
                 FontSize = 14,
                 FontWeight = FontWeights.Bold, // Bold like CustomizeFenceForm
                 Foreground = Brushes.White, // White text on colored background
@@ -97,7 +97,7 @@ namespace Desktop_Fences
             // Close button with hover effects (same as CustomizeFenceForm)
             Button closeButton = new Button
             {
-                Content = "✕",
+                Content = Loc.T("✕"),
                 Width = 32,
                 Height = 32,
                 FontSize = 12,
@@ -163,7 +163,7 @@ namespace Desktop_Fences
             // Instruction text on the left
             TextBlock instructionText = new TextBlock
             {
-                Text = "Select an Icon from the available and click OK",
+                Text = Loc.T("Select an Icon from the available and click OK"),
                 FontSize = 13,
                 FontWeight = FontWeights.Medium,
                 Foreground = new SolidColorBrush(Color.FromRgb(95, 99, 104)),
@@ -183,7 +183,7 @@ namespace Desktop_Fences
 
             Button cancelButton = new Button
             {
-                Content = "Cancel",
+                Content = Loc.T("Cancel"),
                 Height = 36,
                 MinWidth = 80,
                 FontSize = 13,
@@ -201,7 +201,7 @@ namespace Desktop_Fences
             // OK button with accent color (same as Save button in other forms)
             _okButton = new Button
             {
-                Content = "OK",
+                Content = Loc.T("OK"),
                 Height = 36,
                 MinWidth = 80,
                 FontSize = 13,

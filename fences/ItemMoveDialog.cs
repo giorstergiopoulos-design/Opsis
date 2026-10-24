@@ -61,7 +61,7 @@ namespace Desktop_Fences
             // Create modern hierarchical Move dialog
             var moveWindow = new Window
             {
-                Title = "Move Item To...",
+                Title = Loc.T("Move Item To..."),
                 Width = 480,
                 Height = 600,
                 WindowStartupLocation = WindowStartupLocation.CenterScreen,
@@ -118,7 +118,7 @@ namespace Desktop_Fences
 
             TextBlock mainTitle = new TextBlock
             {
-                Text = "Move Item To...",
+                Text = Loc.T("Move Item To..."),
                 FontSize = 16,
                 FontWeight = FontWeights.SemiBold,
                 Foreground = System.Windows.Media.Brushes.White,
@@ -138,7 +138,7 @@ namespace Desktop_Fences
 
             Button closeButton = new Button
             {
-                Content = "✕",
+                Content = Loc.T("✕"),
                 Width = 30,
                 Height = 30,
                 FontSize = 16,
@@ -177,7 +177,7 @@ namespace Desktop_Fences
             // Instructions
             TextBlock instructionsText = new TextBlock
             {
-                Text = "Select a destination fence or tab:",
+                Text = Loc.T("Select a destination fence or tab:"),
                 FontSize = 13,
                 FontWeight = FontWeights.Medium,
                 Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(95, 99, 104)),
@@ -219,7 +219,7 @@ namespace Desktop_Fences
 
             Button cancelButton = new Button
             {
-                Content = "Cancel",
+                Content = Loc.T("Cancel"),
                 Width = 100,
                 Height = 36,
                 FontSize = 13,
@@ -315,7 +315,7 @@ namespace Desktop_Fences
 
                     TextBlock fenceIcon = new TextBlock
                     {
-                        Text = "📂",
+                        Text = Loc.T("📂"),
                         FontSize = 16,
                         Margin = new Thickness(0, 0, 10, 0),
                         VerticalAlignment = VerticalAlignment.Center

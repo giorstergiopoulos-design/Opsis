@@ -135,6 +135,8 @@ namespace MotionDesk.UI
         // ελέγχων· η πλήρης, ακριβής ανακατασκευή γίνεται ΜΙΑ φορά όταν αφήνει ο χρήστης το slider.
         public static event Action? Repainted;
 
+        public static void RaiseRepainted() => Repainted?.Invoke();
+
         public static void PreviewDarkIntensity(double intensity)
         {
             if (!Current.IsDark) return;

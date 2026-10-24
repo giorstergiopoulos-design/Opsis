@@ -37,7 +37,7 @@ public partial class EditShortcutWindow : Window
 
     private void InitializeModernComponent()
     {
-        Title = "Edit Shortcut";
+        Title = Loc.T("Edit Shortcut");
         Width = 540;
         Height = 550;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
@@ -132,7 +132,7 @@ public partial class EditShortcutWindow : Window
         // Title label with white text (same as CustomizeFenceForm)
         TextBlock titleText = new TextBlock
         {
-            Text = "Edit Shortcut",
+            Text = Loc.T("Edit Shortcut"),
             FontSize = 14,
             FontWeight = FontWeights.Bold, // Bold like CustomizeFenceForm
             Foreground = Brushes.White, // White text on colored background
@@ -143,7 +143,7 @@ public partial class EditShortcutWindow : Window
         // Close button with hover effects (same as CustomizeFenceForm)
         Button closeButton = new Button
         {
-            Content = "✕",
+            Content = Loc.T("✕"),
             Width = 32,
             Height = 32,
             FontSize = 12,
@@ -308,7 +308,7 @@ public partial class EditShortcutWindow : Window
 
         TextBlock iconLabel = new TextBlock
         {
-            Text = "Icon:",
+            Text = Loc.T("Icon:"),
             FontSize = 12,
             FontWeight = FontWeights.Medium,
             Foreground = new SolidColorBrush(Color.FromRgb(95, 99, 104)),
@@ -391,7 +391,7 @@ public partial class EditShortcutWindow : Window
         // Green default button (same as CustomizeFenceForm)
         Button defaultButton = new Button
         {
-            Content = "Default",
+            Content = Loc.T("Default"),
             Height = 36,
             MinWidth = 80,
             FontSize = 13,
@@ -412,7 +412,7 @@ public partial class EditShortcutWindow : Window
         // Save button with accent color (same as CustomizeFenceForm)
         _saveButton = new Button
         {
-            Content = "Save",
+            Content = Loc.T("Save"),
             Height = 36,
             MinWidth = 80,
             FontSize = 13,
@@ -588,7 +588,7 @@ public partial class EditShortcutWindow : Window
             var fileDialog = new System.Windows.Forms.OpenFileDialog
             {
                 Filter = "Executable Files (*.exe)|*.exe|All Files (*.*)|*.*",
-                Title = "Select Target File",
+                Title = Loc.T("Select Target File"),
                 CheckFileExists = true,
                 CheckPathExists = true
             };
@@ -618,7 +618,7 @@ public partial class EditShortcutWindow : Window
         var dialog = new System.Windows.Forms.OpenFileDialog
         {
             Filter = "Icon Files (*.ico)|*.ico|Executable Files (*.exe)|*.exe|DLL Files (*.dll)|*.dll|All Files (*.*)|*.*",
-            Title = "Select an Icon"
+            Title = Loc.T("Select an Icon")
         };
 
         if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
@@ -684,7 +684,7 @@ public partial class EditShortcutWindow : Window
             argumentsBox.Text = "";
 
             // Setting this to "Default" triggers the removal logic in Save_Click
-            iconPathBox.Text = "Default";
+            iconPathBox.Text = Loc.T("Default");
 
             // Force the preview to update immediately
             LoadIconPreview("Default");

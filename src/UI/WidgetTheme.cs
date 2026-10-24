@@ -1,3 +1,4 @@
+using System;
 using System.Drawing;
 using MotionDesk.Services;
 
@@ -16,7 +17,12 @@ namespace MotionDesk.UI
     {
         private static UiPalette Resolve()
         {
-            string mode = AppSettings.Load().WidgetsThemeMode;
+            var settings = AppSettings.Load();
+            string mode = settings.WidgetsThemeMode;
+            // "Transparent": there is no surface to take the contrast from, so the text colour follows the desktop behind the widgets
+            // (bright backdrop -> dark text, dark backdrop -> light text), re-evaluated while the wallpaper changes or moves.
+            if (mode == "Transparent" && settings.WidgetsAutoContrast)
+                return BackdropContrast.UseDarkText ? UiPalette.Light() : UiPalette.Dark(settings.DarkIntensity);
             return mode switch
             {
                 "Windows" => ThemeManager.IsWindowsLightTheme() ? UiPalette.Light() : UiPalette.Dark(AppSettings.Load().DarkIntensity),
@@ -67,6 +73,20 @@ namespace MotionDesk.UI
         // κανονικές λειτουργίες θέματος μένουν ΑΚΡΙΒΩΣ όπως πριν (αδιαφανές Surface) - μόνο η ρητή
         // "Πλήρης διαφάνεια" αλλάζει συμπεριφορά.
         public static bool IsFullyTransparent => AppSettings.Load().WidgetsThemeMode == "Transparent";
+        // Colour-key (pure see-through) only without a tint; with a tint the widget is a translucent coloured surface (same look as the DeskContainers).
+        public static bool IsColorKey => IsFullyTransparent && AppSettings.Load().WidgetsTintPercent <= 0;
+        public static Color TintColor => NamedColor(AppSettings.Load().WidgetsTintColor);
+        public static int TintAlpha => (int)Math.Round(255 * Math.Clamp(AppSettings.Load().WidgetsTintPercent, 0, 100) / 100.0);
+
+        public static readonly string[] ColorNames = { "Black", "Gray", "White", "Beige", "Green", "Purple", "Fuchsia", "Yellow", "Orange", "Red", "Blue", "Bismark", "Teal" };
+        public static Color NamedColor(string name) => name switch
+        {
+            "Red" => Color.FromArgb(0x9E, 0x05, 0x2E), "Green" => Color.FromArgb(0x06, 0x49, 0x1A), "Teal" => Color.FromArgb(0x00, 0x80, 0x80),
+            "Blue" => Color.FromArgb(0x01, 0x21, 0x62), "Bismark" => Color.FromArgb(0x49, 0x69, 0x7E), "White" => Color.FromArgb(0xF1, 0xF1, 0xF6),
+            "Beige" => Color.FromArgb(0xC8, 0xAD, 0x7E), "Gray" => Color.FromArgb(0x6E, 0x6E, 0x6E), "Purple" => Color.FromArgb(0x3A, 0x0B, 0x50),
+            "Fuchsia" => Color.FromArgb(0x5F, 0x09, 0x3D), "Yellow" => Color.FromArgb(0xC1, 0xC7, 0x08), "Orange" => Color.FromArgb(0xB7, 0x54, 0x33),
+            _ => Color.FromArgb(0x1F, 0x1D, 0x1C)
+        };
         public static Color SurfaceGlass => IsFullyTransparent ? Color.Black : Surface;
 
         public static readonly Font FontHeading = UiTheme.FontHeading;

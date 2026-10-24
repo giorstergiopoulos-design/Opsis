@@ -190,6 +190,7 @@ namespace Desktop_Fences
 
                 string formattedJson = JsonConvert.SerializeObject(serializedData, Formatting.Indented);
                 File.WriteAllText(_jsonFilePath, formattedJson);
+                DesktopOriginals.Reconcile(serializedData);          // Opsis: desktop icons whose item left every container come back
 
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.Settings,
                     $"Saved fences.json with consistent formatting for {serializedData.Count} fences");

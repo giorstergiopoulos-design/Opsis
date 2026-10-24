@@ -644,14 +644,14 @@ namespace Desktop_Fences
                 // [ < ] Back Button
                 Button btnBack = new Button
                 {
-                    Content = "‹",
+                    Content = Loc.T("‹"),
                     FontSize = 14,
                     FontWeight = FontWeights.Bold,
                     Background = System.Windows.Media.Brushes.Transparent,
                     Foreground = System.Windows.Media.Brushes.White,
                     BorderThickness = new Thickness(0),
                     Cursor = Cursors.Hand,
-                    ToolTip = "Go Up"
+                    ToolTip = Loc.T("Go Up")
                 };
                 btnBack.Click += (s, e) => NavigatePortalFence(liveFence, System.IO.Directory.GetParent(normCurrent)?.FullName);
 
@@ -672,13 +672,13 @@ namespace Desktop_Fences
                 // [ ⚓ ] Anchor Button
                 Button btnSetBase = new Button
                 {
-                    Content = "⚓",
+                    Content = Loc.T("⚓"),
                     FontSize = 10,
                     Background = System.Windows.Media.Brushes.Transparent,
                     Foreground = System.Windows.Media.Brushes.Orange,
                     BorderThickness = new Thickness(0),
                     Cursor = Cursors.Hand,
-                    ToolTip = "Set current view as the new Home for this fence"
+                    ToolTip = Loc.T("Set current view as the new Home for this fence")
                 };
                 btnSetBase.Click += (s, e) =>
                 {
@@ -1075,20 +1075,20 @@ namespace Desktop_Fences
             // ------------------------
 
             // About item
-            var aboutItem = new MenuItem { Header = "About..." };
+            var aboutItem = new MenuItem { Header = Loc.T("About...") };
             aboutItem.Click += (s, e) => AboutFormManager.ShowAboutForm();
             menu.Items.Add(aboutItem);
 
             // Options item
-            var optionsItem = new MenuItem { Header = "Options..." };
-            optionsItem.Click += (s, e) => OptionsFormManager.ShowOptionsForm();
+            var optionsItem = new MenuItem { Header = Loc.T("Options...") };
+            optionsItem.Click += (s, e) => OpsisBridge.OpenOpsisSettings();   // Opsis: settings live in the Opsis application
             menu.Items.Add(optionsItem);
 
             // Separator
             menu.Items.Add(new Separator());
 
             // New Fence items
-            var newFenceItem = new MenuItem { Header = "New Fence" };
+            var newFenceItem = new MenuItem { Header = Loc.T("New Fence") };
             newFenceItem.Click += (s, e) =>
             {
                 var mousePosition = System.Windows.Forms.Cursor.Position;
@@ -1096,7 +1096,7 @@ namespace Desktop_Fences
             };
             menu.Items.Add(newFenceItem);
 
-            var newPortalFenceItem = new MenuItem { Header = "New Portal Fence" };
+            var newPortalFenceItem = new MenuItem { Header = Loc.T("New Portal Fence") };
             newPortalFenceItem.Click += (s, e) =>
             {
                 var mousePosition = System.Windows.Forms.Cursor.Position;
@@ -1104,7 +1104,7 @@ namespace Desktop_Fences
             };
             menu.Items.Add(newPortalFenceItem);
 
-            MenuItem newNoteFenceItem = new MenuItem { Header = "New Note Fence" };
+            MenuItem newNoteFenceItem = new MenuItem { Header = Loc.T("New Note Fence") };
             newNoteFenceItem.Click += (s, e) =>
             {
                 var mousePosition = System.Windows.Forms.Cursor.Position;
@@ -1123,7 +1123,7 @@ namespace Desktop_Fences
 
                 var enableTabsItem = new MenuItem
                 {
-                    Header = "Enable Tabs On This Fence",
+                    Header = Loc.T("Enable Tabs On This Fence"),
                     IsCheckable = true,   // Shows checkbox gutter
                     IsChecked = tabsEnabled // Visual checkmark
                 };
@@ -1137,7 +1137,7 @@ namespace Desktop_Fences
 
             // --- REORDERED: Delete Option Second ---
             // Delete this fence
-            var deleteThisFence = new MenuItem { Header = "Delete this Fence" };
+            var deleteThisFence = new MenuItem { Header = Loc.T("Delete this Fence") };
             deleteThisFence.Click += (s, e) =>
             {
                 bool result = MessageBoxesManager.ShowCustomMessageBoxForm();
@@ -1175,18 +1175,18 @@ namespace Desktop_Fences
             menu.Items.Add(new Separator());
 
             // Export/Import Group
-            var exportItem = new MenuItem { Header = "Export this Fence" };
+            var exportItem = new MenuItem { Header = Loc.T("Export this Fence") };
             exportItem.Click += (s, e) => BackupManager.ExportFence(fence);
             menu.Items.Add(exportItem);
 
-            var importItem = new MenuItem { Header = "Import a Fence..." };
+            var importItem = new MenuItem { Header = Loc.T("Import a Fence...") };
             importItem.Click += (s, e) => BackupManager.ImportFence();
             menu.Items.Add(importItem);
 
             // Restore Fence item
             var restoreItem = new MenuItem
             {
-                Header = "Restore Last Deleted Fence",
+                Header = Loc.T("Restore Last Deleted Fence"),
                 Visibility = BackupManager.IsRestoreAvailable ? Visibility.Visible : Visibility.Collapsed
             };
             restoreItem.Click += (s, e) => BackupManager.RestoreLastDeletedFence();
@@ -1196,7 +1196,7 @@ namespace Desktop_Fences
             menu.Items.Add(new Separator());
 
             // Exit item
-            var exitItem = new MenuItem { Header = "Exit" };
+            var exitItem = new MenuItem { Header = Loc.T("Exit") };
             exitItem.Click += (s, e) => System.Windows.Application.Current.Shutdown();
             menu.Items.Add(exitItem);
 
@@ -1259,9 +1259,9 @@ namespace Desktop_Fences
                 ContextMenu iconContextMenu = new ContextMenu();
 
                 // --- GROUP 1: MANIPULATION ---
-                MenuItem miEdit = new MenuItem { Header = "Edit..." };
-                MenuItem miMove = new MenuItem { Header = "Move..." };
-                MenuItem miRemove = new MenuItem { Header = "Remove" };
+                MenuItem miEdit = new MenuItem { Header = Loc.T("Edit...") };
+                MenuItem miMove = new MenuItem { Header = Loc.T("Move...") };
+                MenuItem miRemove = new MenuItem { Header = Loc.T("Remove") };
 
                 iconContextMenu.Items.Add(miEdit);
                 iconContextMenu.Items.Add(miMove);
@@ -1271,7 +1271,7 @@ namespace Desktop_Fences
 
                 // --- GROUP 2: CLIPBOARD ---
                 Separator sepClipboard = new Separator();
-                MenuItem miCopyItem = new MenuItem { Header = "Copy Item" };
+                MenuItem miCopyItem = new MenuItem { Header = Loc.T("Copy Item") };
 
                 iconContextMenu.Items.Add(sepClipboard);
                 iconContextMenu.Items.Add(miCopyItem);
@@ -1294,10 +1294,10 @@ namespace Desktop_Fences
                 {
                     iconContextMenu.Items.Add(new Separator());
 
-                    MenuItem miRunAsAdmin = new MenuItem { Header = "Run as administrator" };
+                    MenuItem miRunAsAdmin = new MenuItem { Header = Loc.T("Run as administrator") };
                     miAlwaysAdmin = new MenuItem
                     {
-                        Header = "Always run as administrator",
+                        Header = Loc.T("Always run as administrator"),
                         IsCheckable = true
                     };
 
@@ -1357,14 +1357,14 @@ namespace Desktop_Fences
                 Separator sepPath = new Separator();
                 iconContextMenu.Items.Add(sepPath);
 
-                MenuItem miCopyPathRoot = new MenuItem { Header = "Copy path" };
-                MenuItem miCopyFolder = new MenuItem { Header = "Folder path" };
-                MenuItem miCopyFullPath = new MenuItem { Header = "Full path" };
+                MenuItem miCopyPathRoot = new MenuItem { Header = Loc.T("Copy path") };
+                MenuItem miCopyFolder = new MenuItem { Header = Loc.T("Folder path") };
+                MenuItem miCopyFullPath = new MenuItem { Header = Loc.T("Full path") };
 
                 miCopyPathRoot.Items.Add(miCopyFolder);
                 miCopyPathRoot.Items.Add(miCopyFullPath);
 
-                MenuItem miFindTarget = new MenuItem { Header = "Open target folder..." };
+                MenuItem miFindTarget = new MenuItem { Header = Loc.T("Open target folder...") };
 
                 iconContextMenu.Items.Add(miCopyPathRoot);
                 iconContextMenu.Items.Add(miFindTarget);
@@ -1461,7 +1461,7 @@ namespace Desktop_Fences
                     // 1. Send to Desktop (Ctrl only, Skip for spacers)
                     if (isCtrl && !isSpacer)
                     {
-                        miSendToDesktop = new MenuItem { Header = "Send to Desktop" };
+                        miSendToDesktop = new MenuItem { Header = Loc.T("Send to Desktop") };
                         miSendToDesktop.Click += (sender, args) => CopyPasteManager.SendToDesktop(item);
                         int idxCopy = iconContextMenu.Items.IndexOf(miCopyItem);
                         if (idxCopy != -1) iconContextMenu.Items.Insert(idxCopy + 1, miSendToDesktop);
@@ -1470,8 +1470,8 @@ namespace Desktop_Fences
                     // 2. Different User Options (Ctrl OR if setting is already checked)
                     if (isEligibleForAdmin && (isCtrl || isAlwaysDiffUser))
                     {
-                        miRunAsDifferentUser = new MenuItem { Header = "Run as different user..." };
-                        miAlwaysRunAsDifferentUser = new MenuItem { Header = "Always run as different user", IsCheckable = true };
+                        miRunAsDifferentUser = new MenuItem { Header = Loc.T("Run as different user...") };
+                        miAlwaysRunAsDifferentUser = new MenuItem { Header = Loc.T("Always run as different user"), IsCheckable = true };
 
                         miRunAsDifferentUser.Click += (sender, args) => {
                             string target = Utility.GetShortcutTarget(filePath);
@@ -1945,7 +1945,7 @@ namespace Desktop_Fences
             try
             {
                 ContextMenu iconContextMenu = new ContextMenu();
-                MenuItem miRemove = new MenuItem { Header = "Remove" };
+                MenuItem miRemove = new MenuItem { Header = Loc.T("Remove") };
 
         
                 miRemove.Click += (sender, e) =>
@@ -1987,7 +1987,7 @@ namespace Desktop_Fences
                 bool alwaysAdmin = Convert.ToBoolean(item["AlwaysRunAsAdmin"] ?? false);
                 MenuItem miAlwaysAdmin = new MenuItem
                 {
-                    Header = "Always run as administrator",
+                    Header = Loc.T("Always run as administrator"),
                     IsCheckable = true,
                     IsChecked = alwaysAdmin
                 };
@@ -2371,17 +2371,17 @@ namespace Desktop_Fences
                         // Update context menu checkmarks
                         if (win.ContextMenu != null)
                         {
-                            var customizeMenu = win.ContextMenu.Items.OfType<MenuItem>().FirstOrDefault(m => m.Header.ToString() == "Customize");
+                            var customizeMenu = win.ContextMenu.Items.OfType<MenuItem>().FirstOrDefault(m => m.Header.ToString() == Loc.T("Customize"));
                             if (customizeMenu != null)
                             {
                                 var submenu = propertyName == "CustomColor"
-                                    ? customizeMenu.Items.OfType<MenuItem>().FirstOrDefault(m => m.Header.ToString() == "Color")
-                                    : customizeMenu.Items.OfType<MenuItem>().FirstOrDefault(m => m.Header.ToString() == "Launch Effect");
+                                    ? customizeMenu.Items.OfType<MenuItem>().FirstOrDefault(m => m.Header.ToString() == Loc.T("Color"))
+                                    : customizeMenu.Items.OfType<MenuItem>().FirstOrDefault(m => m.Header.ToString() == Loc.T("Launch Effect"));
                                 if (submenu != null)
                                 {
                                     foreach (MenuItem item in submenu.Items)
                                     {
-                                        item.IsChecked = item.Tag?.ToString() == value || (value == null && item.Header.ToString() == "Default");
+                                        item.IsChecked = item.Tag?.ToString() == value || (value == null && item.Header.ToString() == Loc.T("Default"));
                                     }
                                 }
                             }
@@ -2625,7 +2625,7 @@ namespace Desktop_Fences
                 // 7. CREATE GHOST ARROWS
                 TextBlock leftArrow = new TextBlock
                 {
-                    Text = "‹", // Elegant chevron
+                    Text = Loc.T("‹"), // Elegant chevron
                     FontSize = 14,
                     FontWeight = FontWeights.Bold,
                     Foreground = arrowBrush,
@@ -2639,7 +2639,7 @@ namespace Desktop_Fences
 
                 TextBlock rightArrow = new TextBlock
                 {
-                    Text = "›",
+                    Text = Loc.T("›"),
                     FontSize = 14,
                     FontWeight = FontWeights.Bold,
                     Foreground = arrowBrush,
@@ -2719,11 +2719,11 @@ namespace Desktop_Fences
 
                     // Context Menu
                     ContextMenu tabContextMenu = new ContextMenu();
-                    MenuItem miAddTab = new MenuItem { Header = "Add New Tab" };
-                    MenuItem miRenameTab = new MenuItem { Header = "Rename Tab" };
-                    MenuItem miDeleteTab = new MenuItem { Header = "Delete Tab" };
-                    MenuItem miMoveLeft = new MenuItem { Header = "Move Left" };
-                    MenuItem miMoveRight = new MenuItem { Header = "Move Right" };
+                    MenuItem miAddTab = new MenuItem { Header = Loc.T("Add New Tab") };
+                    MenuItem miRenameTab = new MenuItem { Header = Loc.T("Rename Tab") };
+                    MenuItem miDeleteTab = new MenuItem { Header = Loc.T("Delete Tab") };
+                    MenuItem miMoveLeft = new MenuItem { Header = Loc.T("Move Left") };
+                    MenuItem miMoveRight = new MenuItem { Header = Loc.T("Move Right") };
 
                     tabContextMenu.Items.Add(miAddTab);
                     tabContextMenu.Items.Add(new Separator());
@@ -2752,7 +2752,7 @@ namespace Desktop_Fences
                 // 10. POPULATE PINNED [+] BUTTON
                 Button addTabButton = new Button
                 {
-                    Content = "+",
+                    Content = Loc.T("+"),
                     Tag = "ADD_TAB",
                     Height = 18,
                     Width = 25,
@@ -2762,7 +2762,7 @@ namespace Desktop_Fences
                     FontFamily = new System.Windows.Media.FontFamily("Segoe UI"),
                     BorderThickness = new Thickness(1),
                     Cursor = Cursors.Hand,
-                    ToolTip = "Add new tab (Ctrl+Click to Import)", // Updated Tooltip
+                    ToolTip = Loc.T("Add new tab (Ctrl+Click to Import)"), // Updated Tooltip
                     Focusable = false
                 };
 
@@ -4341,7 +4341,7 @@ namespace Desktop_Fences
                 var dataFence = new
                 {
                     Id = Guid.NewGuid().ToString(),
-                    Title = "New Fence - Drop your shortcuts here",
+                    Title = Loc.T("New Fence - Drop your shortcuts here"),
                     X = 20.0,
                     Y = 20.0,
                     Width = 360.0,
@@ -4400,7 +4400,7 @@ namespace Desktop_Fences
                 };
 
                 // 3. Combine and Save
-                var fences = new List<object> { dataFence, noteFence };
+                var fences = new List<object> { dataFence };   // Opsis: no welcome note; the instructions live in the Opsis About page
                 string defaultJson = JsonConvert.SerializeObject(fences, Formatting.Indented);
 
                 System.IO.File.WriteAllText(FenceDataManager.JsonFilePath, defaultJson);
@@ -4522,7 +4522,7 @@ namespace Desktop_Fences
 
             TextBlock heart = new TextBlock
             {
-                // Text = "♥",
+                // Text = Loc.T("♥"),
 
                 Name = "FenceMenuIcon", // New! Name
                 Text = MenuSymbol,
@@ -4636,10 +4636,10 @@ namespace Desktop_Fences
            
             {
 
-                //     Text = "🔐",
-                //     Text = "🔑",
-                //     Text = "🔒",
-                //     Text = "🔓",
+                //     Text = Loc.T("🔐"),
+                //     Text = Loc.T("🔑"),
+                //     Text = Loc.T("🔒"),
+                //     Text = Loc.T("🔓"),
                 Name = "FenceLockIcon", // New! Name
                 Text = LockSymbol,//"🛡️",
                                 FontSize = 14,
@@ -4740,12 +4740,12 @@ namespace Desktop_Fences
             titleGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(30, GridUnitType.Pixel) }); // Col 3: Lock Icon
                                                                                                                       // End of ctrl+click handler
             ContextMenu CnMnFenceManager = new ContextMenu();
-            // MenuItem miNewFence = new MenuItem { Header = "New Fence" };
-            // MenuItem miNewPortalFence = new MenuItem { Header = "New Portal Fence" };
-            MenuItem miNewNoteFence = new MenuItem { Header = "New Note Fence" };
-            // MenuItem miRemoveFence = new MenuItem { Header = "Delete Fence" };
-            // MenuItem miXT = new MenuItem { Header = "Exit" };
-            MenuItem miHide = new MenuItem { Header = "Hide Fence" }; // New Hide Fence item
+            // MenuItem miNewFence = new MenuItem { Header = Loc.T("New Fence") };
+            // MenuItem miNewPortalFence = new MenuItem { Header = Loc.T("New Portal Fence") };
+            MenuItem miNewNoteFence = new MenuItem { Header = Loc.T("New Note Fence") };
+            // MenuItem miRemoveFence = new MenuItem { Header = Loc.T("Delete Fence") };
+            // MenuItem miXT = new MenuItem { Header = Loc.T("Exit") };
+            MenuItem miHide = new MenuItem { Header = Loc.T("Hide Fence") }; // New Hide Fence item
                                                                       // CnMnFenceManager.Items.Add(miRemoveFence);
             CnMnFenceManager.Items.Add(miHide); // Add Hide Fence
                                                 // Add Note fence specific context menu items if this is a Note fence
@@ -4784,7 +4784,7 @@ namespace Desktop_Fences
             // Opsis: Sort by (Data fences) and Exclude from auto-hide, ported from the old DeskContainers.
             if (fence.ItemsType?.ToString() == "Data")
             {
-                MenuItem miSortBy = new MenuItem { Header = "Sort by" };
+                MenuItem miSortBy = new MenuItem { Header = Loc.T("Sort by") };
                 foreach (var (label, key) in new[] { ("Name", "name"), ("Type", "type"), ("Date modified", "date"), ("Size", "size") })
                 {
                     var sortItem = new MenuItem { Header = label };
@@ -4794,10 +4794,10 @@ namespace Desktop_Fences
                 }
                 CnMnFenceManager.Items.Add(miSortBy);
             }
-            MenuItem miExcludeAutoHide = new MenuItem { Header = "Exclude from auto-hide", IsCheckable = true, IsChecked = IsExcludedFromAutoHide(win) };
+            MenuItem miExcludeAutoHide = new MenuItem { Header = Loc.T("Exclude from auto-hide"), IsCheckable = true, IsChecked = IsExcludedFromAutoHide(win) };
             miExcludeAutoHide.Click += (s, e) => UpdateFenceProperty(fence, "ExcludeFromAutoHide", miExcludeAutoHide.IsChecked ? "true" : "false", $"Auto-hide exclusion for '{fence.Title}'");
             CnMnFenceManager.Items.Add(miExcludeAutoHide);
-            MenuItem miPeekBehind = new MenuItem { Header = "Peek Behind" };
+            MenuItem miPeekBehind = new MenuItem { Header = Loc.T("Peek Behind") };
             CnMnFenceManager.Items.Add(miPeekBehind);
             miPeekBehind.Click += (s, e) =>
             {
@@ -4818,7 +4818,7 @@ namespace Desktop_Fences
                 // Create countdown label
                 Label countdownLabel = new Label
                 {
-                    Content = "10",
+                    Content = Loc.T("10"),
                     Foreground = System.Windows.Media.Brushes.White,
                     Background = System.Windows.Media.Brushes.Black,
                     Opacity = 0.7,
@@ -4876,7 +4876,7 @@ namespace Desktop_Fences
                 sepClearDead = new Separator { Visibility = Visibility.Collapsed };
                 CnMnFenceManager.Items.Add(sepClearDead);
 
-                miClearDeadShortcuts = new MenuItem { Header = "Clear Dead Shortcuts", Visibility = Visibility.Collapsed };
+                miClearDeadShortcuts = new MenuItem { Header = Loc.T("Clear Dead Shortcuts"), Visibility = Visibility.Collapsed };
                 CnMnFenceManager.Items.Add(miClearDeadShortcuts);
 
                 miClearDeadShortcuts.Click += (s, e) =>
@@ -4901,7 +4901,7 @@ namespace Desktop_Fences
             // 2. Open Folder (Portal Only)
             if (fence.ItemsType?.ToString() == "Portal")
             {
-                MenuItem miOpenFolder = new MenuItem { Header = "Open fence folder" };
+                MenuItem miOpenFolder = new MenuItem { Header = Loc.T("Open fence folder") };
                 miOpenFolder.Click += (s, e) =>
                 {
                     try
@@ -4918,7 +4918,7 @@ namespace Desktop_Fences
             CnMnFenceManager.Items.Add(new Separator());
 
             // 3. Paste Item (Initially Hidden)
-            MenuItem miPasteItem = new MenuItem { Header = "Paste Item", Visibility = Visibility.Collapsed };
+            MenuItem miPasteItem = new MenuItem { Header = Loc.T("Paste Item"), Visibility = Visibility.Collapsed };
             miPasteItem.Click += (s, e) => CopyPasteManager.PasteItem(fence);
             CnMnFenceManager.Items.Add(miPasteItem);
 
@@ -4928,7 +4928,7 @@ namespace Desktop_Fences
             //  CnMnFenceManager.Items.Add(new Separator());
 
             //CnMnFenceManager.Items.Add(miNewCustomize);
-            MenuItem miCustomize = new MenuItem { Header = "Customize..." };
+            MenuItem miCustomize = new MenuItem { Header = Loc.T("Customize...") };
             miCustomize.Click += (s, e) =>
             {
                 try
@@ -5359,13 +5359,13 @@ namespace Desktop_Fences
                 // C. Export All & Spacer Menu (Data Fence + Ctrl)
                 if (isCtrlPressed && isDataFence)
                 {
-                    miExportAllToDesktop = new MenuItem { Header = "Export all icons to desktop" };
+                    miExportAllToDesktop = new MenuItem { Header = Loc.T("Export all icons to desktop") };
                     miExportAllToDesktop.Click += (s, e) => ExportAllIconsToDesktop(fence);
 
-                    miAddSpacerMenu = new MenuItem { Header = "Add spacer" };
+                    miAddSpacerMenu = new MenuItem { Header = Loc.T("Add spacer") };
 
-                    MenuItem miSpacerBlank = new MenuItem { Header = "Blank" };
-                    MenuItem miSpacerDot = new MenuItem { Header = "Dot" };
+                    MenuItem miSpacerBlank = new MenuItem { Header = Loc.T("Blank") };
+                    MenuItem miSpacerDot = new MenuItem { Header = Loc.T("Dot") };
 
                     // Centralized Spacer Creation Logic
                     Action<string> CreateSpacer = (prefix) =>
@@ -5429,7 +5429,7 @@ namespace Desktop_Fences
                     // Insert before Customize (safe lookup)
                     int insertIndex = CnMnFenceManager.Items.Count - 1;
                     var customizeItem = CnMnFenceManager.Items.OfType<MenuItem>()
-                        .FirstOrDefault(m => m.Header.ToString() == "Customize...");
+                        .FirstOrDefault(m => m.Header.ToString() == Loc.T("Customize..."));
                     if (customizeItem != null) insertIndex = CnMnFenceManager.Items.IndexOf(customizeItem);
 
                     CnMnFenceManager.Items.Insert(insertIndex, miExportAllToDesktop);
@@ -5439,7 +5439,7 @@ namespace Desktop_Fences
                 // D. Name After Target (Portal Fence + Ctrl)
                 if (isCtrlPressed && isPortalFence)
                 {
-                    miNameAfterPath = new MenuItem { Header = "Name Fence After Target Path" };
+                    miNameAfterPath = new MenuItem { Header = Loc.T("Name Fence After Target Path") };
                     miNameAfterPath.Click += (s, e) =>
                     {
                         // Get Base Path (Not navigation path)
@@ -5475,7 +5475,7 @@ namespace Desktop_Fences
                     // Insert before Customize
                     int insertIndex = CnMnFenceManager.Items.Count - 1;
                     var customizeItem = CnMnFenceManager.Items.OfType<MenuItem>()
-                        .FirstOrDefault(m => m.Header.ToString() == "Customize...");
+                        .FirstOrDefault(m => m.Header.ToString() == Loc.T("Customize..."));
 
                     if (customizeItem != null)
                     {
@@ -5512,14 +5512,14 @@ namespace Desktop_Fences
                 TextBlock filterIcon = new TextBlock
                 {
                     Name = "FenceFilterIcon", // New! Name
-                    Text = "❖",
+                    Text = Loc.T("❖"),
                     FontSize = 18,
                     Foreground = hasInitialFilter ? System.Windows.Media.Brushes.Orange : System.Windows.Media.Brushes.White,
                     VerticalAlignment = VerticalAlignment.Center,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     Cursor = Cursors.Hand,
                     Margin = new Thickness(0, 0, 5, 0),
-                    ToolTip = "Filter files (e.g. '*.jpg' or '>*.tmp' to exclude)",
+                    ToolTip = Loc.T("Filter files (e.g. '*.jpg' or '>*.tmp' to exclude)"),
                     Opacity = hasInitialFilter ? 1.0 : ((double)SettingsManager.MenuTintValue / 100)
                 };
 
@@ -5624,13 +5624,13 @@ namespace Desktop_Fences
                 // Clear Button
                 Button btnClearFilter = new Button
                 {
-                    Content = "✕",
+                    Content = Loc.T("✕"),
                     Background = System.Windows.Media.Brushes.Transparent,
                     Foreground = System.Windows.Media.Brushes.Gray,
                     BorderThickness = new Thickness(0),
                     Cursor = Cursors.Hand,
                     Width = 20,
-                    ToolTip = "Clear filter and close"
+                    ToolTip = Loc.T("Clear filter and close")
                 };
 
                 filterBar.Children.Add(cmbFilter);
@@ -6735,6 +6735,7 @@ namespace Desktop_Fences
                                     // Attach Context Menu
                                     AttachIconContextMenu(sp, newItem, fence, win);
 
+                                    DesktopOriginals.OnDropped(shortcutName, droppedFile);   // Opsis: the desktop icon moves into the container (hidden, restorable)
                                     // --- HIDDEN TWEAK: Delete Original Shortcut On Drop ---
                                     if (SettingsManager.DeleteOriginalShortcutsOnDrop && isDroppedShortcut && !isFolder && !isWebLink)
                                     {
@@ -7058,14 +7059,14 @@ namespace Desktop_Fences
                 sp.Children.Add(ico);
 
                 // Add empty label to maintain exact grid alignment
-                TextBlock blankLbl = new TextBlock { Text = " " };
+                TextBlock blankLbl = new TextBlock { Text = Loc.T(" ") };
                 sp.Children.Add(blankLbl);
 
                 // CRITICAL: Must be transparent to catch mouse clicks/drags
                 sp.Background = System.Windows.Media.Brushes.Transparent;
 
                 sp.Tag = new { FilePath = filePath, IsFolder = false, Arguments = (string)null };
-                sp.ToolTip = new ToolTip { Content = "Blank Spacer (Hold CTRL to move)" };
+                sp.ToolTip = new ToolTip { Content = Loc.T("Blank Spacer (Hold CTRL to move)") };
                 wpcont.Children.Add(sp);
                 return; // Skip standard extraction
             }
@@ -7304,7 +7305,7 @@ namespace Desktop_Fences
 
                 TextBlock networkIndicator = new TextBlock
                 {
-                    Text = "🔗",
+                    Text = Loc.T("🔗"),
                     FontSize = 14,
                     Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(65, 135, 225)),
                     HorizontalAlignment = HorizontalAlignment.Left,

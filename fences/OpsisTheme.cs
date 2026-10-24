@@ -115,19 +115,26 @@ namespace Desktop_Fences
             }
         }
 
+        private static void Set(DependencyObject d, DependencyProperty prop, Brush? current, Brush? wanted)
+        {
+            if (!ReferenceEquals(current, wanted)) d.SetValue(prop, wanted);
+        }
+
         private static void Recolor(DependencyObject root)
         {
             if (!(root is System.Windows.Media.Visual) && !(root is System.Windows.Media.Media3D.Visual3D)) return;
             switch (root)
             {
-                case Window w: w.Background = MapBack(w.Background); ApplyChrome(w); break;
-                case Border b: b.Background = MapBack(b.Background); b.BorderBrush = MapBorder(b.BorderBrush); break;
-                case Panel p: p.Background = MapBack(p.Background); break;
-                case TextBlock t: t.Foreground = MapFore(t.Foreground); t.Background = MapBack(t.Background); break;
+                // Only write a property when the colour really changes: an unconditional assignment would create a LOCAL value that beats the
+                // triggers inside our control templates (checked fill, hover ring...).
+                case Window w: Set(w, Window.BackgroundProperty, w.Background, MapBack(w.Background)); ApplyChrome(w); break;
+                case Border b: Set(b, Border.BackgroundProperty, b.Background, MapBack(b.Background)); Set(b, Border.BorderBrushProperty, b.BorderBrush, MapBorder(b.BorderBrush)); break;
+                case Panel p: Set(p, Panel.BackgroundProperty, p.Background, MapBack(p.Background)); break;
+                case TextBlock t: Set(t, TextBlock.ForegroundProperty, t.Foreground, MapFore(t.Foreground)); Set(t, TextBlock.BackgroundProperty, t.Background, MapBack(t.Background)); break;
                 case Control c:
-                    c.Background = MapBack(c.Background); c.Foreground = MapFore(c.Foreground); c.BorderBrush = MapBorder(c.BorderBrush);
+                    Set(c, Control.BackgroundProperty, c.Background, MapBack(c.Background)); Set(c, Control.ForegroundProperty, c.Foreground, MapFore(c.Foreground)); Set(c, Control.BorderBrushProperty, c.BorderBrush, MapBorder(c.BorderBrush));
                     break;
-                case Shape sh: sh.Stroke = MapBorder(sh.Stroke); break;
+                case Shape sh: Set(sh, Shape.StrokeProperty, sh.Stroke, MapBorder(sh.Stroke)); break;
             }
             if (root is ComboBox combo && combo.ReadLocalValue(FrameworkElement.StyleProperty) == DependencyProperty.UnsetValue && !ReferenceEquals(combo.Style, ComboStyle))
             {

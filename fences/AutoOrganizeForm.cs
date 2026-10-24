@@ -67,7 +67,7 @@ namespace Desktop_Fences
 
         private void InitializeModernComponent()
         {
-            Title = "Smart Desktop Rules";
+            Title = Loc.T("Smart Desktop Rules");
             Width = 850; // Increased Width
             Height = 700; // Increased Height
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
@@ -153,7 +153,7 @@ namespace Desktop_Fences
 
             TextBlock titleText = new TextBlock
             {
-                Text = "Smart Desktop Rules",
+                Text = Loc.T("Smart Desktop Rules"),
                 FontSize = 14,
                 FontWeight = FontWeights.Bold,
                 Foreground = Brushes.White,
@@ -163,7 +163,7 @@ namespace Desktop_Fences
 
             Button closeButton = new Button
             {
-                Content = "✕",
+                Content = Loc.T("✕"),
                 Width = 32,
                 Height = 32,
                 FontSize = 12,
@@ -257,12 +257,12 @@ namespace Desktop_Fences
             botButtons.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
             botButtons.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-            Button btnAdd = new Button { Content = "+ Add Rule", Height = 32, FontSize = 12, FontWeight = FontWeights.Medium, Cursor = Cursors.Hand, Foreground = Brushes.White };
+            Button btnAdd = new Button { Content = Loc.T("+ Add Rule"), Height = 32, FontSize = 12, FontWeight = FontWeights.Medium, Cursor = Cursors.Hand, Foreground = Brushes.White };
             btnAdd.Background = new SolidColorBrush(Color.FromRgb(34, 139, 34)); // Dark Green
             btnAdd.BorderThickness = new Thickness(0);
             btnAdd.Click += (s, e) => AddNewRule();
 
-            Button btnRemove = new Button { Content = "− Remove", Height = 32, FontSize = 12, FontWeight = FontWeights.Medium, Cursor = Cursors.Hand, Foreground = Brushes.White };
+            Button btnRemove = new Button { Content = Loc.T("− Remove"), Height = 32, FontSize = 12, FontWeight = FontWeights.Medium, Cursor = Cursors.Hand, Foreground = Brushes.White };
             btnRemove.Background = new SolidColorBrush(Color.FromRgb(255, 140, 0)); // Dark Orange
             btnRemove.BorderThickness = new Thickness(0);
             btnRemove.Click += (s, e) => RemoveRule();
@@ -291,7 +291,7 @@ namespace Desktop_Fences
             Border group1 = new Border { Background = new SolidColorBrush(Color.FromRgb(251, 252, 253)), BorderBrush = new SolidColorBrush(Color.FromRgb(218, 220, 224)), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6), Margin = new Thickness(0, 0, 0, 12), Padding = new Thickness(15) };
             StackPanel sp1 = new StackPanel();
 
-            _chkIsEnabled = new CheckBox { Content = "Enable this rule", FontSize = 14, FontWeight = FontWeights.Bold, Foreground = new SolidColorBrush(Color.FromRgb(34, 139, 34)), Margin = new Thickness(0, 0, 0, 5) };
+            _chkIsEnabled = new CheckBox { Content = Loc.T("Enable this rule"), FontSize = 14, FontWeight = FontWeights.Bold, Foreground = new SolidColorBrush(Color.FromRgb(34, 139, 34)), Margin = new Thickness(0, 0, 0, 5) };
             _chkIsEnabled.Checked += (s, e) => { if (!_isLoadingRule && _selectedRule != null) { _selectedRule.IsEnabled = true; _rulesList.Items.Refresh(); } };
             _chkIsEnabled.Unchecked += (s, e) => { if (!_isLoadingRule && _selectedRule != null) { _selectedRule.IsEnabled = false; _rulesList.Items.Refresh(); } };
             sp1.Children.Add(_chkIsEnabled);
@@ -299,7 +299,7 @@ namespace Desktop_Fences
             _txtLastRun = new TextBlock { FontSize = 12, Foreground = Brushes.Gray, FontStyle = FontStyles.Italic, Margin = new Thickness(0, 0, 0, 15) };
             sp1.Children.Add(_txtLastRun);
 
-            sp1.Children.Add(new TextBlock { Text = "Rule Name:", FontSize = 12, FontWeight = FontWeights.Medium, Foreground = new SolidColorBrush(Color.FromRgb(95, 99, 104)), Margin = new Thickness(0, 0, 0, 8) });
+            sp1.Children.Add(new TextBlock { Text = Loc.T("Rule Name:"), FontSize = 12, FontWeight = FontWeights.Medium, Foreground = new SolidColorBrush(Color.FromRgb(95, 99, 104)), Margin = new Thickness(0, 0, 0, 8) });
             _txtName = new TextBox { FontSize = 13, Padding = new Thickness(8, 6, 8, 6), BorderBrush = new SolidColorBrush(Color.FromRgb(218, 220, 224)), BorderThickness = new Thickness(1), Background = Brushes.White, Foreground = new SolidColorBrush(Color.FromRgb(32, 33, 36)) };
             _txtName.TextChanged += (s, e) => { if (!_isLoadingRule && _selectedRule != null) { _selectedRule.Name = _txtName.Text; _rulesList.Items.Refresh(); } };
             sp1.Children.Add(_txtName);
@@ -311,7 +311,7 @@ namespace Desktop_Fences
             Border group2 = new Border { Background = new SolidColorBrush(Color.FromRgb(251, 252, 253)), BorderBrush = new SolidColorBrush(Color.FromRgb(218, 220, 224)), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6), Margin = new Thickness(0, 0, 0, 12), Padding = new Thickness(15) };
             StackPanel sp2 = new StackPanel();
 
-            sp2.Children.Add(new TextBlock { Text = "If File Extension Is:", FontSize = 12, FontWeight = FontWeights.Medium, Foreground = new SolidColorBrush(Color.FromRgb(95, 99, 104)), Margin = new Thickness(0, 0, 0, 8) });
+            sp2.Children.Add(new TextBlock { Text = Loc.T("If File Extension Is:"), FontSize = 12, FontWeight = FontWeights.Medium, Foreground = new SolidColorBrush(Color.FromRgb(95, 99, 104)), Margin = new Thickness(0, 0, 0, 8) });
             _cmbCondition = new ComboBox { FontSize = 13, Padding = new Thickness(8, 6, 8, 6), BorderBrush = new SolidColorBrush(Color.FromRgb(218, 220, 224)), BorderThickness = new Thickness(1), Background = Brushes.White, Foreground = new SolidColorBrush(Color.FromRgb(32, 33, 36)) };
             foreach (var p in _presets.Keys) _cmbCondition.Items.Add(p);
             _cmbCondition.SelectionChanged += CmbCondition_SelectionChanged;
@@ -319,14 +319,14 @@ namespace Desktop_Fences
 
             _customExtBorder = new Border { Visibility = Visibility.Collapsed };
             StackPanel customExtStack = new StackPanel();
-            customExtStack.Children.Add(new TextBlock { Text = "Custom Extensions (e.g., *.zip; *.rar):", FontSize = 12, FontWeight = FontWeights.Medium, Foreground = new SolidColorBrush(Color.FromRgb(95, 99, 104)), Margin = new Thickness(0, 12, 0, 8) });
+            customExtStack.Children.Add(new TextBlock { Text = Loc.T("Custom Extensions (e.g., *.zip; *.rar):"), FontSize = 12, FontWeight = FontWeights.Medium, Foreground = new SolidColorBrush(Color.FromRgb(95, 99, 104)), Margin = new Thickness(0, 12, 0, 8) });
             _txtCustomExt = new TextBox { FontSize = 13, Padding = new Thickness(8, 6, 8, 6), BorderBrush = new SolidColorBrush(Color.FromRgb(218, 220, 224)), BorderThickness = new Thickness(1), Background = Brushes.White, Foreground = new SolidColorBrush(Color.FromRgb(32, 33, 36)) };
             _txtCustomExt.TextChanged += (s, e) => { if (!_isLoadingRule && _selectedRule != null && _cmbCondition.SelectedItem?.ToString() == "Custom Extensions...") _selectedRule.Extensions = _txtCustomExt.Text; };
             customExtStack.Children.Add(_txtCustomExt);
             _customExtBorder.Child = customExtStack;
             sp2.Children.Add(_customExtBorder);
 
-            sp2.Children.Add(new TextBlock { Text = "And Filename Contains (Optional, leave blank for any):", FontSize = 12, FontWeight = FontWeights.Medium, Foreground = new SolidColorBrush(Color.FromRgb(95, 99, 104)), Margin = new Thickness(0, 12, 0, 8) });
+            sp2.Children.Add(new TextBlock { Text = Loc.T("And Filename Contains (Optional, leave blank for any):"), FontSize = 12, FontWeight = FontWeights.Medium, Foreground = new SolidColorBrush(Color.FromRgb(95, 99, 104)), Margin = new Thickness(0, 12, 0, 8) });
             _txtNameContains = new TextBox { FontSize = 13, Padding = new Thickness(8, 6, 8, 6), BorderBrush = new SolidColorBrush(Color.FromRgb(218, 220, 224)), BorderThickness = new Thickness(1), Background = Brushes.White, Foreground = new SolidColorBrush(Color.FromRgb(32, 33, 36)) };
             _txtNameContains.TextChanged += (s, e) => { if (!_isLoadingRule && _selectedRule != null) _selectedRule.NameContains = _txtNameContains.Text; };
             sp2.Children.Add(_txtNameContains);
@@ -338,18 +338,18 @@ namespace Desktop_Fences
             Border group3 = new Border { Background = new SolidColorBrush(Color.FromRgb(251, 252, 253)), BorderBrush = new SolidColorBrush(Color.FromRgb(218, 220, 224)), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6), Margin = new Thickness(0, 0, 0, 12), Padding = new Thickness(15) };
             StackPanel sp3 = new StackPanel();
 
-            sp3.Children.Add(new TextBlock { Text = "Move To:", FontSize = 12, FontWeight = FontWeights.Medium, Foreground = new SolidColorBrush(Color.FromRgb(95, 99, 104)), Margin = new Thickness(0, 0, 0, 8) });
+            sp3.Children.Add(new TextBlock { Text = Loc.T("Move To:"), FontSize = 12, FontWeight = FontWeights.Medium, Foreground = new SolidColorBrush(Color.FromRgb(95, 99, 104)), Margin = new Thickness(0, 0, 0, 8) });
             _cmbTarget = new ComboBox { FontSize = 13, Padding = new Thickness(8, 6, 8, 6), BorderBrush = new SolidColorBrush(Color.FromRgb(218, 220, 224)), BorderThickness = new Thickness(1), Background = Brushes.White, Foreground = new SolidColorBrush(Color.FromRgb(32, 33, 36)) };
             LoadPortalFencesIntoDropdown();
             _cmbTarget.SelectionChanged += CmbTarget_SelectionChanged;
             sp3.Children.Add(_cmbTarget);
 
-            _chkAutoCreate = new CheckBox { Content = "Generate new Portal Fence for this folder", FontSize = 12, Foreground = new SolidColorBrush(Color.FromRgb(95, 99, 104)), Margin = new Thickness(4, 6, 0, 6), Visibility = Visibility.Collapsed };
+            _chkAutoCreate = new CheckBox { Content = Loc.T("Generate new Portal Fence for this folder"), FontSize = 12, Foreground = new SolidColorBrush(Color.FromRgb(95, 99, 104)), Margin = new Thickness(4, 6, 0, 6), Visibility = Visibility.Collapsed };
             _chkAutoCreate.Checked += (s, e) => { if (!_isLoadingRule && _selectedRule != null) _selectedRule.AutoCreateFence = true; };
             _chkAutoCreate.Unchecked += (s, e) => { if (!_isLoadingRule && _selectedRule != null) _selectedRule.AutoCreateFence = false; };
             sp3.Children.Add(_chkAutoCreate);
 
-            sp3.Children.Add(new TextBlock { Text = "If File Already Exists:", FontSize = 12, FontWeight = FontWeights.Medium, Foreground = new SolidColorBrush(Color.FromRgb(95, 99, 104)), Margin = new Thickness(0, 12, 0, 8) });
+            sp3.Children.Add(new TextBlock { Text = Loc.T("If File Already Exists:"), FontSize = 12, FontWeight = FontWeights.Medium, Foreground = new SolidColorBrush(Color.FromRgb(95, 99, 104)), Margin = new Thickness(0, 12, 0, 8) });
             _cmbConflict = new ComboBox { FontSize = 13, Padding = new Thickness(8, 6, 8, 6), BorderBrush = new SolidColorBrush(Color.FromRgb(218, 220, 224)), BorderThickness = new Thickness(1), Background = Brushes.White, Foreground = new SolidColorBrush(Color.FromRgb(32, 33, 36)) };
             _cmbConflict.Items.Add("Auto-Rename (e.g., File (1).jpg)");
             _cmbConflict.Items.Add("Overwrite (Send old file to Recycle Bin)");
@@ -393,7 +393,7 @@ namespace Desktop_Fences
 
             Button saveButton = new Button
             {
-                Content = "Save Rules",
+                Content = Loc.T("Save Rules"),
                 Height = 36,
                 MinWidth = 100,
                 FontSize = 13,
@@ -470,7 +470,7 @@ namespace Desktop_Fences
                 }
                 catch { }
             }
-            _cmbTarget.Items.Add(new ComboBoxItem { Content = "Browse for Folder...", Tag = "BROWSE", FontWeight = FontWeights.Bold });
+            _cmbTarget.Items.Add(new ComboBoxItem { Content = Loc.T("Browse for Folder..."), Tag = "BROWSE", FontWeight = FontWeights.Bold });
         }
 
         private void RefreshList()

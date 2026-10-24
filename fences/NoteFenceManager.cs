@@ -310,7 +310,7 @@ namespace Desktop_Fences
                         var buttonLayout = GetDoneButtonLayout();
                         doneButton = new Button
                         {
-                            Content = "✓",
+                            Content = Loc.T("✓"),
                             Width = buttonLayout.width,
                             Height = buttonLayout.height,
                             HorizontalAlignment = HorizontalAlignment.Right,
@@ -322,7 +322,7 @@ namespace Desktop_Fences
                             FontSize = 14,
                             FontWeight = FontWeights.Bold,
                             Cursor = Cursors.Hand,
-                            ToolTip = "Click to finish editing",
+                            ToolTip = Loc.T("Click to finish editing"),
                             Visibility = Visibility.Collapsed,
                         };
 
@@ -436,7 +436,7 @@ namespace Desktop_Fences
                     }
                 };
 
-                noteTextBox.ToolTip = "Click to edit note content";
+                noteTextBox.ToolTip = Loc.T("Click to edit note content");
             }
             catch (Exception ex)
             {
@@ -521,10 +521,10 @@ namespace Desktop_Fences
             
 
                 //        // Text formatting submenu
-                //    //    MenuItem formatMenu = new MenuItem { Header = "Text Format" };
+                //    //    MenuItem formatMenu = new MenuItem { Header = Loc.T("Text Format") };
 
                 //        // Font Size submenu
-                //        MenuItem fontSizeMenu = new MenuItem { Header = "Font Size" };
+                //        MenuItem fontSizeMenu = new MenuItem { Header = Loc.T("Font Size") };
                 //        foreach (string size in new[] { "Small", "Medium", "Large", "Extra Large" })
                 //        {
                 //            MenuItem sizeItem = new MenuItem { Header = size };
@@ -534,7 +534,7 @@ namespace Desktop_Fences
                 // //       formatMenu.Items.Add(fontSizeMenu);
 
                 //        // Font Family submenu
-                //        MenuItem fontFamilyMenu = new MenuItem { Header = "Font Family" };
+                //        MenuItem fontFamilyMenu = new MenuItem { Header = Loc.T("Font Family") };
                 //        foreach (string family in new[] { "Segoe UI", "Consolas", "Times New Roman", "Arial", "Courier New" })
                 //        {
                 //            MenuItem familyItem = new MenuItem { Header = family };
@@ -544,7 +544,7 @@ namespace Desktop_Fences
                 // //       formatMenu.Items.Add(fontFamilyMenu);
 
                 //        // Text Color submenu (uses same colors as fence icons)
-                //        MenuItem textColorMenu = new MenuItem { Header = "Text Color" };
+                //        MenuItem textColorMenu = new MenuItem { Header = Loc.T("Text Color") };
                 //        foreach (string color in new[] { "Default", "Red", "Green", "Blue", "White", "Black", "Gray" })
                 //        {
                 //            MenuItem colorItem = new MenuItem { Header = color };
@@ -556,11 +556,11 @@ namespace Desktop_Fences
                 // //       menu.Items.Add(formatMenu);
 
                 // Text operations
-                //   MenuItem textOpsMenu = new MenuItem { Header = "Text Operations" };
+                //   MenuItem textOpsMenu = new MenuItem { Header = Loc.T("Text Operations") };
 
 
                 // Text Format form (new unified approach)
-                MenuItem textFormatFormItem = new MenuItem { Header = "Text Format..." };
+                MenuItem textFormatFormItem = new MenuItem { Header = Loc.T("Text Format...") };
                 textFormatFormItem.Click += (s, e) =>
                 {
                     try
@@ -581,11 +581,11 @@ namespace Desktop_Fences
                 // A seperator to commnds to note-specific commands
                 menu.Items.Add(new Separator());
 
-                MenuItem copyAllItem = new MenuItem { Header = "Copy All Text" };
+                MenuItem copyAllItem = new MenuItem { Header = Loc.T("Copy All Text") };
                 copyAllItem.Click += (s, e) => CopyAllNoteText(noteTextBox);
                 menu.Items.Add(copyAllItem);
 
-                MenuItem clearAllItem = new MenuItem { Header = "Clear All Text" };
+                MenuItem clearAllItem = new MenuItem { Header = Loc.T("Clear All Text") };
                 clearAllItem.Click += (s, e) => ClearAllNoteText(fence, noteTextBox);
                 menu.Items.Add(clearAllItem);
 

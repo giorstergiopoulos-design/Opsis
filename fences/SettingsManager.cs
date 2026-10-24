@@ -31,6 +31,7 @@ namespace Desktop_Fences
         public static int MenuTintValue { get; set; } = 85;
         public static int MenuIcon { get; set; } = 1;
         public static bool AutoRollUpOnHover { get; set; } = false;      // Opsis: roll fences up when the mouse leaves, expand on hover
+        public static bool HideDesktopOriginalsOnDrop { get; set; } = true;   // Opsis: a dropped desktop icon leaves the desktop (hidden, restored when removed)
         // Title bar band (Stardock-style): "Auto" = a darker shade of the fence colour, otherwise a named colour; opacity 0-100.
         public static string TitleBarColor { get; set; } = "Auto";
         public static int TitleBarOpacity { get; set; } = 90;
@@ -175,6 +176,7 @@ namespace Desktop_Fences
                 MenuTintValue,
                 MenuIcon,
                 AutoRollUpOnHover,
+                HideDesktopOriginalsOnDrop,
                 TitleBarColor,
                 TitleBarOpacity,
                 TitleBarHeight,
@@ -245,6 +247,7 @@ namespace Desktop_Fences
             try { MenuTintValue = data.MenuTintValue ?? 85; } catch { MenuTintValue = 85; }
             try { MenuIcon = data.MenuIcon ?? 1; } catch { MenuIcon = 1; }
             try { AutoRollUpOnHover = data.AutoRollUpOnHover ?? false; } catch { AutoRollUpOnHover = false; }
+            try { HideDesktopOriginalsOnDrop = data.HideDesktopOriginalsOnDrop ?? true; } catch { HideDesktopOriginalsOnDrop = true; }
             try { TitleBarColor = data.TitleBarColor ?? "Auto"; } catch { TitleBarColor = "Auto"; }
             try { TitleBarOpacity = data.TitleBarOpacity ?? 90; } catch { TitleBarOpacity = 90; }
             try { TitleBarHeight = Math.Clamp((int)(data.TitleBarHeight ?? 28), 24, 64); } catch { TitleBarHeight = 28; }

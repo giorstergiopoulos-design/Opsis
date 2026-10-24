@@ -95,7 +95,7 @@ namespace Desktop_Fences
                 _userAccentColor = Utility.GetColorFromName(selectedColorName);
 
                 // Modern WPF window setup with DPI awareness (same as customize form)
-                this.Title = "Text Format";
+                this.Title = Loc.T("Text Format");
                 this.Width = 400;
                 this.Height = 400;
                 this.WindowStartupLocation = WindowStartupLocation.Manual;
@@ -199,7 +199,7 @@ namespace Desktop_Fences
             // Title label (same style as customize form)
             TextBlock titleBlock = new TextBlock
             {
-                Text = "Text Format",
+                Text = Loc.T("Text Format"),
                 FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 18,
                 FontWeight = FontWeights.Bold,
@@ -212,7 +212,7 @@ namespace Desktop_Fences
             // Close button (✕) (same style as customize form)
             Button closeButton = new Button
             {
-                Content = "✕",
+                Content = Loc.T("✕"),
                 Width = 32,
                 Height = 32,
                 FontSize = 16,
@@ -283,7 +283,7 @@ namespace Desktop_Fences
             // Apply button with green color (same as Default button in customize form)
             Button applyButton = new Button
             {
-                Content = "Apply",
+                Content = Loc.T("Apply"),
                 Width = 100,
                 Height = 34,
                 FontFamily = new FontFamily("Segoe UI"),
@@ -300,7 +300,7 @@ namespace Desktop_Fences
             // Cancel button (same style as customize form)
             Button cancelButton = new Button
             {
-                Content = "Cancel",
+                Content = Loc.T("Cancel"),
                 Width = 100,
                 Height = 33,
                 FontFamily = new FontFamily("Segoe UI"),
@@ -318,7 +318,7 @@ namespace Desktop_Fences
             // Save button with accent color (same as customize form)
             Button saveButton = new Button
             {
-                Content = "Save",
+                Content = Loc.T("Save"),
                 Width = 100,
                 Height = 34,
                 FontFamily = new FontFamily("Segoe UI"),
@@ -344,7 +344,7 @@ namespace Desktop_Fences
             // GroupBox with same style as customize form
             GroupBox textAppearanceGroupBox = new GroupBox
             {
-                Header = "Text Appearance",
+                Header = Loc.T("Text Appearance"),
                 FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 14,
                 FontWeight = FontWeights.Bold,
@@ -368,7 +368,7 @@ namespace Desktop_Fences
             // GroupBox with same style as customize form
             GroupBox textBehaviorGroupBox = new GroupBox
             {
-                Header = "Text Behavior",
+                Header = Loc.T("Text Behavior"),
                 FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 14,
                 FontWeight = FontWeights.Bold,

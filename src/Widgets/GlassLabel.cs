@@ -59,9 +59,12 @@ namespace MotionDesk.Widgets
             g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
             if (UiTheme.IsFullyTransparent)
             {
-                // Όχι καθαρό μαύρο: είναι το color-key και θα γινόταν τρύπα αντί για σκιά.
-                using var shadow = new SolidBrush(Color.FromArgb(255, 14, 14, 18));
-                g.DrawString(text, font, shadow, new RectangleF(rect.X + 1, rect.Y + 1, rect.Width, rect.Height), fmt);
+                // Not pure black (that is the colour key and would become a hole). Dark text gets a light halo, light text a dark one,
+                // drawn on the 4 diagonals so the letters stay readable over any wallpaper (bright, dark, busy or moving).
+                bool darkText = (0.2126 * color.R + 0.7152 * color.G + 0.0722 * color.B) < 120;
+                using var halo = new SolidBrush(darkText ? Color.FromArgb(205, 246, 246, 250) : Color.FromArgb(215, 14, 14, 18));
+                foreach (var (dx, dy) in new[] { (1f, 1f), (-1f, 1f), (1f, -1f), (-1f, -1f), (0f, 1.5f) })
+                    g.DrawString(text, font, halo, new RectangleF(rect.X + dx, rect.Y + dy, rect.Width, rect.Height), fmt);
             }
             using var brush = new SolidBrush(color);
             g.DrawString(text, font, brush, rect, fmt);

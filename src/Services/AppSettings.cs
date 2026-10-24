@@ -74,6 +74,10 @@ namespace MotionDesk.Services
         // εφαρμογή". "App" = ακολουθεί το θέμα της εφαρμογής (προηγούμενη, μοναδική συμπεριφορά),
         // "Windows" = ακολουθεί ανεξάρτητα το θέμα των Windows, "Dark"/"Light" = πάντα σταθερό.
         public string WidgetsThemeMode { get; set; } = "App";
+        // "Transparent" widgets: pick the text colour from the desktop behind them, and optionally add a coloured tint (same colours as the DeskContainers).
+        public bool WidgetsAutoContrast { get; set; } = true;
+        public string WidgetsTintColor { get; set; } = "Black";
+        public int WidgetsTintPercent { get; set; } = 0;          // 0 = fully transparent (colour-key); > 0 = tinted translucent surface
 
         // Ενιαίο προεπιλεγμένο μέγεθος για όλα τα νέα widgets — ζητήθηκε ρητά "όλα τα widgets να
         // έχουν το ίδιο μέγεθος και να μπορεί ο χρήστης να το αλλάζει".

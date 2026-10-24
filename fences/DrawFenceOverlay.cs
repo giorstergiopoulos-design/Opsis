@@ -53,7 +53,7 @@ namespace Desktop_Fences
             //    Padding = new Thickness(10),
             //    Child = new TextBlock
             //    {
-            //        Text = "Draw a box to create a Fence (Esc to cancel)",
+            //        Text = Loc.T("Draw a box to create a Fence (Esc to cancel)"),
             //        Foreground = Brushes.White,
             //        FontWeight = FontWeights.Bold
             //    },

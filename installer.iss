@@ -362,6 +362,7 @@ Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [UninstallRun]
+Filename: "{app}\fences\OpsisFences.exe"; Parameters: "--unhide-desktop"; Flags: runhidden skipifdoesntexist; RunOnceId: "UnhideDesktopIcons"
 Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM OpsisFences.exe"; Flags: runhidden; RunOnceId: "StopOpsisFences"
 
 [Registry]

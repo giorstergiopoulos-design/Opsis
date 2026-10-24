@@ -46,7 +46,7 @@ namespace Desktop_Fences
             {
                 _userAccentColor = Utility.GetColorFromName(SettingsManager.SelectedColor);
 
-                this.Title = "Automation Rules";
+                this.Title = Loc.T("Automation Rules");
                 this.Width = 550;
                 this.Height = 750;
                 this.WindowStartupLocation = WindowStartupLocation.Manual;
@@ -96,9 +96,9 @@ namespace Desktop_Fences
             headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(40) });
 
             StackPanel titleStack = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(16, 0, 0, 0) };
-            titleStack.Children.Add(new TextBlock { Text = "Manage Automation Rules", FontFamily = new FontFamily("Segoe UI"), FontSize = 18, FontWeight = FontWeights.Bold, Foreground = Brushes.White });
+            titleStack.Children.Add(new TextBlock { Text = Loc.T("Manage Automation Rules"), FontFamily = new FontFamily("Segoe UI"), FontSize = 18, FontWeight = FontWeights.Bold, Foreground = Brushes.White });
 
-            Button closeButton = new Button { Content = "✕", Width = 32, Height = 32, FontSize = 16, Foreground = Brushes.White, Background = Brushes.Transparent, BorderThickness = new Thickness(0), Cursor = Cursors.Hand };
+            Button closeButton = new Button { Content = Loc.T("✕"), Width = 32, Height = 32, FontSize = 16, Foreground = Brushes.White, Background = Brushes.Transparent, BorderThickness = new Thickness(0), Cursor = Cursors.Hand };
             closeButton.Click += (s, e) => Close();
 
             Grid.SetColumn(titleStack, 0); headerGrid.Children.Add(titleStack);
@@ -119,7 +119,7 @@ namespace Desktop_Fences
             // --- 1. EXISTING RULES ---
             GroupBox listGroup = new GroupBox
             {
-                Header = "Existing Rules",
+                Header = Loc.T("Existing Rules"),
                 FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 14,
                 FontWeight = FontWeights.Bold,
@@ -135,7 +135,7 @@ namespace Desktop_Fences
             // RED Delete Button (Width 120)
             Button btnDelete = new Button
             {
-                Content = "Delete Selected",
+                Content = Loc.T("Delete Selected"),
                 Width = 120,
                 Height = 34,
                 HorizontalAlignment = HorizontalAlignment.Right,
@@ -147,7 +147,7 @@ namespace Desktop_Fences
             };
             btnDelete.Click += (s, e) => DeleteRule();
 
-            listPanel.Children.Add(new TextBlock { Text = "Double-click to edit rule", FontSize = 11, Foreground = Brushes.Gray, Margin = new Thickness(0, 0, 0, 5) });
+            listPanel.Children.Add(new TextBlock { Text = Loc.T("Double-click to edit rule"), FontSize = 11, Foreground = Brushes.Gray, Margin = new Thickness(0, 0, 0, 5) });
             listPanel.Children.Add(_rulesList);
             listPanel.Children.Add(btnDelete);
             listGroup.Content = listPanel;
@@ -156,7 +156,7 @@ namespace Desktop_Fences
             // --- 2. RULE DEFINITION ---
             GroupBox ruleGroup = new GroupBox
             {
-                Header = "Rule Definition",
+                Header = Loc.T("Rule Definition"),
                 FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 14,
                 FontWeight = FontWeights.Bold,
@@ -177,7 +177,7 @@ namespace Desktop_Fences
             // PURPLE Pick Button (Width 120 to match Delete)
             Button btnPick = new Button
             {
-                Content = "🎯 Pick Window",
+                Content = Loc.T("🎯 Pick Window"),
                 Width = 120,
                 Height = 34,
                 Margin = new Thickness(0, 0, 0, 10),
@@ -206,7 +206,7 @@ namespace Desktop_Fences
             delayGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
             _delaySlider = new Slider { Minimum = 0, Maximum = 10, TickFrequency = 1, IsSnapToTickEnabled = true, Value = 1 };
-            _delayValText = new TextBlock { Text = "1s", FontWeight = FontWeights.Bold, Margin = new Thickness(10, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+            _delayValText = new TextBlock { Text = Loc.T("1s"), FontWeight = FontWeights.Bold, Margin = new Thickness(10, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
             _delaySlider.ValueChanged += (s, e) => { if (_delayValText != null) _delayValText.Text = $"{(int)e.NewValue}s"; };
 
             delayGrid.Children.Add(_delaySlider);
@@ -214,7 +214,7 @@ namespace Desktop_Fences
             ruleStack.Children.Add(delayGrid);
 
             // Persistence
-            _persistedChk = new CheckBox { Content = "Persisted Mode (Stay on profile after close)", Margin = new Thickness(0, 5, 0, 0) };
+            _persistedChk = new CheckBox { Content = Loc.T("Persisted Mode (Stay on profile after close)"), Margin = new Thickness(0, 5, 0, 0) };
             ruleStack.Children.Add(_persistedChk);
 
             ruleGroup.Content = ruleStack;
@@ -240,7 +240,7 @@ namespace Desktop_Fences
             // Close
             Button btnCancel = new Button
             {
-                Content = "Close",
+                Content = Loc.T("Close"),
                 Width = 100,
                 Height = 34,
                 Background = new SolidColorBrush(Color.FromRgb(248, 249, 250)),
@@ -255,7 +255,7 @@ namespace Desktop_Fences
             // GREEN Apply
             Button btnApply = new Button
             {
-                Content = "Apply",
+                Content = Loc.T("Apply"),
                 Width = 100,
                 Height = 34,
                 Background = new SolidColorBrush(_colorGreen),
@@ -270,7 +270,7 @@ namespace Desktop_Fences
             // THEME Save
             Button btnSave = new Button
             {
-                Content = "Save",
+                Content = Loc.T("Save"),
                 Width = 100,
                 Height = 34,
                 Background = new SolidColorBrush(_userAccentColor),
@@ -463,7 +463,7 @@ namespace Desktop_Fences
         //    };
         //    TextBlock msg = new TextBlock
         //    {
-        //        Text = "CLICK ON THE TARGET WINDOW",
+        //        Text = Loc.T("CLICK ON THE TARGET WINDOW"),
         //        Foreground = Brushes.White,
         //        FontSize = 24,
         //        FontWeight = FontWeights.Bold

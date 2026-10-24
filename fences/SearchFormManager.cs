@@ -71,7 +71,7 @@ namespace Desktop_Fences
         private void InitializeComponent()
         {
             // 1. Window Setup
-            this.Title = "Desktop Fences Search";
+            this.Title = Loc.T("Desktop Fences Search");
             this.Width = WINDOW_WIDTH;
             this.Height = HEADER_HEIGHT + TITLE_HEIGHT; // Initial Compact Size
             this.WindowStartupLocation = WindowStartupLocation.CenterScreen;
@@ -103,7 +103,7 @@ namespace Desktop_Fences
 
             _watermark = new TextBlock
             {
-                Text = "Type to search...",
+                Text = Loc.T("Type to search..."),
                 FontSize = 18,
                 Foreground = Brushes.Gray,
                 VerticalAlignment = VerticalAlignment.Center,
@@ -146,7 +146,7 @@ namespace Desktop_Fences
             // 1. The App Title (Visible initially)
             _appTitle = new TextBlock
             {
-                Text = "Opsis Fences",
+                Text = Loc.T("Opsis Fences"),
                 FontSize = 14,
                 FontWeight = FontWeights.Bold,
                 Foreground = new SolidColorBrush(Utility.GetColorFromName(SettingsManager.SelectedColor)),

@@ -42,7 +42,7 @@ namespace Desktop_Fences
 
         private void InitializeModernComponent()
         {
-            Title = "Focus Fence";
+            Title = Loc.T("Focus Fence");
             Width = 450;
             Height = 550;
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
@@ -118,7 +118,7 @@ namespace Desktop_Fences
 
             TextBlock titleText = new TextBlock
             {
-                Text = "Focus Fence",
+                Text = Loc.T("Focus Fence"),
                 FontSize = 14,
                 FontWeight = FontWeights.Bold,
                 Foreground = Brushes.White,
@@ -128,7 +128,7 @@ namespace Desktop_Fences
 
             Button closeButton = new Button
             {
-                Content = "✕",
+                Content = Loc.T("✕"),
                 Width = 32,
                 Height = 32,
                 FontSize = 12,
@@ -181,7 +181,7 @@ namespace Desktop_Fences
 
             TextBlock searchLabel = new TextBlock
             {
-                Text = "Search active fences:",
+                Text = Loc.T("Search active fences:"),
                 FontSize = 12,
                 FontWeight = FontWeights.Medium,
                 Foreground = new SolidColorBrush(Color.FromRgb(95, 99, 104)),
@@ -250,7 +250,7 @@ namespace Desktop_Fences
 
             Button cancelButton = new Button
             {
-                Content = "Cancel",
+                Content = Loc.T("Cancel"),
                 Height = 36,
                 MinWidth = 80,
                 FontSize = 13,
@@ -267,7 +267,7 @@ namespace Desktop_Fences
 
             Button focusButton = new Button
             {
-                Content = "Focus Fence",
+                Content = Loc.T("Focus Fence"),
                 Height = 36,
                 MinWidth = 80,
                 FontSize = 13,

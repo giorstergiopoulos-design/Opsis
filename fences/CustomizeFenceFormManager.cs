@@ -81,7 +81,7 @@ namespace Desktop_Fences
                 _userAccentColor = mediaColor;
 
                 // Modern WPF window setup with DPI awareness
-                this.Title = "Customize Fence";
+                this.Title = Loc.T("Customize Fence");
                 this.Width = 500;
                 this.Height = 675;
                 this.WindowStartupLocation = WindowStartupLocation.Manual;
@@ -187,7 +187,7 @@ namespace Desktop_Fences
             // Title label
             TextBlock titleBlock = new TextBlock
             {
-                Text = "Customize Fence",
+                Text = Loc.T("Customize Fence"),
                 FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 18,
                 FontWeight = FontWeights.Bold,
@@ -200,7 +200,7 @@ namespace Desktop_Fences
             // Close button (✕)
             Button closeButton = new Button
             {
-                Content = "✕",
+                Content = Loc.T("✕"),
                 Width = 32,
                 Height = 32,
                 FontSize = 16,
@@ -285,7 +285,7 @@ namespace Desktop_Fences
             // 1. Default Button (Moved Left & Restyled to Dark Gray)
             Button defaultButton = new Button
             {
-                Content = "Default",
+                Content = Loc.T("Default"),
                 Width = 80, // Slightly smaller to fit 4 buttons
                 Height = 34,
                 FontFamily = new FontFamily("Segoe UI"),
@@ -302,7 +302,7 @@ namespace Desktop_Fences
             // 2. Apply Button (New! Green, in old Default location)
             Button applyButton = new Button
             {
-                Content = "Apply",
+                Content = Loc.T("Apply"),
                 Width = 100,
                 Height = 34,
                 FontFamily = new FontFamily("Segoe UI"),
@@ -319,7 +319,7 @@ namespace Desktop_Fences
             // 3. Cancel Button
             Button cancelButton = new Button
             {
-                Content = "Cancel",
+                Content = Loc.T("Cancel"),
                 Width = 100,
                 Height = 33,
                 FontFamily = new FontFamily("Segoe UI"),
@@ -337,7 +337,7 @@ namespace Desktop_Fences
             // 4. Save Button
             Button saveButton = new Button
             {
-                Content = "Save",
+                Content = Loc.T("Save"),
                 Width = 100,
                 Height = 34,
                 FontFamily = new FontFamily("Segoe UI"),
@@ -364,7 +364,7 @@ namespace Desktop_Fences
         {
             GroupBox fenceGroupBox = new GroupBox
             {
-                Header = "Fence",
+                Header = Loc.T("Fence"),
                 FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 14,
                 FontWeight = FontWeights.Bold,
@@ -388,7 +388,7 @@ namespace Desktop_Fences
         {
             GroupBox titleGroupBox = new GroupBox
             {
-                Header = "Title",
+                Header = Loc.T("Title"),
                 FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 14,
                 FontWeight = FontWeights.Bold,
@@ -413,7 +413,7 @@ namespace Desktop_Fences
         {
             GroupBox iconsGroupBox = new GroupBox
             {
-                Header = "Icons",
+                Header = Loc.T("Icons"),
                 FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 14,
                 FontWeight = FontWeights.Bold,
@@ -446,7 +446,7 @@ namespace Desktop_Fences
 
             TextBlock label = new TextBlock
             {
-                Text = labelText,
+                Text = Loc.T(labelText),
                 FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 12,
                 FontWeight = FontWeights.Normal,
@@ -491,7 +491,7 @@ namespace Desktop_Fences
 
             TextBlock label = new TextBlock
             {
-                Text = labelText,
+                Text = Loc.T(labelText),
                 FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 12,
                 FontWeight = FontWeights.Normal,
@@ -525,7 +525,7 @@ namespace Desktop_Fences
         {
             checkBox = new CheckBox
             {
-                Content = labelText,
+                Content = Loc.T(labelText),
                 FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 12,
                 FontWeight = FontWeights.Normal,
@@ -1546,7 +1546,7 @@ namespace Desktop_Fences
             // Up button (▲)
             _upButton = new Button
             {
-                Content = "▲",
+                Content = Loc.T("▲"),
                 Width = 18,
                 Height = 12,
                 FontSize = 6,
@@ -1563,7 +1563,7 @@ namespace Desktop_Fences
             // Down button (▼)
             _downButton = new Button
             {
-                Content = "▼",
+                Content = Loc.T("▼"),
                 Width = 18,
                 Height = 12,
                 FontSize = 6,

@@ -16,7 +16,7 @@ namespace MotionDesk.UI
     /// The real application shell. Feature windows/widgets remain independent,
     /// while this window provides a single navigation point for the desktop manager.
     /// </summary>
-    public sealed class MainWindow : Form
+    public sealed partial class MainWindow : Form
     {
         private Panel _sidebar = null!;
         private TableLayoutPanel _sidebarLayout = null!;
@@ -490,6 +490,30 @@ namespace MotionDesk.UI
 
             if (_sidebarCollapsed) foreach (var btn in _navButtons.Values) btn.Collapsed = true;
             if (_navButtons.TryGetValue(_currentPageKey, out var active)) SetActiveButton(active);
+            EnsureSidebarFits();
+        }
+
+        // Plugins add pages to the side menu: the window grows (up to the screen) so the whole menu stays visible; if the screen is too small the menu scrolls.
+        private void EnsureSidebarFits()
+        {
+            if (!IsHandleCreated) return;
+            BeginInvoke(new Action(() =>
+            {
+                if (IsDisposed || WindowState != FormWindowState.Normal) return;
+                int need = _nav.Padding.Vertical + _nav.Controls.Cast<Control>().Sum(c => c.Height + c.Margin.Vertical);
+                int missing = need - _nav.ClientSize.Height;
+                if (missing > 0)
+                {
+                    var wa = Screen.FromControl(this).WorkingArea;
+                    int newHeight = Math.Min(Height + missing + 8, wa.Height);
+                    if (newHeight > Height)
+                    {
+                        Height = newHeight;
+                        if (Bottom > wa.Bottom) Top = Math.Max(wa.Top, wa.Bottom - Height);
+                    }
+                }
+                _nav.AutoScroll = need > _nav.ClientSize.Height + 1;
+            }));
         }
 
         private void ApplyChromeColors()
@@ -1061,6 +1085,7 @@ namespace MotionDesk.UI
                     var a = AppSettings.Load(); a.ShowSystemMonitor = v; a.Save();
                 }));
             panel.Controls.Add(SettingsView.BuildWidgetsThemeRow());
+            panel.Controls.Add(BuildWidgetsTransparencyRows());
             var sizeRow = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 2, 0, 10) };
             sizeRow.Controls.Add(SettingsView.NumericRow(LocalizationManager.T("Settings.WidgetDefaultWidthLabel"), AppSettings.Load().WidgetDefaultWidth, 160, 800,
                 v => { var a = AppSettings.Load(); a.WidgetDefaultWidth = v; a.Save(); }));
@@ -1191,21 +1216,8 @@ namespace MotionDesk.UI
             panel.Controls.Add(quickHideCheck);
             panel.Controls.Add(keepIconsBtn);
 
-            // DeskContainers engine: the bundled DesktopFences (MIT, THIRD_PARTY_NOTICES.md). When it is on, its own heart menu,
-            // Options and Customize windows manage the fences; the built-in legacy containers below are hidden.
-            if (FencesEngine.IsAvailable)
-            {
-                panel.Controls.Add(SettingsView.Checkbox(LdKeep("Χρήση της μηχανής DesktopFences για τα DeskContainers (προτεινόμενο)", "Use the DesktopFences engine for DeskContainers (recommended)"), AppSettings.Load().UseFencesEngine, v =>
-                {
-                    var a = AppSettings.Load(); a.UseFencesEngine = v; a.Save();
-                    if (v) { DeskContainerHostEngine.Instance.CloseAll(); FencesEngine.Start(); }
-                    else FencesEngine.Stop();
-                    _statusLabel.Text = LdKeep("Άνοιξε ξανά αυτή τη σελίδα για να δεις τα αντίστοιχα χειριστήρια.", "Reopen this page to see the matching controls.");
-                }));
-                AddIconButtonGrid(panel,
-                    ("Container", LdKeep("Έναρξη Fences", "Start Fences"), (_, _) => { FencesEngine.Start(); }),
-                    ("Close", LdKeep("Διακοπή Fences", "Stop Fences"), (_, _) => FencesEngine.Stop()));
-            }
+            // DeskContainers engine (bundled fences): its settings are cards right here, not a separate window.
+            if (FencesEngine.IsAvailable) BuildFencesSettings(panel);
             if (!FencesEngine.Enabled) {
             AddIconButtonGrid(panel,
                 ("Container", LocalizationManager.T("DeskZones.NewContainerBtn"), (_, _) => DeskContainerHostEngine.Instance.SpawnContainer($"container{DateTime.Now.Ticks}", LocalizationManager.T("DeskZones.NewContainerDefaultTitle"), 360, 200, 360, 260)),
@@ -3126,6 +3138,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             panel.Controls.Add(BuildTopicCard("Nav.Widgets", "Widgets.Intro"));
             panel.Controls.Add(BuildTopicCard("Nav.DeskZones", "DeskZones.Intro"));
             panel.Controls.Add(BuildTopicCard("DeskZones.SectionContainers", "DeskZones.ContainersIntro"));
+            panel.Controls.Add(BuildTopicCard("About.DeskContainersGuideTitle", "About.DeskContainersGuide"));
             panel.Controls.Add(BuildTopicCard("Nav.Wallpaper", "Wallpaper.Intro"));
             panel.Controls.Add(BuildTopicCard("Nav.Personalization", "Personalization.Intro"));
             panel.Controls.Add(BuildTopicCard("Nav.Automation", "Automation.Intro"));

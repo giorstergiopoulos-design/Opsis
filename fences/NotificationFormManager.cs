@@ -38,7 +38,7 @@ namespace Desktop_Fences
         private void InitializeComponent()
         {
             // Window Props
-            this.Title = "Opsis Fences Notification"; // Taskbar/System title
+            this.Title = Loc.T("Opsis Fences Notification"); // Taskbar/System title
             this.Width = 360;
             this.Height = 200;
             this.SizeToContent = SizeToContent.Height;
@@ -111,7 +111,7 @@ namespace Desktop_Fences
             // Close X
             Button btnClose = new Button
             {
-                Content = "✕",
+                Content = Loc.T("✕"),
                 Foreground = Brushes.White,
                 Background = Brushes.Transparent,
                 BorderThickness = new Thickness(0),
@@ -161,7 +161,7 @@ namespace Desktop_Fences
             {
                 _chkDismiss = new CheckBox
                 {
-                    Content = "Don't show this again",
+                    Content = Loc.T("Don't show this again"),
                     FontSize = 11,
                     Foreground = Brushes.Gray,
                     Cursor = System.Windows.Input.Cursors.Hand

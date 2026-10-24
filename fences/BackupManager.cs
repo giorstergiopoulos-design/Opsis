@@ -280,7 +280,7 @@ namespace Desktop_Fences
                     Filter = "Fence Files|*.fence",
                     DefaultExt = ".fence",
                     InitialDirectory = Directory.Exists(exportsDir) ? exportsDir : exeDir,
-                    Title = "Select Fence Export File"
+                    Title = Loc.T("Select Fence Export File")
                 };
 
                 if (openDialog.ShowDialog() != true) return;

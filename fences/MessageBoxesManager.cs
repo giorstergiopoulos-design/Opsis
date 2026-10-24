@@ -52,6 +52,7 @@ namespace Desktop_Fences
         /// <returns>True if Yes was clicked, False if No was clicked</returns>
         public static bool ShowCustomYesNoMessageBox(string message, string title)
         {
+            message = Loc.T(message); title = Loc.T(title);
             try
             {
                 var messageBox = new CustomYesNoMessageBoxWindow(message, title);
@@ -172,7 +173,7 @@ namespace Desktop_Fences
                 };
                 TextBlock warningIcon = new TextBlock
                 {
-                    Text = "⚠",
+                    Text = Loc.T("⚠"),
                     FontFamily = new FontFamily("Segoe UI"),
                     FontSize = 32,
                     FontWeight = FontWeights.Bold,
@@ -218,7 +219,7 @@ namespace Desktop_Fences
                 // No Button
                 Button btnNo = new Button
                 {
-                    Content = "No",
+                    Content = Loc.T("No"),
                     Width = 80,
                     Height = 32,
                     FontFamily = new FontFamily("Segoe UI"),
@@ -237,7 +238,7 @@ namespace Desktop_Fences
                 // Yes Button (Red for Reset/Danger actions)
                 Button btnYes = new Button
                 {
-                    Content = "Yes",
+                    Content = Loc.T("Yes"),
                     Width = 80,
                     Height = 32,
                     FontFamily = new FontFamily("Segoe UI"),
@@ -268,6 +269,7 @@ namespace Desktop_Fences
 
         public static void ShowOKOnlyMessageBoxFormStatic(string msgboxMessage, string msgboxTitle)
         {
+            msgboxMessage = Loc.T(msgboxMessage); msgboxTitle = Loc.T(msgboxTitle);
             MessageBoxesManager.ShowOKOnlyMessageBoxForm(msgboxMessage, msgboxTitle);
         }
 
@@ -304,7 +306,7 @@ namespace Desktop_Fences
             // 2. Branding Subtitle
             var brandBlock = new TextBlock
             {
-                Text = "Opsis Fences",
+                Text = Loc.T("Opsis Fences"),
                 Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#99FFFFFF")), // Dimmed White
                 FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 9,
@@ -455,7 +457,7 @@ namespace Desktop_Fences
                 // Manual close button
                 Button manualCloseButton = new Button
                 {
-                    Content = "✕",
+                    Content = Loc.T("✕"),
                     Width = 24,
                     Height = 20,
                     FontFamily = new FontFamily("Segoe UI"),
@@ -706,6 +708,7 @@ namespace Desktop_Fences
         /// <param name="autoCloseTimeMs">Time in milliseconds before auto-close (default: 2000)</param>
         public static void ShowAutoClosingMessageBoxForm(string message, string title, int autoCloseTimeMs = 2000)
         {
+            message = Loc.T(message); title = Loc.T(title);
             try
             {
                 var messageBox = new AutoClosingMessageBoxWindow(message, title, autoCloseTimeMs);
@@ -730,6 +733,7 @@ namespace Desktop_Fences
         /// <returns>The wait window instance (caller should close it when done)</returns>
         public static Window CreateWaitWindow(string title = "Opsis Fences", string message = "Please wait...")
         {
+            title = Loc.T(title); message = Loc.T(message);
             try
             {
                 var waitWindow = new WaitWindow(title, message);
@@ -868,7 +872,7 @@ namespace Desktop_Fences
 
                 TextBlock infoIcon = new TextBlock
                 {
-                    Text = "ℹ",
+                    Text = Loc.T("ℹ"),
                     FontFamily = new FontFamily("Segoe UI"),
                     FontSize = 42,
                     FontWeight = FontWeights.Bold,
@@ -924,7 +928,7 @@ namespace Desktop_Fences
                 // OK button with user's accent color
                 Button btnOK = new Button
                 {
-                    Content = "OK",
+                    Content = Loc.T("OK"),
                     Width = 90,
                     Height = 36,
                     FontFamily = new FontFamily("Segoe UI"),
@@ -1014,7 +1018,7 @@ namespace Desktop_Fences
                 _userAccentColor = mediaColor;
 
                 // Modern WPF window setup
-                this.Title = "Delete Tab";
+                this.Title = Loc.T("Delete Tab");
                 this.Width = 420;
                 this.Height = 220;
                 this.WindowStartupLocation = WindowStartupLocation.Manual;
@@ -1092,7 +1096,7 @@ namespace Desktop_Fences
 
                 TextBlock warningIcon = new TextBlock
                 {
-                    Text = "🗂",
+                    Text = Loc.T("🗂"),
                     FontFamily = new FontFamily("Segoe UI"),
                     FontSize = 42,
                     FontWeight = FontWeights.Bold,
@@ -1113,7 +1117,7 @@ namespace Desktop_Fences
 
                 TextBlock titleLabel = new TextBlock
                 {
-                    Text = "Delete Tab",
+                    Text = Loc.T("Delete Tab"),
                     FontFamily = new FontFamily("Segoe UI"),
                     FontSize = 18,
                     FontWeight = FontWeights.Bold,
@@ -1149,7 +1153,7 @@ namespace Desktop_Fences
                 // No button (safe action)
                 Button btnNo = new Button
                 {
-                    Content = "No",
+                    Content = Loc.T("No"),
                     Width = 80,
                     Height = 32,
                     FontFamily = new FontFamily("Segoe UI"),
@@ -1175,7 +1179,7 @@ namespace Desktop_Fences
                 // Yes button (danger action)
                 Button btnYes = new Button
                 {
-                    Content = "Yes",
+                    Content = Loc.T("Yes"),
                     Width = 80,
                     Height = 32,
                     FontFamily = new FontFamily("Segoe UI"),
@@ -1371,7 +1375,7 @@ namespace Desktop_Fences
                 _userAccentColor = mediaColor;
 
                 // Modern WPF window setup
-                this.Title = "Confirm delete";
+                this.Title = Loc.T("Confirm delete");
                 this.Width = 420;
                 this.Height = 200;
                 this.WindowStartupLocation = WindowStartupLocation.Manual;
@@ -1450,7 +1454,7 @@ namespace Desktop_Fences
 
                 TextBlock warningIcon = new TextBlock
                 {
-                    Text = "⚠",
+                    Text = Loc.T("⚠"),
                     FontFamily = new FontFamily("Segoe UI"),
                     FontSize = 32,
                     FontWeight = FontWeights.Bold,
@@ -1471,7 +1475,7 @@ namespace Desktop_Fences
 
                 TextBlock titleLabel = new TextBlock
                 {
-                    Text = "Delete Fence",
+                    Text = Loc.T("Delete Fence"),
                     FontFamily = new FontFamily("Segoe UI"),
                     FontSize = 18,
                     FontWeight = FontWeights.Bold,
@@ -1481,7 +1485,7 @@ namespace Desktop_Fences
 
                 TextBlock messageLabel = new TextBlock
                 {
-                    Text = "Are you sure you want to delete this fence?",
+                    Text = Loc.T("Are you sure you want to delete this fence?"),
                     FontFamily = new FontFamily("Segoe UI"),
                     FontSize = 14,
                     Foreground = new SolidColorBrush(Color.FromRgb(95, 99, 104)),
@@ -1506,7 +1510,7 @@ namespace Desktop_Fences
                 // No button with user's accent color (safe action)
                 Button btnNo = new Button
                 {
-                    Content = "No",
+                    Content = Loc.T("No"),
                     Width = 80,
                     Height = 32,
                     FontFamily = new FontFamily("Segoe UI"),
@@ -1533,7 +1537,7 @@ namespace Desktop_Fences
                 // Yes button with danger styling
                 Button btnYes = new Button
                 {
-                    Content = "Yes",
+                    Content = Loc.T("Yes"),
                     Width = 80,
                     Height = 32,
                     FontFamily = new FontFamily("Segoe UI"),
@@ -1602,6 +1606,7 @@ namespace Desktop_Fences
         /// <param name="title">The dialog title</param>
         public static void ShowOKOnlyMessageBoxForm(string message, string title)
         {
+            message = Loc.T(message); title = Loc.T(title);
             try
             {
                 var messageBox = new OKOnlyMessageBoxWindow(message, title);
