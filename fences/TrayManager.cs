@@ -240,7 +240,6 @@ namespace Desktop_Fences
             }
 
             var trayMenu = new ContextMenuStrip();
-            trayMenu.Items.Add(Loc.T("About..."), null, (s, e) => AboutFormManager.ShowAboutForm());
             trayMenu.Items.Add(Loc.T("Options..."), null, (s, e) => OpsisBridge.OpenOpsisSettings());
             trayMenu.Items.Add(new ToolStripSeparator());
 

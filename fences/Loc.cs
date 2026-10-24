@@ -31,6 +31,9 @@ namespace Desktop_Fences
         private static readonly Dictionary<string, string> Map = new Dictionary<string, string>
         {
             // menus
+            ["Settings"] = "Ρυθμίσεις", ["All settings in Opsis..."] = "Όλες οι ρυθμίσεις στο Opsis…", ["Single click to launch"] = "Άνοιγμα με ένα κλικ", ["Snap near other containers"] = "Μαγνητική στοίχιση κοντά σε άλλα containers",
+            ["Sounds"] = "Ήχοι", ["Auto roll-up (expand on hover)"] = "Αυτόματο μάζεμα (άνοιγμα με hover)", ["Auto-hide when idle"] = "Αυτόματη απόκρυψη μετά από αδράνεια",
+            ["Chameleon (colour from the wallpaper)"] = "Chameleon (χρώμα από το wallpaper)", ["Dropped desktop icons leave the desktop"] = "Τα εικονίδια που σύρονται μέσα φεύγουν από την επιφάνεια", ["Hide scrollbars"] = "Απόκρυψη scrollbars",
             ["About..."] = "Σχετικά…", ["Options..."] = "Ρυθμίσεις…", ["New Fence"] = "Νέο DeskContainer", ["New Portal Fence"] = "Νέο Portal DeskContainer",
             ["New Note Fence"] = "Νέο DeskContainer σημείωσης", ["Enable Tabs On This Fence"] = "Ενεργοποίηση καρτελών σε αυτό το DeskContainer",
             ["Delete this Fence"] = "Διαγραφή αυτού του DeskContainer", ["Export this Fence"] = "Εξαγωγή αυτού του DeskContainer", ["Import a Fence..."] = "Εισαγωγή DeskContainer…",

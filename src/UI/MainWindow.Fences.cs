@@ -156,6 +156,10 @@ namespace MotionDesk.UI
                 (Lx("Αντίγραφο ασφαλείας", "Backup"), () => FencesBridge.Command("backup")),
                 (Lx("Επαναφορά…", "Restore…"), () => FencesBridge.Command("restore")),
                 (Lx("Φάκελος αντιγράφων", "Open backups folder"), () => FencesBridge.Command("open-backups")));
+            FxButtons(tools,
+                (Lx("Νέο DeskContainer", "New DeskContainer"), () => FencesBridge.Command("new-fence")),
+                (Lx("Νέο DeskContainer σημείωσης", "New note DeskContainer"), () => FencesBridge.Command("new-note")),
+                (Lx("Εισαγωγή DeskContainer…", "Import DeskContainer…"), () => FencesBridge.Command("import-fence")));
             FxBool(tools, Lx("Αυτόματο καθημερινό αντίγραφο", "Automatic backup (daily)"), "EnableAutoBackup", true);
             FxButtons(tools,
                 (Lx("Επαναφορά fences εντός οθόνης", "Screen bound fences"), () => FencesBridge.Command("screen-bound")),

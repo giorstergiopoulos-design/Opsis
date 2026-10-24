@@ -121,6 +121,9 @@ namespace Desktop_Fences
                 case "reset-styles": FenceManager.ResetAllCustomizations(); break;
                 case "factory-reset": OptionsFormManager.PerformFullFactoryReset(); break;
                 case "open-log": OptionsFormManager.OpenLogFile(); break;
+                case "import-fence": BackupManager.ImportFence(); break;
+                case "new-note": FenceManager.CreateNewFenceAt("Note"); break;
+                case "new-fence": FenceManager.CreateNewFenceAt("Data"); break;
                 case "exit": DesktopOriginals.ShowAll(); Application.Current.Shutdown(); break;
             }
         }

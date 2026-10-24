@@ -151,6 +151,13 @@ namespace Desktop_Fences
             catch { return false; }
         }
 
+        // Opsis: create a container from the Opsis settings page (near the top-left of the primary screen, cascading).
+        public static void CreateNewFenceAt(string itemsType)
+        {
+            int n = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>().Count();
+            CreateNewFence("", itemsType, 140 + (n % 6) * 36, 140 + (n % 6) * 36);
+        }
+
         // Opsis: F2 -> rename the fence currently under the mouse pointer.
         // Opsis: first-run welcome note (replaces the upstream "Desktop Fences+ Startup Tips").
         private static bool OpsisGreek => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "el";
@@ -1074,15 +1081,28 @@ namespace Desktop_Fences
             menu.MouseLeave += (s, e) => { menuTimer.Stop(); menuTimer.Start(); };
             // ------------------------
 
-            // About item
-            var aboutItem = new MenuItem { Header = Loc.T("About...") };
-            aboutItem.Click += (s, e) => AboutFormManager.ShowAboutForm();
-            menu.Items.Add(aboutItem);
-
-            // Options item
-            var optionsItem = new MenuItem { Header = Loc.T("Options...") };
-            optionsItem.Click += (s, e) => OpsisBridge.OpenOpsisSettings();   // Opsis: settings live in the Opsis application
-            menu.Items.Add(optionsItem);
+            // Settings submenu (the three-bars menu keeps the settings at hand; every setting is also in the Opsis DeskZones page)
+            var settingsItem = new MenuItem { Header = Loc.T("Settings") };
+            void AddToggle(string header, Func<bool> get, Action<bool> set, Action after = null)
+            {
+                var mi = new MenuItem { Header = Loc.T(header), IsCheckable = true, IsChecked = get() };
+                mi.Click += (s, e) => { set(mi.IsChecked); SettingsManager.SaveSettings(); after?.Invoke(); };
+                menu.Opened += (s, e) => mi.IsChecked = get();      // stays in sync with changes made from the Opsis page
+                settingsItem.Items.Add(mi);
+            }
+            AddToggle("Single click to launch", () => SettingsManager.SingleClickToLaunch, v => SettingsManager.SingleClickToLaunch = v);
+            AddToggle("Snap near other containers", () => SettingsManager.IsSnapEnabled, v => SettingsManager.IsSnapEnabled = v);
+            AddToggle("Sounds", () => SettingsManager.EnableSounds, v => SettingsManager.EnableSounds = v);
+            AddToggle("Auto roll-up (expand on hover)", () => SettingsManager.AutoRollUpOnHover, v => SettingsManager.AutoRollUpOnHover = v);
+            AddToggle("Auto-hide when idle", () => SettingsManager.AutoHideFences, v => SettingsManager.AutoHideFences = v, () => ResetAutoHideTimer());
+            AddToggle("Chameleon (colour from the wallpaper)", () => SettingsManager.EnableChameleonMode, v => SettingsManager.EnableChameleonMode = v, () => Utility.UpdateFenceVisuals());
+            AddToggle("Dropped desktop icons leave the desktop", () => SettingsManager.HideDesktopOriginalsOnDrop, v => SettingsManager.HideDesktopOriginalsOnDrop = v);
+            AddToggle("Hide scrollbars", () => SettingsManager.DisableFenceScrollbars, v => SettingsManager.DisableFenceScrollbars = v, () => TrayManager.reloadAllFences());
+            settingsItem.Items.Add(new Separator());
+            var allSettings = new MenuItem { Header = Loc.T("All settings in Opsis...") };
+            allSettings.Click += (s, e) => OpsisBridge.OpenOpsisSettings();   // Opsis: the full settings live in the Opsis application
+            settingsItem.Items.Add(allSettings);
+            menu.Items.Add(settingsItem);
 
             // Separator
             menu.Items.Add(new Separator());
@@ -2500,7 +2520,7 @@ namespace Desktop_Fences
                 {
                     // Cleanup Legendary Effects
                     string currentTitle = fence.Title?.ToString() ?? "";
-                    if (currentTitle == "Nikos" || currentTitle == "Nikos Georgousis" || currentTitle.Contains(">:"))
+                    if (false)
                     {
                         InterCore.ProcessTitleChange(liveFence, "RESET_EFFECT_TEMP", "");
                     }
@@ -6919,7 +6939,7 @@ namespace Desktop_Fences
 
             // Check for persistent Legendary Mode (Nikos or >:)
             string fTitle = fence.Title?.ToString() ?? "";
-            if (fTitle == "Nikos" || fTitle == "Nikos Georgousis" || fTitle.Contains(">:"))
+            if (false)
             {
                 // Defer slightly to ensure window is loaded
                 System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>

@@ -44,7 +44,7 @@ namespace Desktop_Fences
         private static Color Hex(string s) => (Color)ColorConverter.ConvertFromString("#" + s.TrimStart('#'));
 
         private static bool IsFenceOrOverlay(Window w) =>
-            w is NonActivatingWindow || w is SmartToast || w is DrawFenceOverlay || w is FenceFocusFormManager || w is NotificationFormManager
+            w is NonActivatingWindow || w is SmartToast || w is DrawFenceOverlay || w is FenceFocusFormManager
             || w.GetType().Name.Contains("WaitWindow") || w.Title == "" && w.WindowStyle == WindowStyle.None && w.AllowsTransparency && w.Width < 400 && w.Height < 120;
 
         private static void OnWindowLoaded(object sender, RoutedEventArgs e)

@@ -138,45 +138,7 @@ namespace Desktop_Fences
         // Processes fence title changes for special triggers (e.g. "limbo666")
         public static string ProcessTitleChange(dynamic fence, string newTitle, string originalTitle)
         {
-            try
-            {
-                // 1. Limbo666 Easter Egg (One-time trigger, Reverts title)
-                if (string.Equals(newTitle, "limbo666", StringComparison.OrdinalIgnoreCase))
-                {
-                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, "InterCore: limbo666 trigger activated");
-                    ActivateSparkleEffect();
-                    return originalTitle; // Revert
-                }
-
-                // 2. The "Nikos" Legendary Mode (Persistent, Keeps title)
-                bool isLegendary = string.Equals(newTitle, "Nikos", StringComparison.OrdinalIgnoreCase) ||
-                                   string.Equals(newTitle, "Nikos Georgousis", StringComparison.OrdinalIgnoreCase) ||
-                                   (!string.IsNullOrEmpty(newTitle) && newTitle.Contains(">:"));
-
-                // We need the window to apply effects. Find it by ID.
-                string fenceId = fence.Id?.ToString();
-                var win = Application.Current.Windows.OfType<NonActivatingWindow>().FirstOrDefault(w => w.Tag?.ToString() == fenceId);
-
-                if (win != null)
-                {
-                    if (isLegendary)
-                    {
-                        ActivateLegendaryMode(win, fenceId);
-                    }
-                    else
-                    {
-                        // If it WAS legendary but user changed name to "Work", deactivate it
-                        DeactivateLegendaryMode(win, fenceId);
-                    }
-                }
-
-                return newTitle; // Keep the new name (e.g. "Nikos")
-            }
-            catch (Exception ex)
-            {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, $"InterCore: Error processing title change: {ex.Message}");
-                return newTitle;
-            }
+            return newTitle;      // Opsis: no special title triggers
         }
 
         #region Legendary Mode (Nikos)
