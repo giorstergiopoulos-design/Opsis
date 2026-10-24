@@ -224,7 +224,7 @@ namespace Desktop_Fences
             _trayIcon = new NotifyIcon
             {
                 Icon = Icon.ExtractAssociatedIcon(exePath),
-                Visible = true,
+                Visible = false,   // Opsis owns the tray: its menu carries the DeskContainers entries
                 Text = $"Desktop Fences ({ProfileManager.CurrentProfileName})"
             };
 
@@ -751,7 +751,7 @@ namespace Desktop_Fences
                     string exePath = Process.GetCurrentProcess().MainModule.FileName;
                     _trayIcon.Icon = Icon.ExtractAssociatedIcon(exePath);
                 }
-                _trayIcon.Visible = true;
+                _trayIcon.Visible = false;
             }
             else
             {

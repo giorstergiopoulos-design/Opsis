@@ -130,6 +130,7 @@ namespace Desktop_Fences
                 case "import-fence": BackupManager.ImportFence(); break;
                 case "new-note": FenceManager.CreateNewFenceAt("Note"); break;
                 case "new-fence": FenceManager.CreateNewFenceAt("Data"); break;
+                case "reload-all": _ = TrayManager.reloadAllFences(); break;
                 case "exit": DesktopOriginals.ShowAll(); Application.Current.Shutdown(); break;
             }
         }

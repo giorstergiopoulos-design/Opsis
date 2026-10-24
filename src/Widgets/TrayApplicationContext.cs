@@ -65,6 +65,7 @@ namespace MotionDesk.Widgets
             contextMenu.Items.Add(new ToolStripSeparator());
 
             contextMenu.Items.Add(LocalizationManager.T("Tray.DeskZonesEdit"), null, (s, e) => AddDeskZone());
+            if (AppSettings.Load().UseFencesEngine) contextMenu.Items.Add(BuildDeskContainersMenu());
             contextMenu.Items.Add(new ToolStripSeparator());
 
             _wallpaperToggleItem = new ToolStripMenuItem(LocalizationManager.T("Tray.WallpaperToggle"));
@@ -412,6 +413,26 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
         // Κοινός, πλήρης καθαρισμός εξόδου — καλείται ΚΑΙ από το μενού "Έξοδος" ΚΑΙ από ένα
         // self-update install (μέσω RequestExit/ExitRequested) ώστε και στις δύο περιπτώσεις να
         // αποθηκεύεται η συνεδρία και να σταματούν σωστά τα plugins/hotkeys πριν το Application.Exit().
+        private ToolStripMenuItem BuildDeskContainersMenu()
+        {
+            bool el = LocalizationManager.CurrentLanguage == "el";
+            string L(string en, string gr) => el ? gr : en;
+            var menu = new ToolStripMenuItem("DeskContainers");
+            void Add(string en, string gr, string cmd) => menu.DropDownItems.Add(L(en, gr), null, (s, e) => FencesBridge.Command(cmd));
+            Add("New DeskContainer", "Νέο DeskContainer", "new-fence");
+            Add("New note", "Νέα σημείωση", "new-note");
+            menu.DropDownItems.Add(new ToolStripSeparator());
+            Add("Profiles…", "Προφίλ…", "manage-profiles");
+            Add("Profile automation…", "Αυτοματισμός προφίλ…", "manage-automation");
+            Add("Smart desktop rules…", "Κανόνες έξυπνης επιφάνειας…", "smart-rules");
+            Add("Organize desktop now", "Οργάνωση επιφάνειας τώρα", "organize-now");
+            menu.DropDownItems.Add(new ToolStripSeparator());
+            Add("Reload all DeskContainers", "Επαναφόρτωση DeskContainers", "reload-all");
+            Add("Back up data", "Αντίγραφο ασφαλείας", "backup");
+            menu.DropDownItems.Add(L("Settings…", "Ρυθμίσεις…"), null, (s, e) => ShowMainWindow("DeskZones"));
+            return menu;
+        }
+
         private void PerformExit()
         {
             try { WorkspaceProfileService.Save("Last Session"); WorkspaceProfileService.ExitSaveDone = true; } catch { }
