@@ -14,7 +14,7 @@ namespace Desktop_Fences
     //  * the "Options..." menu entries ask Opsis to open its settings page by writing  <data>\bridge\to_opsis.txt.
     internal static class OpsisBridge
     {
-        private static FileSystemWatcher _optionsWatcher, _commandWatcher;
+        private static FileSystemWatcher _optionsWatcher, _commandWatcher, _themeWatcher;
         private static DispatcherTimer _debounce;
         private static string _lastHash = "";
         private static bool _started;
@@ -37,6 +37,12 @@ namespace Desktop_Fences
 
                 _debounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
                 _debounce.Tick += (s, e) => { _debounce.Stop(); ApplyExternalOptions(); };
+
+                var themeWatcher = new FileSystemWatcher(BridgeDir, "theme.txt") { NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName, EnableRaisingEvents = true };
+                void ReadTheme() { try { System.Threading.Thread.Sleep(60); var spec = File.ReadAllText(Path.Combine(BridgeDir, "theme.txt")).Trim(); if (spec.Length > 0) OpsisTheme.Reload(spec); } catch { } }
+                themeWatcher.Changed += (s, e) => ReadTheme();
+                themeWatcher.Created += (s, e) => ReadTheme();
+                _themeWatcher = themeWatcher;
 
                 _commandWatcher = new FileSystemWatcher(BridgeDir, "cmd_*.txt") { NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite, EnableRaisingEvents = true };
                 _commandWatcher.Created += (s, e) => Dispatch(() => RunCommandFile(e.FullPath));

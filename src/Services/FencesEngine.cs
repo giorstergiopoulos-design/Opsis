@@ -44,11 +44,29 @@ namespace MotionDesk.Services
             catch (Exception) { }
         }
 
+        // "1;bg;surface;hover;border;text;text2;muted;accent" (hex RRGGBB); the first field is 1 for a dark Opsis theme
+        private static string ThemeSpec()
+        {
+            var pal = MotionDesk.UI.ThemeManager.Current;
+            string Hx(System.Drawing.Color c) => $"{c.R:X2}{c.G:X2}{c.B:X2}";
+            return string.Join(";", pal.IsDark ? "1" : "0", Hx(pal.Background), Hx(pal.Surface), Hx(pal.SurfaceHover), Hx(pal.Border), Hx(pal.TextPrimary), Hx(pal.TextSecondary), Hx(pal.TextMuted), Hx(pal.AccentCyan));
+        }
+
+        private static bool _themeHooked;
+
         public static void Start()
         {
             if (!IsAvailable || IsRunning) return;
             FencesMigration.MigrateLegacyContainers();     // first start only: brings the old DeskContainers over
             WatchRequests();
+            if (!_themeHooked)
+            {
+                _themeHooked = true;      // a theme change in Opsis reaches the running engine without restarting it
+                MotionDesk.UI.ThemeManager.Changed += () =>
+                {
+                    try { if (IsRunning) { Directory.CreateDirectory(FencesBridge.BridgeDir); File.WriteAllText(Path.Combine(FencesBridge.BridgeDir, "theme.txt"), ThemeSpec()); } } catch (IOException) { }
+                };
+            }
             if (!_exitHooked) { _exitHooked = true; Application.ApplicationExit += (_, _) => Stop(); }
             try
             {
@@ -56,9 +74,7 @@ namespace MotionDesk.Services
                 psi.Environment["OPSIS_PARENT_PID"] = Environment.ProcessId.ToString();
                 psi.Environment["OPSIS_LANG"] = LocalizationManager.CurrentLanguage;      // the engine shows its texts in the Opsis language
                 // Opsis palette for the Fences settings windows (see fences\OpsisTheme.cs).
-                var pal = MotionDesk.UI.ThemeManager.Current;
-                string Hx(System.Drawing.Color c) => $"{c.R:X2}{c.G:X2}{c.B:X2}";
-                psi.Environment["OPSIS_THEME"] = string.Join(";", pal.IsDark ? "1" : "0", Hx(pal.Background), Hx(pal.Surface), Hx(pal.SurfaceHover), Hx(pal.Border), Hx(pal.TextPrimary), Hx(pal.TextSecondary), Hx(pal.TextMuted), Hx(pal.AccentCyan));
+                psi.Environment["OPSIS_THEME"] = ThemeSpec();
                 // An elevated Opsis must not hand its elevation to the engine: UIPI would block drag & drop from Explorer into its windows.
                 if (DeElevatedLauncher.IsElevated())
                 {

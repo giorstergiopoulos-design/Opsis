@@ -13,6 +13,9 @@ namespace Desktop_Fences
         public static readonly bool Greek =
             string.Equals((Environment.GetEnvironmentVariable("OPSIS_LANG") ?? CultureInfo.CurrentUICulture.TwoLetterISOLanguageName), "el", StringComparison.OrdinalIgnoreCase);
 
+        // Exact-match translation only (no "fence" renaming): used for texts that were not wrapped at their source.
+        public static string Translate(string s) => Greek && !string.IsNullOrEmpty(s) && Map.TryGetValue(s, out var g) ? g : s;
+
         public static string T(string s)
         {
             if (string.IsNullOrEmpty(s)) return s;
@@ -31,6 +34,15 @@ namespace Desktop_Fences
         private static readonly Dictionary<string, string> Map = new Dictionary<string, string>
         {
             // menus
+            ["Process Name (Pick or Type):"] = "Όνομα διεργασίας (επιλογή ή πληκτρολόγηση):", ["Target Profile:"] = "Προφίλ προορισμού:", ["Activation Delay:"] = "Καθυστέρηση ενεργοποίησης:",
+            ["Up"] = "Πάνω", ["Down"] = "Κάτω", ["Move Up"] = "Μετακίνηση πάνω", ["Move Down"] = "Μετακίνηση κάτω", ["Rename"] = "Μετονομασία", ["Delete"] = "Διαγραφή", ["Delete Profile"] = "Διαγραφή προφίλ",
+            ["Rename profile:"] = "Μετονομασία προφίλ:", ["New Profile Name..."] = "Όνομα νέου προφίλ…", ["Invalid name or profile already exists."] = "Μη έγκυρο όνομα ή το προφίλ υπάρχει ήδη.",
+            ["Rename failed. Name may be in use or invalid."] = "Η μετονομασία απέτυχε (το όνομα χρησιμοποιείται ή δεν είναι έγκυρο).", ["Cancel/Close"] = "Άκυρο/Κλείσιμο",
+            ["Backup"] = "Αντίγραφο ασφαλείας", ["Backup completed successfully."] = "Το αντίγραφο ασφαλείας ολοκληρώθηκε.", ["Restore"] = "Επαναφορά",
+            ["Custom path:"] = "Προσαρμοσμένη διαδρομή:", ["BROWSE"] = "ΕΠΙΛΟΓΗ", ["Portal"] = "Portal", ["New Rule"] = "Νέος κανόνας", ["Saved"] = "Αποθηκεύτηκε",
+            ["Your rules have been saved and applied successfully."] = "Οι κανόνες αποθηκεύτηκαν και εφαρμόστηκαν.", ["Last successful run: Never"] = "Τελευταία επιτυχής εκτέλεση: Ποτέ",
+            ["Custom Extensions..."] = "Προσαρμοσμένες επεκτάσεις…", ["Overwrite (Send old file to Recycle Bin)"] = "Αντικατάσταση (το παλιό αρχείο πάει στον Κάδο)", ["Skip (Leave on Desktop)"] = "Παράλειψη (μένει στην επιφάνεια)",
+            ["Images"] = "Εικόνες", ["Documents"] = "Έγγραφα", ["Archives"] = "Αρχεία συμπίεσης", ["Executables"] = "Εκτελέσιμα",
             ["Settings"] = "Ρυθμίσεις", ["All settings in Opsis..."] = "Όλες οι ρυθμίσεις στο Opsis…", ["Single click to launch"] = "Άνοιγμα με ένα κλικ", ["Snap near other containers"] = "Μαγνητική στοίχιση κοντά σε άλλα containers",
             ["Sounds"] = "Ήχοι", ["Auto roll-up (expand on hover)"] = "Αυτόματο μάζεμα (άνοιγμα με hover)", ["Auto-hide when idle"] = "Αυτόματη απόκρυψη μετά από αδράνεια",
             ["Chameleon (colour from the wallpaper)"] = "Chameleon (χρώμα από το wallpaper)", ["Dropped desktop icons leave the desktop"] = "Τα εικονίδια που σύρονται μέσα φεύγουν από την επιφάνεια", ["Hide scrollbars"] = "Απόκρυψη scrollbars",
@@ -72,9 +84,9 @@ namespace Desktop_Fences
             ["Title Bar"] = "Γραμμή τίτλου", ["Color"] = "Χρώμα", ["Effect"] = "Εφέ", ["Menu Icon"] = "Εικονίδιο μενού",
             // profiles / automation / smart desktop
             ["Profile Manager"] = "Διαχείριση προφίλ", ["Active"] = "Ενεργό", ["Enable Profile Automation"] = "Ενεργοποίηση αυτοματισμού προφίλ", ["Automation Rules"] = "Κανόνες αυτοματισμού", ["Manage Automation Rules"] = "Διαχείριση κανόνων αυτοματισμού",
-            ["Persisted Mode (Stay on profile after close)"] = "Μόνιμη λειτουργία (παραμονή στο προφίλ μετά το κλείσιμο)", ["CLICK ON THE TARGET WINDOW"] = "ΚΑΝΕ ΚΛΙΚ ΣΤΟ ΠΑΡΑΘΥΡΟ ΠΡΟΟΡΙΣΜΟΥ", ["🎯 Pick Window"] = "🎯 Επιλογή παραθύρου",
+            ["Persisted Mode (Stay on profile after close)"] = "Μόνιμη λειτουργία (παραμονή στο προφίλ μετά το κλείσιμο)", ["CLICK ON THE TARGET WINDOW"] = "ΚΑΝΕ ΚΛΙΚ ΣΤΟ ΠΑΡΑΘΥΡΟ ΠΡΟΟΡΙΣΜΟΥ", ["🎯 Pick Window"] = "🎯 Επιλ.",
             ["Smart Desktop Rules"] = "Κανόνες έξυπνης επιφάνειας εργασίας", ["Existing Rules"] = "Υπάρχοντες κανόνες", ["Rule Definition"] = "Ορισμός κανόνα", ["Rule Name:"] = "Όνομα κανόνα:", ["Save Rules"] = "Αποθήκευση κανόνων",
-            ["+ Add Rule"] = "+ Νέος κανόνας", ["− Remove"] = "− Αφαίρεση", ["Delete Selected"] = "Διαγραφή επιλεγμένου", ["Enable this rule"] = "Ενεργοποίηση κανόνα", ["Double-click to edit rule"] = "Διπλό κλικ για επεξεργασία κανόνα",
+            ["+ Add Rule"] = "+ Νέος", ["− Remove"] = "− Αφαίρεση", ["Delete Selected"] = "Διαγραφή", ["Enable this rule"] = "Ενεργοποίηση κανόνα", ["Double-click to edit rule"] = "Διπλό κλικ για επεξεργασία κανόνα",
             ["If File Extension Is:"] = "Αν η επέκταση αρχείου είναι:", ["And Filename Contains (Optional, leave blank for any):"] = "Και το όνομα περιέχει (προαιρετικά, άφησέ το κενό για οποιοδήποτε):",
             ["If File Already Exists:"] = "Αν το αρχείο υπάρχει ήδη:", ["Custom Extensions (e.g., *.zip; *.rar):"] = "Προσαρμοσμένες επεκτάσεις (π.χ. *.zip; *.rar):", ["Icon:"] = "Εικονίδιο:",
             ["Original project"] = "Αρχικό project", ["Opsis Fences"] = "Opsis DeskContainers", ["About Desktop Fences +"] = "Σχετικά με τα Opsis DeskContainers", ["Desktop Fences Plus"] = "Opsis DeskContainers",

@@ -18,25 +18,38 @@ namespace Desktop_Fences
         private static Color _bg, _surface, _hover, _border, _text, _text2, _muted, _accent;
         private static Style? _buttonStyle;
 
-        public static void Init()
-        {
-            // Menus always follow the Opsis style (dark surface); colours come from the passed palette when dark, else built-in Opsis defaults.
-            string[] pal = (Environment.GetEnvironmentVariable("OPSIS_THEME") ?? "").Split(';');
-            bool havePal = pal.Length >= 9 && pal[0] == "1";
-            try { OpsisMenuStyles.Apply(havePal ? "#" + pal[2] : "#1E2129", havePal ? "#" + pal[3] : "#2C303C", havePal ? "#" + pal[4] : "#3A3F4E", havePal ? "#" + pal[5] : "#EBEEF5", havePal ? "#" + pal[7] : "#8E94A6", havePal ? "#" + pal[8] : "#00C8FF"); } catch (Exception) { /* the stock menus stay if the style fails */ }
+        private static bool _handlerRegistered;
 
-            string? spec = Environment.GetEnvironmentVariable("OPSIS_THEME");
-            if (string.IsNullOrWhiteSpace(spec)) return;
-            var p = spec.Split(';');
-            if (p.Length < 9 || p[0] != "1") return;           // only the dark palette is mapped; a light Opsis theme keeps the original light windows
-            try
+        public static void Init() => ApplySpec(Environment.GetEnvironmentVariable("OPSIS_THEME"));
+
+        // Called again (through the bridge) when the Opsis theme changes while the engine runs; windows opened afterwards use the new palette.
+        public static void Reload(string spec)
+        {
+            try { if (Application.Current != null) Application.Current.Dispatcher.Invoke(() => ApplySpec(spec)); } catch (Exception) { }
+        }
+
+        private static void ApplySpec(string? spec)
+        {
+            var pal = (spec ?? "").Split(';');
+            bool dark = pal.Length >= 9 && pal[0] == "1";
+            if (dark)
             {
-                _bg = Hex(p[1]); _surface = Hex(p[2]); _hover = Hex(p[3]); _border = Hex(p[4]);
-                _text = Hex(p[5]); _text2 = Hex(p[6]); _muted = Hex(p[7]); _accent = Hex(p[8]);
+                try
+                {
+                    _bg = Hex(pal[1]); _surface = Hex(pal[2]); _hover = Hex(pal[3]); _border = Hex(pal[4]);
+                    _text = Hex(pal[5]); _text2 = Hex(pal[6]); _muted = Hex(pal[7]); _accent = Hex(pal[8]);
+                }
+                catch (FormatException) { return; }
             }
-            catch (FormatException) { return; }
-            _enabled = true;
-            EventManager.RegisterClassHandler(typeof(Window), FrameworkElement.LoadedEvent, new RoutedEventHandler(OnWindowLoaded));
+            // Menus always follow the Opsis style (dark surface); built-in Opsis colours when the Opsis theme is light.
+            try { OpsisMenuStyles.Apply(dark ? "#" + pal[2] : "#1E2129", dark ? "#" + pal[3] : "#2C303C", dark ? "#" + pal[4] : "#3A3F4E", dark ? "#" + pal[5] : "#EBEEF5", dark ? "#" + pal[7] : "#8E94A6", dark ? "#" + pal[8] : "#00C8FF"); } catch (Exception) { }
+            _buttonStyle = _comboStyle = _comboItemStyle = _checkStyle = _radioStyle = _sliderStyle = _textStyle = null;
+            _enabled = dark;                       // only the dark palette is mapped; a light Opsis theme keeps the original light windows
+            if (dark && !_handlerRegistered)
+            {
+                _handlerRegistered = true;
+                EventManager.RegisterClassHandler(typeof(Window), FrameworkElement.LoadedEvent, new RoutedEventHandler(OnWindowLoaded));
+            }
         }
 
         private static string ToHex(Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}";
@@ -49,10 +62,12 @@ namespace Desktop_Fences
 
         private static void OnWindowLoaded(object sender, RoutedEventArgs e)
         {
-            if (!_enabled || sender is not Window w || IsFenceOrOverlay(w) || !ReferenceEquals(e.OriginalSource, w)) return;
-            try { Recolor(w); } catch (Exception ex) { Log(ex); }
+            if (sender is not Window w || IsFenceOrOverlay(w) || !ReferenceEquals(e.OriginalSource, w)) return;
+            if (!_enabled && !Loc.Greek) return;
+            void Pass() { try { if (_enabled) Recolor(w); if (Loc.Greek) TranslateTree(w); } catch (Exception ex) { Log(ex); } }
+            Pass();
             var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };   // content built later (tabs, lists) gets the same treatment
-            timer.Tick += (_, _) => { if (w.IsVisible) { try { Recolor(w); } catch (Exception ex) { Log(ex); } } else timer.Stop(); };
+            timer.Tick += (_, _) => { if (w.IsVisible) Pass(); else timer.Stop(); };
             timer.Start();
             w.Closed += (_, _) => timer.Stop();
         }
@@ -118,6 +133,21 @@ namespace Desktop_Fences
         private static void Set(DependencyObject d, DependencyProperty prop, Brush? current, Brush? wanted)
         {
             if (!ReferenceEquals(current, wanted)) d.SetValue(prop, wanted);
+        }
+
+        // Strings that the engine builds without going through Loc.T (labels created by helpers) are translated here, by exact dictionary match only.
+        private static void TranslateTree(DependencyObject root)
+        {
+            if (!(root is System.Windows.Media.Visual)) return;
+            if (root is Window win) { var t = Loc.Translate(win.Title); if (t != win.Title) win.Title = t; }
+            if (root is TextBlock tb) { if (tb.Inlines.Count <= 1) { var t = Loc.Translate(tb.Text); if (t != tb.Text) tb.Text = t; } }
+            else if (root is ContentControl cc && cc.Content is string s) { var t = Loc.Translate(s); if (t != s) cc.Content = t; }
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+            {
+                DependencyObject child;
+                try { child = VisualTreeHelper.GetChild(root, i); } catch (ArgumentOutOfRangeException) { break; }
+                TranslateTree(child);
+            }
         }
 
         private static void Recolor(DependencyObject root)

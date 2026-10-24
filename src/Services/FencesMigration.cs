@@ -64,6 +64,10 @@ namespace MotionDesk.Services
                     ["CustomColor"] = null,
                     ["FenceBorderThickness"] = 2
                 };
+                fence["IconSize"] = s.IconPx switch { <= 16 => "Tiny", <= 24 => "Small", <= 32 => "Medium", <= 48 => "Large", _ => "Huge" };
+                fence["TitleTextSize"] = s.TitleFontSize switch { <= 10.5f => "Small", <= 12.5f => "Medium", <= 16.5f => "Large", <= 20.5f => "Extra Large", _ => "Huge" };
+                string[] fonts = { "Segoe UI", "Segoe UI Semibold", "Arial", "Calibri", "Cambria", "Consolas", "Georgia", "Tahoma", "Trebuchet MS", "Verdana", "Comic Sans MS" };
+                if (!string.IsNullOrWhiteSpace(s.TitleFontFamily) && fonts.Contains(s.TitleFontFamily)) fence["TitleFontFamily"] = s.TitleFontFamily;
 
                 if (portal)
                 {
@@ -107,9 +111,15 @@ namespace MotionDesk.Services
         private static JsonArray ItemsOf(IEnumerable<ContainerItem>? items)
         {
             var arr = new JsonArray();
+            int order = 0;
             foreach (var i in items ?? Enumerable.Empty<ContainerItem>())
             {
-                if (string.IsNullOrWhiteSpace(i.Path) || i.Path.StartsWith("::spacer::", StringComparison.Ordinal)) continue;   // spacers have no Fences equivalent
+                if (string.IsNullOrWhiteSpace(i.Path)) continue;
+                if (i.Path.StartsWith("::spacer::", StringComparison.Ordinal))      // blank spacer -> the engine's own spacer item
+                {
+                    arr.Add(new JsonObject { ["Filename"] = "INTERNAL_BLANK_EMPTY_" + Guid.NewGuid(), ["DisplayName"] = "", ["IsFolder"] = false, ["IsLink"] = false, ["IsNetwork"] = false, ["AlwaysRunAsAdmin"] = false, ["DisplayOrder"] = order++ });
+                    continue;
+                }
                 string ext = Path.GetExtension(i.Path).ToLowerInvariant();
                 arr.Add(new JsonObject
                 {
@@ -118,7 +128,8 @@ namespace MotionDesk.Services
                     ["IsLink"] = ext is ".lnk" or ".url",
                     ["IsNetwork"] = i.Path.StartsWith(@"\\", StringComparison.Ordinal),
                     ["DisplayName"] = Path.GetFileNameWithoutExtension(i.Path) is { Length: > 0 } n ? n : Path.GetFileName(i.Path),
-                    ["AlwaysRunAsAdmin"] = false
+                    ["AlwaysRunAsAdmin"] = false,
+                    ["DisplayOrder"] = order++
                 });
             }
             return arr;

@@ -7,6 +7,8 @@ namespace Desktop_Fences
     // menus, tab menus...) with the Opsis style: rounded dark surface, accent hover, thin separators. Colours come from OpsisTheme.
     internal static class OpsisMenuStyles
     {
+        private static ResourceDictionary? _applied;
+
         public static void Apply(string surface, string hover, string border, string text, string muted, string accent)
         {
             if (Application.Current == null) return;
@@ -137,6 +139,8 @@ namespace Desktop_Fences
             xaml = xaml.Replace("#SURFACE", surface).Replace("#HOVER", hover).Replace("#BORDER", border)
                        .Replace("#TEXT", text).Replace("#MUTED", muted).Replace("#ACCENT", accent);
             var dict = (ResourceDictionary)XamlReader.Parse(xaml);
+            if (_applied != null) Application.Current.Resources.MergedDictionaries.Remove(_applied);
+            _applied = dict;
             Application.Current.Resources.MergedDictionaries.Add(dict);
         }
     }

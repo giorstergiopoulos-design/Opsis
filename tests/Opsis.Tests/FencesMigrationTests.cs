@@ -26,7 +26,10 @@ public sealed class FencesMigrationTests
         Assert.Equal("Data", (string)arr[0]!["ItemsType"]!);
         Assert.Equal(200.0, (double)arr[0]!["X"]!);                    // 300 px / 1.5
         Assert.Equal("true", (string)arr[0]!["IsLocked"]!);
-        Assert.Single(arr[0]!["Items"]!.AsArray());                    // the spacer is dropped
+        Assert.Equal(2, arr[0]!["Items"]!.AsArray().Count);                // the item and the blank spacer
+        Assert.StartsWith("INTERNAL_BLANK_", (string)arr[0]!["Items"]![1]!["Filename"]!);
+        Assert.Equal("Medium", (string)arr[0]!["IconSize"]!);
+        Assert.Equal("Medium", (string)arr[0]!["TitleTextSize"]!);
         Assert.True((bool)arr[0]!["Items"]![0]!["IsLink"]!);
         Assert.Equal("true", (string)arr[1]!["TabsEnabled"]!);
         Assert.Equal("Work", (string)arr[1]!["Tabs"]![1]!["TabName"]!);
