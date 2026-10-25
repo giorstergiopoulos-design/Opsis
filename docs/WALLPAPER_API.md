@@ -40,7 +40,7 @@ Nothing is sent while the wallpaper is paused (fullscreen app, lock, battery sav
 Opsis builds the controls under the page chooser and stores the values per wallpaper.
 
 ## 4. Wallpaper elements (any mode)
-Wallpaper page → *Wallpaper elements*: analog clock, CPU, memory, GPU, network, disks, battery, audio spectrum — the pieces of the Opsis widgets, drawn over **every** mode (waves, video, image, page…). The user picks which ones, their position (X/Y %) and size, a frosted card and an accent colour. Code: `src/Widgets/wallpaper/elements.js`; settings: `WallpaperSettings.Elements`.
+Wallpaper page → *Wallpaper elements*: analog clock, CPU, memory, GPU, network, disks, battery, audio spectrum — the pieces of the Opsis widgets, drawn over **every** mode (waves, video, image, page…). The elements form one column on the LEFT or the RIGHT edge of the screen (the user chooses the side and Top/Middle/Bottom), each with its own size, plus a frosted card and an accent colour. Code: `src/Widgets/wallpaper/elements.js`; settings: `WallpaperSettings.Elements`.
 
 ## 5. Safety model
 The page runs in an iframe of the wallpaper page; it cannot reach Opsis host objects (cross-origin). Remote pages get no data at all. Only `file://` pages are connected to the API.

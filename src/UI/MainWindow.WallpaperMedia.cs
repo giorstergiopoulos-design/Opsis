@@ -255,8 +255,8 @@ namespace MotionDesk.UI
         {
             settings.EnsureElements();
             AddSection(panel, L("Wallpaper elements", "Στοιχεία στο wallpaper"));
-            AddText(panel, L("Choose which pieces of the widgets are drawn on the wallpaper, and where. They work over every wallpaper mode and stop with it when it pauses.",
-                             "Διάλεξε ποια κομμάτια των widgets θα εμφανίζονται πάνω στο wallpaper και πού. Δουλεύουν πάνω από κάθε τρόπο wallpaper και σταματούν όταν σταματά το wallpaper."));
+            AddText(panel, L("Choose which pieces of the widgets are drawn on the wallpaper, on the left or the right edge of the screen. They work over every wallpaper mode and stop with it when it pauses.",
+                             "Διάλεξε ποια κομμάτια των widgets θα εμφανίζονται πάνω στο wallpaper, στην αριστερή ή στη δεξιά πλευρά της οθόνης. Δουλεύουν πάνω από κάθε τρόπο wallpaper και σταματούν όταν σταματά το wallpaper."));
 
             // one debounce for all sliders: save the whole list, then redraw only the elements (the wallpaper itself is not restarted)
             var debounce = new System.Windows.Forms.Timer { Interval = 150 };
@@ -267,6 +267,19 @@ namespace MotionDesk.UI
                 var s = WallpaperSettings.Load(); s.EnsureElements(); change(s); s.Save();
                 WallpaperHostEngine.Instance.RefreshElements();
             }
+
+            // side of the screen and vertical alignment: all elements form ONE column on the chosen edge
+            var place = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 0, 0, 8) };
+            place.Controls.Add(new Label { Text = L("Show on the", "Εμφάνιση στη"), AutoSize = true, Font = UiTheme.FontBody, ForeColor = UiTheme.TextSecondary, Margin = new Padding(0, 8, 6, 0) });
+            var side = new FlatComboBox { Width = 130, Margin = new Padding(0, 0, 14, 0) };
+            side.SetItems(new[] { L("Left side", "Αριστερή πλευρά"), L("Right side", "Δεξιά πλευρά") }, settings.ElementsSide == "Right" ? L("Right side", "Δεξιά πλευρά") : L("Left side", "Αριστερή πλευρά"));
+            side.SelectedIndexChanged += (_, _) => Commit(s => s.ElementsSide = side.SelectedIndex == 1 ? "Right" : "Left");
+            var valign = new FlatComboBox { Width = 130 };
+            string[] vNames = { L("Top", "Πάνω"), L("Middle", "Μέση"), L("Bottom", "Κάτω") };
+            valign.SetItems(vNames, settings.ElementsVAlign == "Top" ? vNames[0] : settings.ElementsVAlign == "Bottom" ? vNames[2] : vNames[1]);
+            valign.SelectedIndexChanged += (_, _) => Commit(s => s.ElementsVAlign = valign.SelectedIndex == 0 ? "Top" : valign.SelectedIndex == 2 ? "Bottom" : "Center");
+            place.Controls.Add(side); place.Controls.Add(valign);
+            panel.Controls.Add(place);
 
             foreach (var el in settings.Elements)
             {
@@ -284,8 +297,6 @@ namespace MotionDesk.UI
                     sl.ValueChanged += (_, _) => { int v = sl.Value; pending = () => Commit(s => set(s.Elements.First(e => e.Id == id), v)); debounce.Stop(); debounce.Start(); };
                     row.Controls.Add(sl);
                 }
-                AddSlider("X", 0, 100, el.X, (e, v) => e.X = v);
-                AddSlider("Y", 0, 100, el.Y, (e, v) => e.Y = v);
                 AddSlider(L("Size", "Μέγεθος"), 40, 250, el.Scale, (e, v) => e.Scale = v);
                 panel.Controls.Add(row);
             }

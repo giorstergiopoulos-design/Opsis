@@ -9,9 +9,11 @@
 
     const css = document.createElement('style');
     css.textContent = `
-    #elements{position:fixed;inset:0;pointer-events:none;z-index:5}
-    .el{position:fixed;transform:translate(-50%,-50%) scale(var(--s,1));transform-origin:center;color:#fff;font-family:"Segoe UI",system-ui,sans-serif;
-        padding:14px 18px;border-radius:16px;min-width:170px;--a:#00d2ff;text-shadow:0 1px 6px rgba(0,0,0,.55)}
+    #elements{position:fixed;top:0;bottom:0;display:flex;flex-direction:column;flex-wrap:wrap;gap:14px;padding:3vh 2vw;box-sizing:border-box;pointer-events:none;z-index:5;overflow:hidden}
+    #elements.left{left:0;align-items:flex-start;align-content:flex-start}
+    #elements.right{right:0;align-items:flex-end;align-content:flex-start;flex-wrap:wrap-reverse}
+    .el{position:relative;zoom:var(--s,1);flex:none;color:#fff;font-family:"Segoe UI",system-ui,sans-serif;
+        padding:14px 18px;border-radius:16px;width:190px;box-sizing:border-box;--a:#00d2ff;text-shadow:0 1px 6px rgba(0,0,0,.55)}
     .elCard .el, .el.card{background:rgba(10,14,24,.42);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.12);box-shadow:0 8px 28px rgba(0,0,0,.25)}
     .elT{font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.75;margin-bottom:6px}
     .elBig{font-size:30px;font-weight:300;font-variant-numeric:tabular-nums;line-height:1.1}
@@ -69,7 +71,7 @@
         },
         audio: {
             needsAudio: true,
-            html: '<div class="elT">Audio</div><canvas class="elCv" data-k="cv" width="260" height="90"></canvas>',
+            html: '<div class="elT">Audio</div><canvas class="elCv" data-k="cv" width="260" height="90" style="width:100%;height:auto"></canvas>',
             draw(e, bands) { const cv = $q(e, 'cv'), c = cv.getContext('2d'); c.clearRect(0, 0, cv.width, cv.height);
                 const n = bands.length || 24, bw = cv.width / n; c.fillStyle = getComputedStyle(e).getPropertyValue('--a') || '#00d2ff';
                 for (let i = 0; i < n; i++) { const v = Math.min(1, (bands[i] || 0) * 1.2), h = Math.max(2, v * cv.height); c.globalAlpha = .4 + .6 * v; c.fillRect(i * bw + 1.5, cv.height - h, bw - 3, h); } c.globalAlpha = 1; }
@@ -105,13 +107,16 @@
         const list = (c.elements || []).filter(x => defs[x.id]);
         const want = new Map(list.map(x => [x.id, x]));
         for (const [id, e] of [...active]) if (!want.has(id)) { e.remove(); active.delete(id); }
+        root.className = c.elSide === 'Right' ? 'right' : 'left';
+        root.style.justifyContent = c.elVAlign === 'Top' ? 'flex-start' : c.elVAlign === 'Bottom' ? 'flex-end' : 'center';
         for (const x of list) {
             let e = active.get(x.id);
             if (!e) {
                 e = document.createElement('div'); e.className = 'el'; e.innerHTML = defs[x.id].html; root.appendChild(e); active.set(x.id, e);
                 if (defs[x.id].init) defs[x.id].init(e);
             }
-            e.style.left = x.x + '%'; e.style.top = x.y + '%'; e.style.setProperty('--s', (x.scale || 100) / 100); e.style.setProperty('--a', c.elAccent || '#00d2ff');
+            root.appendChild(e);                       // keeps the catalog order (appending an existing node just moves it)
+            e.style.setProperty('--s', (x.scale || 100) / 100); e.style.setProperty('--a', c.elAccent || '#00d2ff');
             e.classList.toggle('card', !!c.elCard);
         }
         clearTimers();

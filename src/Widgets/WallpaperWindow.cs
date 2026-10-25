@@ -143,7 +143,9 @@ namespace MotionDesk.Widgets
                 infoFont = string.IsNullOrWhiteSpace(settings.InfoFont) ? "Segoe UI Light" : settings.InfoFont,
                 waveStyle = settings.WaveStyle,
                 pageUri,
-                elements = settings.Elements.Where(e => e.Enabled).Select(e => new { id = e.Id, x = Math.Clamp(e.X, 0, 100), y = Math.Clamp(e.Y, 0, 100), scale = Math.Clamp(e.Scale, 40, 250) }),
+                elements = settings.Elements.Where(e => e.Enabled).Select(e => new { id = e.Id, scale = Math.Clamp(e.Scale, 40, 250) }),
+                elSide = settings.ElementsSide == "Right" ? "Right" : "Left",
+                elVAlign = settings.ElementsVAlign is "Top" or "Bottom" ? settings.ElementsVAlign : "Center",
                 elAccent = settings.ElementsAccent,
                 elCard = settings.ElementsCard,
                 pageLocal = ApiActive,
@@ -354,6 +356,8 @@ namespace MotionDesk.Widgets
         public List<WallpaperElement> Elements { get; set; } = new();
         public string ElementsAccent { get; set; } = "#00d2ff";
         public bool ElementsCard { get; set; } = true;          // frosted card behind every element
+        public string ElementsSide { get; set; } = "Left";      // Left | Right: the elements are stacked in a column on that edge of the screen
+        public string ElementsVAlign { get; set; } = "Center";  // Top | Center | Bottom
         public Dictionary<string, string> PageProperties { get; set; } = new();   // "<page>|<key>" -> value, see WallpaperManifest
         public DateTime? LastRotateUtc { get; set; }                               // when the playlist last advanced (the rotation timer survives restarts)
         public string WaveStyle { get; set; } = "Ribbons"; // "Ribbons" | "Aurora" — παραλλαγές ΜΕΣΑ στο Waves mode
