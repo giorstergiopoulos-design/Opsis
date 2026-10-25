@@ -1380,7 +1380,7 @@ namespace MotionDesk.UI
 
             AddSection(panel, LocalizationManager.T("Wallpaper.SectionMode"));
             var modeCombo = new FlatComboBox { Width = 200, Margin = new Padding(0, 0, 0, 10) };
-            modeCombo.SetItems(new[] { "Waves", "Video", "Particles", "Weather", "Desktop" }, settings.Mode);
+            modeCombo.SetItems(new[] { "Waves", "Video", "Image", "Page", "Particles", "Weather", "Desktop" }, settings.Mode);
             // Ξαναχτίζει ΟΛΟΚΛΗΡΗ τη σελίδα κάθε φορά που αλλάζει το Mode — ζητήθηκε ρητά bug fix:
             // πριν, οι ενότητες "Video Library"/"Theme & Colors"/"Wave Tuning" ήταν ΠΑΝΤΑ ορατές
             // ανεξάρτητα από το επιλεγμένο mode, οπότε η επιλογή βίντεο έμενε στην οθόνη ακόμη κι
@@ -1576,6 +1576,7 @@ namespace MotionDesk.UI
 
             // Theme/Palette και Wave Tuning ισχύουν για Waves ΚΑΙ Particles (μοιράζονται το ίδιο
             // cfg.speed/glowIntensity/palette στο JS engine) — άσχετα μόνο σε Video mode.
+            if (settings.Mode is "Page" or "Image") BuildMediaWallpaperSection(panel, settings);
             if (settings.Mode == "Weather") BuildWeatherWallpaperSection(panel, settings);
             if (settings.Mode == "Desktop") AddText(panel, LocalizationManager.T("Wallpaper.DesktopIntro"));
 
@@ -1898,7 +1899,7 @@ namespace MotionDesk.UI
         }
 
         // Time-of-day schedule: up to 3 windows, each switching the wallpaper MODE
-        private static readonly string[] ScheduleModes = { "Waves", "Particles", "Weather", "Video", "Desktop" };
+        private static readonly string[] ScheduleModes = { "Waves", "Particles", "Weather", "Video", "Image", "Page", "Desktop" };
 
         private void BuildWallpaperScheduleSection(Panel panel, WallpaperSettings settings)
         {

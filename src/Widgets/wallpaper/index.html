@@ -8,6 +8,7 @@ html,body{margin:0;padding:0;width:100vw;height:100vh;overflow:hidden;background
 .videoLayer{position:fixed;inset:0;width:100vw;height:100vh;object-fit:cover;background:#000;opacity:0;transition:opacity 650ms ease-in-out}
 .videoLayer.active{opacity:1}
 .videoHidden{display:none!important}
+#mediaImg,#mediaFrame{position:fixed;inset:0;width:100vw;height:100vh;display:none;border:0;background:#000;object-fit:cover}
 #desk{position:fixed;inset:0;display:none;background-repeat:no-repeat;background-position:center}
 #wxInfo{position:fixed;left:50%;top:34%;transform:translate(-50%,-50%);text-align:center;color:#fff;pointer-events:none;display:none;
   font-family:"Segoe UI Light","Segoe UI",system-ui,sans-serif;text-shadow:0 2px 22px rgba(0,0,0,.5),0 1px 3px rgba(0,0,0,.45);white-space:nowrap;--s:1;opacity:0;transition:opacity .7s ease}
@@ -25,6 +26,8 @@ html,body{margin:0;padding:0;width:100vw;height:100vh;overflow:hidden;background
 <video id="videoA" class="videoLayer" muted playsinline></video>
 <video id="videoB" class="videoLayer" muted playsinline></video>
 <div id="desk"></div>
+<img id="mediaImg" alt="">
+<iframe id="mediaFrame" allow="autoplay; encrypted-media" referrerpolicy="strict-origin-when-cross-origin"></iframe>
 <div id="wxInfo"><div id="wxTime"></div><div id="wxDate"></div><div id="wxTemp"></div><div id="wxWind"></div><div id="wxCity"></div></div>
 <div id="pulse"></div>
 <script src="weather.js"></script>
@@ -468,6 +471,7 @@ async function refreshDesk() {
 }
 async function startDesktop() {
     stopWaves();
+    hideMedia();
     videoLayers.forEach(v => { v.classList.add('videoHidden'); v.classList.remove('active'); v.pause(); });
     applyDesk(cfg.desk);
     // ΔΙΟΡΘΩΣΗ πραγματικού flicker στην εκκίνηση (live-επιβεβαιωμένο με διαδοχικά screenshots): το
@@ -593,6 +597,7 @@ function waveLoop(now) {
 }
 
 function startWaves() {
+    hideMedia();
     setDeskVisible(false);
     videoLayers.forEach(v => { v.classList.add('videoHidden'); v.classList.remove('active'); v.pause(); });
     canvas.style.display = 'block';
@@ -604,6 +609,35 @@ function stopWaves() {
     canvas.style.display = 'none';
 }
 
+// "Image" (GIF/PNG/JPG) and "Page" (website / YouTube / local html) modes. While paused nothing is loaded: the source is dropped and re-applied on resume.
+const mediaImg = document.getElementById('mediaImg');
+const mediaFrame = document.getElementById('mediaFrame');
+let mediaSrc = '';
+function hideMedia() {
+    mediaImg.style.display = 'none'; mediaImg.removeAttribute('src');
+    mediaFrame.style.display = 'none'; mediaFrame.removeAttribute('src');
+    mediaSrc = '';
+}
+async function startMedia() {
+    stopWaves();
+    setDeskVisible(false);
+    videoLayers.forEach(v => { v.classList.add('videoHidden'); v.classList.remove('active'); v.pause(); });
+    const isImg = cfg.mode === 'Image';
+    const src = isImg ? cfg.imageUri : cfg.pageUri;
+    if (!src) { startWaves(); return; }
+    if (isPaused) { hideMedia(); return; }
+    if (isImg) {
+        mediaFrame.style.display = 'none'; mediaFrame.removeAttribute('src');
+        mediaImg.style.objectFit = cfg.imageFit === 'Contain' ? 'contain' : 'cover';
+        if (mediaSrc !== src) { mediaImg.src = src; mediaSrc = src; try { await mediaImg.decode(); } catch (e) { /* shown anyway */ } }
+        mediaImg.style.display = 'block';
+    } else {
+        mediaImg.style.display = 'none'; mediaImg.removeAttribute('src');
+        if (mediaSrc !== src) { mediaFrame.src = src; mediaSrc = src; }
+        mediaFrame.style.display = 'block';
+    }
+}
+
 async function playCurrentVideo() {
     const b = bridge();
     if (!b) return;
@@ -611,6 +645,7 @@ async function playCurrentVideo() {
     if (!uri) { startWaves(); return; }
 
     stopWaves();
+    hideMedia();
     setDeskVisible(false);
     videoLayers.forEach(v => v.classList.remove('videoHidden'));
     const layer = activeVideo();
@@ -762,6 +797,8 @@ async function doRefresh() {
     deskTimer = null;
     if (cfg.mode === 'Video') {
         await playCurrentVideo();
+    } else if (cfg.mode === 'Image' || cfg.mode === 'Page') {
+        await startMedia();
     } else if (cfg.mode === 'Desktop') {
         await startDesktop();
         deskTimer = setInterval(refreshDesk, 60 * 1000);
@@ -778,10 +815,13 @@ window.motionDeskSetPaused = (paused) => {
     if (paused) {
         if (waveLoopHandle) { cancelAnimationFrame(waveLoopHandle); waveLoopHandle = null; }
         activeVideo().pause();
+        if (cfg.mode === 'Image' || cfg.mode === 'Page') hideMedia();
         clearInterval(audioTimer);
         audioTimer = null;
     } else {
         if (cfg.mode === 'Video') { activeVideo().play().catch(() => {}); }
+        else if (cfg.mode === 'Image' || cfg.mode === 'Page') { startMedia(); }
+        else if (cfg.mode === 'Desktop') { /* static picture, nothing to restart */ }
         else if (!waveLoopHandle) { waveLoopHandle = requestAnimationFrame(waveLoop); }
         if (!audioTimer && cfg.performanceMode !== 'Battery') audioTimer = setInterval(refreshAudioPulse, cfg.performanceMode === 'High' ? 250 : 600);
     }

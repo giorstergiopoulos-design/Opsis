@@ -66,6 +66,9 @@ namespace MotionDesk.Widgets
                 desk = effectiveMode == "Desktop" ? DeskInfo() : null,
                 infoFont = string.IsNullOrWhiteSpace(settings.InfoFont) ? "Segoe UI Light" : settings.InfoFont,
                 waveStyle = settings.WaveStyle,
+                pageUri = effectiveMode == "Page" ? MediaSource.PageUri(settings.PageSource) : "",
+                imageUri = effectiveMode == "Image" ? MediaSource.ImageUri(settings.ImagePath) : "",
+                imageFit = settings.ImageFit,
                 background = palette.Background,
                 wave = palette.WaveColor,
                 peak = palette.PeakColor,
@@ -238,6 +241,10 @@ namespace MotionDesk.Widgets
     public sealed class WallpaperSettings
     {
         public string Mode { get; set; } = "Waves"; // "Waves" | "Video" | "Particles" | "Weather" | "Desktop" (the normal Windows wallpaper, so the info overlay works over it)
+        // "Page" mode: a website (https://…), a YouTube link or a local .html file / folder with index.html. "Image" mode: a GIF / PNG / JPG file.
+        public string PageSource { get; set; } = string.Empty;
+        public string ImagePath { get; set; } = string.Empty;
+        public string ImageFit { get; set; } = "Cover";   // Cover | Contain
         public string WaveStyle { get; set; } = "Ribbons"; // "Ribbons" | "Aurora" — παραλλαγές ΜΕΣΑ στο Waves mode
         public string VideoPath { get; set; } = string.Empty; // legacy single-video field, kept for back-compat
         public List<string> VideoPaths { get; set; } = new();
@@ -1086,6 +1093,7 @@ namespace MotionDesk.Widgets
         // motionDeskRefresh() στο ήδη-τρέχον WebView2, αλλιώς ένα ήδη ανοιχτό wallpaper window
         // (π.χ. σε λειτουργία Waves) δεν μαθαίνει ΠΟΤΕ ότι το Mode/playlist άλλαξε σε Video —
         // ακριβώς το bug "το .wmv μετατράπηκε επιτυχώς αλλά δεν παίζει το βίντεο".
+        public void RefreshAll() => _ = RefreshAllAsync();
         public Task RefreshAllAsync() => Task.WhenAll(_windows.Select(w => w.RefreshAsync()));
 
         // MD roadmap item: ακριβές στιγμιότυπο του τρέχοντος wallpaper (waves/βίντεο + overlay) για

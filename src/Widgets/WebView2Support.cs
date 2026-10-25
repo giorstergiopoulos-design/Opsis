@@ -49,6 +49,10 @@ namespace MotionDesk.Widgets
                 if (!e.Uri.StartsWith("file:", StringComparison.OrdinalIgnoreCase)) e.Cancel = true;
             };
             core.NewWindowRequested += (_, e) => e.Handled = true;
+            // YouTube embeds refuse to play without a Referer (error 153); a file:// page sends none, so a neutral one is added for the embed host only.
+            core.AddWebResourceRequestedFilter("https://www.youtube-nocookie.com/*", CoreWebView2WebResourceContext.All);
+            core.AddWebResourceRequestedFilter("https://www.youtube.com/*", CoreWebView2WebResourceContext.All);
+            core.WebResourceRequested += (_, e) => { try { e.Request.Headers.SetHeader("Referer", "https://opsis.local/"); } catch (Exception) { } };
             // Crash του GPU/renderer process: χωρίς handler το wallpaper έμενε παγωμένο/λευκό μέχρι επανεκκίνηση.
             core.ProcessFailed += (_, e) =>
             {
