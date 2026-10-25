@@ -82,18 +82,22 @@ function routeVideoAudio(videoEl) {
     } catch (e) { /* ήδη routed αλλού, ή περιορισμός browser — το wallpaper συνεχίζει κανονικά, απλά χωρίς ήχο */ }
 }
 
+let autoMuted = false;   // another application is playing sound: the wallpaper audio is faded out
+window.opsisAutoMute = (m) => { autoMuted = !!m; applyAudioConfig(); };
 function applyAudioConfig() {
+    autoMuted = !!cfg.autoMuted;
     videoLayers.forEach(routeVideoAudio);
     if (audioChain) {
         audioChain.bass.gain.value = cfg.audioBassGain || 0;
         audioChain.mid.gain.value = cfg.audioMidGain || 0;
         audioChain.treble.gain.value = cfg.audioTrebleGain || 0;
-        audioChain.gain.gain.value = cfg.audioVolume ?? 0.8;
+        const target = autoMuted ? 0 : (cfg.audioVolume ?? 0.8);
+        if (audioCtx) audioChain.gain.gain.setTargetAtTime(target, audioCtx.currentTime, 0.25); else audioChain.gain.gain.value = target;
         if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
     }
     // Ξε-σίγαση ΜΟΝΟ σε βίντεο που παίζουν ήδη επιτυχώς (readyState>=2 -> έχει ξεπεράσει το
     // αρχικό muted-autoplay) — αποφεύγει το γνωστό Chromium autoplay-block σε μη-muted play().
-    videoLayers.forEach(v => { if (!v.paused && v.readyState >= 2) v.muted = !cfg.audioEnabled; });
+    videoLayers.forEach(v => { if (!v.paused && v.readyState >= 2) v.muted = !cfg.audioEnabled || (autoMuted && !audioChain); });
 }
 let audioTimer = null;
 let waveLoopHandle = null;
@@ -655,7 +659,7 @@ mediaFrame.addEventListener('load', () => {
 window.addEventListener('message', (e) => {
     const d = e.data;
     if (!d || d.opsis !== 'subscribe' || e.source !== mediaFrame.contentWindow || !cfg.pageLocal) return;
-    try { const b = bridge(); if (b) b.SetSubscription(!!d.audio, !!d.gpu); } catch (x) { /* ignore */ }
+    try { const b = bridge(); if (b) b.SetSubscription(!!d.audio, !!d.gpu, !!d.pointer); } catch (x) { /* ignore */ }
 });
 
 async function playCurrentVideo() {
@@ -824,6 +828,10 @@ async function doRefresh() {
         await playCurrentVideo();
     } else if (cfg.mode === 'Image' || cfg.mode === 'Page') {
         await startMedia();
+    } else if (cfg.mode === 'Application') {
+        // the program's own window covers the page: nothing to draw here
+        stopWaves(); hideMedia(); setDeskVisible(false);
+        videoLayers.forEach(v => { v.classList.add('videoHidden'); v.classList.remove('active'); v.pause(); });
     } else if (cfg.mode === 'Desktop') {
         await startDesktop();
         deskTimer = setInterval(refreshDesk, 60 * 1000);

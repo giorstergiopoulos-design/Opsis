@@ -23,7 +23,9 @@ Everything arrives with `window.addEventListener('message', e => …)`; `e.data.
 
 `data` of `system`: `cpu` %, `ramUsedPercent`, `ramTotalMb`, `ramAvailableMb`, `netDownKbps`, `netUpKbps`, `processes`, `batteryPercent` (-1 = no battery), `charging`, `disks[] {name,totalMb,freeMb,usedPercent}`, `gpu {name,load,temperature,memoryUsedMb}` (only after subscribing with `gpu:true`, otherwise null).
 
-Subscribe from the page: `parent.postMessage({ opsis: 'subscribe', audio: true, gpu: false }, '*')`.
+Subscribe from the page: `parent.postMessage({ opsis: 'subscribe', audio: true, gpu: false, pointer: true }, '*')`.
+
+**Pointer** (`type: 'pointer'`, ~30/s while it moves or a button changes): `x`, `y` (0..1 on this screen), `left`, `right` (buttons) and `overDesktop` (true when the cursor is over the empty desktop or the icons, not over another window). The wallpaper sits behind the icons and gets no mouse input from Windows, so this is how a page can react to the mouse; treat clicks as meaningful only when `overDesktop` is true.
 
 Nothing is sent while the wallpaper is paused (fullscreen app, lock, battery saver, load limits…), and the page itself is frozen after 15 s of pause.
 

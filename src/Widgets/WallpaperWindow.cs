@@ -45,7 +45,9 @@ namespace MotionDesk.Widgets
         public bool ApiActive { get => _apiActive; private set { if (_apiActive == value) return; _apiActive = value; ApiChanged?.Invoke(value); } }
         public bool WantsAudio { get; private set; }
         public bool WantsGpu { get; private set; }
-        public void SetSubscription(bool audio, bool gpu) { WantsAudio = audio; WantsGpu = gpu; }
+        public bool WantsPointer { get; private set; }
+        public Action? SubscriptionChanged { get; set; }
+        public void SetSubscription(bool audio, bool gpu, bool pointer = false) { WantsAudio = audio; WantsGpu = gpu; bool p = WantsPointer != pointer; WantsPointer = pointer; if (p) SubscriptionChanged?.Invoke(); }
 
         public string GetPagePropertiesJson()
         {
@@ -162,6 +164,7 @@ namespace MotionDesk.Widgets
                 lineThickness = settings.LineThickness,
                 performanceMode = settings.PerformanceMode,
                 audioEnabled = settings.AudioEnabled,
+                autoMuted = WallpaperHostEngine.Instance.AutoMuted,
                 audioVolume = settings.AudioVolume,
                 audioBassGain = settings.AudioBassGain,
                 audioMidGain = settings.AudioMidGain,
@@ -350,6 +353,8 @@ namespace MotionDesk.Widgets
         public string Mode { get; set; } = "Waves"; // "Waves" | "Video" | "Particles" | "Weather" | "Desktop" (the normal Windows wallpaper, so the info overlay works over it)
         // "Page" mode: a website (https://…), a YouTube link or a local .html file / folder with index.html. "Image" mode: a GIF / PNG / JPG file.
         public string PageSource { get; set; } = string.Empty;
+        public string AppWallpaperPath { get; set; } = string.Empty;   // "Application" mode: a program whose window is shown as the wallpaper
+        public string AppWallpaperArgs { get; set; } = string.Empty;
         public string ImagePath { get; set; } = string.Empty;
         public string ImageFit { get; set; } = "Cover";   // Cover | Contain
         // Wallpaper elements: the widget pieces (clock, CPU, memory, ...) the user shows on top of ANY wallpaper mode, see wallpaper/elements.js.
@@ -623,6 +628,7 @@ namespace MotionDesk.Widgets
             if (_webView != null) _webView.Visible = true;
             Show();
             KeepBehindIcons();
+            SyncApplication();
             Revealed?.Invoke();
         }
 
@@ -817,7 +823,17 @@ namespace MotionDesk.Widgets
             }
         }
 
-        public Task RefreshAsync() => RefreshWebViewAsync();
+        public Task RefreshAsync() { SyncApplication(); return RefreshWebViewAsync(); }
+
+        // "Application" mode lives in the wallpaper window of the PRIMARY screen only.
+        private void SyncApplication()
+        {
+            if (IsDisposed || !TargetScreen.Primary) return;
+            var s = WallpaperSettings.Load();
+            bool want = WallpaperHostEngine.Instance.EffectiveMode(s) == "Application" && WallpaperHostEngine.Instance.IsEnabled;
+            if (want) ApplicationWallpaper.Sync(this, s.AppWallpaperPath, s.AppWallpaperArgs, _paused);
+            else ApplicationWallpaper.Stop();
+        }
 
         // Ακριβές "στιγμιότυπο" του ΠΡΑΓΜΑΤΙΚΑ αποδομένου wallpaper (waves/video + το overlay
         // ρολογιού κ.λπ.) για χρήση ως εικόνα οθόνης κλειδώματος — όχι ξαναζωγραφισμένο αντίγραφο,
@@ -882,6 +898,45 @@ namespace MotionDesk.Widgets
             _apiTimer.Start();
         }
 
+        // Pointer API for local web wallpapers ("subscribe pointer"): the page lives behind the icons and gets no mouse input from Windows, so Opsis
+        // reads the cursor (position on THIS screen, buttons, and whether it is over the empty desktop) and sends it as messages.
+        private System.Windows.Forms.Timer? _pointerTimer;
+        private int _lastPx = -1, _lastPy = -1, _lastBtn = -1;
+        private void UpdatePointerTimer()
+        {
+            bool on = _bridge is { WantsPointer: true, ApiActive: true };
+            if (!on) { _pointerTimer?.Stop(); return; }
+            _pointerTimer ??= new System.Windows.Forms.Timer { Interval = 33 };
+            _pointerTimer.Tick -= PointerTick; _pointerTimer.Tick += PointerTick;
+            _pointerTimer.Start();
+        }
+        private void PointerTick(object? sender, EventArgs e)
+        {
+            var core = _webView?.CoreWebView2;
+            if (core == null || _paused || !Visible || !GetCursorPos(out var pt)) return;
+            var b = TargetScreen.Bounds;
+            if (!b.Contains(pt.X, pt.Y)) return;
+            int px = (pt.X - b.X) * 10000 / Math.Max(1, b.Width), py = (pt.Y - b.Y) * 10000 / Math.Max(1, b.Height);
+            int btn = ((GetAsyncKeyState(0x01) & 0x8000) != 0 ? 1 : 0) | ((GetAsyncKeyState(0x02) & 0x8000) != 0 ? 2 : 0);
+            if (px == _lastPx && py == _lastPy && btn == _lastBtn) return;
+            _lastPx = px; _lastPy = py; _lastBtn = btn;
+            bool overDesktop = IsDesktopSurface(WindowFromPoint(pt));
+            _ = core.ExecuteScriptAsync("window.opsisPush&&window.opsisPush({opsis:true,type:'pointer',x:" + (px / 10000.0).ToString("0.####", System.Globalization.CultureInfo.InvariantCulture)
+                + ",y:" + (py / 10000.0).ToString("0.####", System.Globalization.CultureInfo.InvariantCulture) + ",left:" + ((btn & 1) != 0 ? "true" : "false")
+                + ",right:" + ((btn & 2) != 0 ? "true" : "false") + ",overDesktop:" + (overDesktop ? "true" : "false") + "})");
+        }
+        private static bool IsDesktopSurface(IntPtr h)
+        {
+            if (h == IntPtr.Zero) return false;
+            var sb = new System.Text.StringBuilder(64); GetClassName(h, sb, 64);
+            return sb.ToString() is "SysListView32" or "SHELLDLL_DefView" or "WorkerW" or "Progman";
+        }
+        [StructLayout(LayoutKind.Sequential)] private struct PT { public int X, Y; }
+        [DllImport("user32.dll")] private static extern bool GetCursorPos(out PT p);
+        [DllImport("user32.dll")] private static extern IntPtr WindowFromPoint(PT p);
+        [DllImport("user32.dll")] private static extern short GetAsyncKeyState(int vk);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr h, System.Text.StringBuilder s, int n);
+
         public async Task RunScriptAsync(string js)
         {
             if (_webView?.CoreWebView2 == null) return;
@@ -898,7 +953,9 @@ namespace MotionDesk.Widgets
 
         public async Task SetPausedAsync(bool paused)
         {
-            _paused = paused; // θυμόμαστε την κατάσταση ώστε να εφαρμοστεί και μετά από (re)navigation
+            _paused = paused;
+            if (TargetScreen.Primary) ApplicationWallpaper.SetPaused(paused);
+            // θυμόμαστε την κατάσταση ώστε να εφαρμοστεί και μετά από (re)navigation
             if (_webView?.CoreWebView2 == null) return;
             var core = _webView.CoreWebView2;
             try
@@ -933,7 +990,8 @@ namespace MotionDesk.Widgets
                 {
                     ContentReady = () => { if (!IsDisposed && IsHandleCreated) BeginInvoke(new Action(MarkContentReady)); }
                 };
-                _bridge.ApiChanged = on => { if (!IsDisposed && IsHandleCreated) BeginInvoke(new Action(() => SetApiPump(on))); };
+                _bridge.ApiChanged = on => { if (!IsDisposed && IsHandleCreated) BeginInvoke(new Action(() => { SetApiPump(on); UpdatePointerTimer(); })); };
+                _bridge.SubscriptionChanged = () => { if (!IsDisposed && IsHandleCreated) BeginInvoke(new Action(UpdatePointerTimer)); };
                 _webView.CoreWebView2.AddHostObjectToScript("wallpaper", _bridge);
                 string htmlPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "widgets", "wallpaper", "index.html");
                 // Μετά από κάθε φόρτωση σελίδας ξαναεφαρμόζουμε την κατάσταση παύσης — αλλιώς ένα
@@ -974,6 +1032,7 @@ namespace MotionDesk.Widgets
                 _revealTimeout?.Dispose();
                 _revealTimeout = null;
                 _apiTimer?.Stop(); _apiTimer?.Dispose(); _apiTimer = null;
+                _pointerTimer?.Stop(); _pointerTimer?.Dispose(); _pointerTimer = null;
                 _bridge?.Dispose();
                 _bridge = null;
                 _webView?.Dispose();
@@ -1003,6 +1062,30 @@ namespace MotionDesk.Widgets
         public string EffectiveMode(WallpaperSettings settings) => !_enabled && _overlayOnly ? "Desktop" : settings.Mode;
         private System.Windows.Forms.Timer? _fullscreenCheckTimer;
         private System.Windows.Forms.Timer? _lockScreenSyncTimer;
+
+        // Auto-mute: while another application plays sound the wallpaper's own audio (if the user enabled it) is faded out.
+        private System.Windows.Forms.Timer? _autoMuteTimer;
+        private MotionDesk.Services.OtherAudioDetector? _otherAudio;
+        public bool AutoMuted { get; private set; }
+        private void EnsureAutoMuteWatcher()
+        {
+            if (_autoMuteTimer != null) return;
+            _autoMuteTimer = new System.Windows.Forms.Timer { Interval = 1500 };
+            _autoMuteTimer.Tick += (_, _) =>
+            {
+                try
+                {
+                    bool want = false;
+                    if (Active && MotionDesk.Services.AppSettings.Load().AutoMuteWhenOtherAudio && WallpaperSettings.Load().AudioEnabled)
+                        want = (_otherAudio ??= new MotionDesk.Services.OtherAudioDetector()).IsOtherAppPlaying();
+                    if (want == AutoMuted) return;
+                    AutoMuted = want;
+                    foreach (var w in _windows) _ = w.RunScriptAsync("window.opsisAutoMute&&window.opsisAutoMute(" + (want ? "true" : "false") + ")");
+                }
+                catch (Exception) { }
+            };
+            _autoMuteTimer.Start();
+        }
         private readonly ExplorerRestartWatcher _explorerWatcher = new();
         private System.Threading.Timer? _displayDebounce;
         private readonly SynchronizationContext _ui;
@@ -1165,6 +1248,7 @@ namespace MotionDesk.Widgets
                 }
             }
             EnsureFullscreenWatcher();
+            EnsureAutoMuteWatcher();
             EnsureLockScreenSync();
             if (wasOverlayOnly && !freshlyBuilt) _ = RefreshAllAsync();   // switch the running windows from "Desktop" to the real mode
             StateChanged?.Invoke();
@@ -1194,6 +1278,7 @@ namespace MotionDesk.Widgets
         public void Disable()
         {
             _enabled = false;
+            ApplicationWallpaper.Stop();
             ProcessFreezer.Thaw();
             // ΔΙΟΡΘΩΣΗ "το disable θέλει 2-3 φορές": (1) τα παλιά παράθυρα ενός rebuild που ΑΚΟΜΑ περίμεναν τον αντικαταστάτη τους δεν
             // κρύβονταν ποτέ από εδώ, (2) ένα παράθυρο με attach σε εξέλιξη εμφανιζόταν ΜΟΝΟ ΤΟΥ όταν τελείωνε το attach, αφού είχε γίνει Disable.

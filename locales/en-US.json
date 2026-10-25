@@ -192,6 +192,7 @@
   "Wallpaper.ScreenLabelPrimary": "Screen {0} (primary)",
   "Wallpaper.PerScreenNote": "A screen with a pinned video doesn't take part in the shared playlist's shuffle/advance.",
   "Wallpaper.SectionAudio": "Wallpaper Audio",
+  "Wallpaper.AutoMuteOtherAudio": "Mute the wallpaper audio while another app plays sound",
   "Wallpaper.AudioEnabled": "Play video audio",
   "Wallpaper.AudioVolume": "Volume",
   "Wallpaper.AudioBass": "Bass",

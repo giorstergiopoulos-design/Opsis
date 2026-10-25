@@ -79,6 +79,36 @@ namespace MotionDesk.UI
             BuildPageProperties(panel, settings);
         }
 
+        // ---- "Application" wallpaper -------------------------------------------------------------------------------------------------------------
+        private void BuildApplicationSection(FlowLayoutPanel panel, WallpaperSettings settings)
+        {
+            AddSection(panel, L("Application wallpaper", "Wallpaper από εφαρμογή"));
+            AddText(panel, L("Choose a program (.exe) with its own window: Opsis starts it, shows its window as the wallpaper behind the icons, pauses it when the wallpaper pauses and closes it when you change the mode. Works best with programs made to run full screen without input (scenes, visualisers).",
+                             "Διάλεξε ένα πρόγραμμα (.exe) με δικό του παράθυρο: το Opsis το ανοίγει, δείχνει το παράθυρό του ως wallpaper πίσω από τα εικονίδια, το παγώνει όταν παγώνει το wallpaper και το κλείνει όταν αλλάζεις τρόπο. Ταιριάζει σε προγράμματα φτιαγμένα να τρέχουν σε πλήρη οθόνη χωρίς είσοδο (σκηνές, visualisers)."));
+            var row = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 0, 0, 6) };
+            var path = new TextBox { Width = 380, Text = settings.AppWallpaperPath, BackColor = UiTheme.Surface, ForeColor = UiTheme.TextPrimary, BorderStyle = BorderStyle.FixedSingle, Font = UiTheme.FontBody, Margin = new Padding(0, 5, 10, 0) };
+            var browse = MediaButton(LocalizationManager.T("Wallpaper.Browse"));
+            browse.Click += (_, _) =>
+            {
+                using var dlg = new OpenFileDialog { Filter = "Programs (*.exe)|*.exe", Title = browse.Text };
+                if (dlg.ShowDialog(this) == DialogResult.OK) path.Text = dlg.FileName;
+            };
+            row.Controls.Add(path); row.Controls.Add(browse);
+            panel.Controls.Add(row);
+            var row2 = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 0, 0, 10) };
+            row2.Controls.Add(new Label { Text = L("Arguments", "Παράμετροι"), AutoSize = false, Width = 90, Height = 28, TextAlign = ContentAlignment.MiddleLeft, Font = UiTheme.FontBody, ForeColor = UiTheme.TextSecondary });
+            var args = new TextBox { Width = 290, Text = settings.AppWallpaperArgs, BackColor = UiTheme.Surface, ForeColor = UiTheme.TextPrimary, BorderStyle = BorderStyle.FixedSingle, Font = UiTheme.FontBody, Margin = new Padding(0, 3, 10, 0) };
+            var apply = MediaButton(LocalizationManager.T("Wallpaper.Apply"));
+            apply.Click += (_, _) =>
+            {
+                var s = WallpaperSettings.Load(); s.AppWallpaperPath = path.Text.Trim().Trim('"'); s.AppWallpaperArgs = args.Text.Trim(); s.Save();
+                WallpaperHostEngine.Instance.Enable();
+                WallpaperHostEngine.Instance.RefreshAll();
+            };
+            row2.Controls.Add(args); row2.Controls.Add(apply);
+            panel.Controls.Add(row2);
+        }
+
         // ---- packages and samples ----------------------------------------------------------------------------------------------------------
         private void BuildPackageRow(FlowLayoutPanel panel)
         {
@@ -319,6 +349,26 @@ namespace MotionDesk.UI
             opt.Controls.Add(new Label { Text = L("Accent colour", "Χρώμα έμφασης"), AutoSize = true, Font = UiTheme.FontBody, ForeColor = UiTheme.TextSecondary, Margin = new Padding(0, 8, 6, 0) });
             opt.Controls.Add(accent);
             panel.Controls.Add(opt);
+        }
+
+        // ---- Discord Rich Presence (Settings page) ---------------------------------------------------------------------------------------------
+        private static void BuildDiscordRows(Control stack)
+        {
+            var s = AppSettings.Load();
+            stack.Controls.Add(SettingsView.Checkbox(L("Show what Opsis is doing on my Discord profile (Rich Presence)", "Εμφάνιση στο προφίλ μου στο Discord τι κάνει το Opsis (Rich Presence)"), s.DiscordPresenceEnabled,
+                v => { var a = AppSettings.Load(); a.DiscordPresenceEnabled = v; a.Save(); DiscordPresence.Instance.Apply(); }));
+            var row = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 0, 0, 4) };
+            row.Controls.Add(new Label { Text = L("Discord Application ID", "Application ID του Discord"), AutoSize = false, Width = 210, Height = 28, TextAlign = ContentAlignment.MiddleLeft, Font = UiTheme.FontBody, ForeColor = UiTheme.TextSecondary });
+            var box = new TextBox { Width = 230, Text = s.DiscordApplicationId, BackColor = UiTheme.Surface, ForeColor = UiTheme.TextPrimary, BorderStyle = BorderStyle.FixedSingle, Font = UiTheme.FontBody, Margin = new Padding(0, 3, 0, 0) };
+            box.Leave += (_, _) => { var a = AppSettings.Load(); a.DiscordApplicationId = box.Text.Trim(); a.Save(); DiscordPresence.Instance.Apply(); };
+            row.Controls.Add(box);
+            stack.Controls.Add(row);
+            stack.Controls.Add(new Label
+            {
+                Text = L("Create a free application at discord.com/developers/applications and paste its Application ID. Only the wallpaper mode and whether it is paused are shown.",
+                         "Φτιάξε μια δωρεάν εφαρμογή στο discord.com/developers/applications και κόλλησε εδώ το Application ID της. Εμφανίζεται μόνο ο τρόπος του wallpaper και αν είναι σε παύση."),
+                AutoSize = false, Width = 640, Height = 38, Font = UiTheme.FontBody, ForeColor = UiTheme.TextSecondary, Margin = new Padding(0, 0, 0, 8)
+            });
         }
 
         // ---- extra pause conditions (Wallpaper page) -------------------------------------------------------------------------------------------

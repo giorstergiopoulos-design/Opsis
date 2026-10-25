@@ -192,6 +192,7 @@
   "Wallpaper.ScreenLabelPrimary": "Οθόνη {0} (κύρια)",
   "Wallpaper.PerScreenNote": "Μια οθόνη με καρφιτσωμένο βίντεο δεν συμμετέχει στο shuffle/advance του κοινού playlist.",
   "Wallpaper.SectionAudio": "Ήχος Wallpaper",
+  "Wallpaper.AutoMuteOtherAudio": "Σίγαση του ήχου του wallpaper όσο παίζει ήχο άλλη εφαρμογή",
   "Wallpaper.AudioEnabled": "Αναπαραγωγή ήχου βίντεο",
   "Wallpaper.AudioVolume": "Ένταση",
   "Wallpaper.AudioBass": "Μπάσα",

@@ -1390,7 +1390,7 @@ namespace MotionDesk.UI
 
             AddSection(panel, LocalizationManager.T("Wallpaper.SectionMode"));
             var modeCombo = new FlatComboBox { Width = 200, Margin = new Padding(0, 0, 0, 10) };
-            modeCombo.SetItems(new[] { "Waves", "Video", "Image", "Page", "Particles", "Weather", "Desktop" }, settings.Mode);
+            modeCombo.SetItems(new[] { "Waves", "Video", "Image", "Page", "Application", "Particles", "Weather", "Desktop" }, settings.Mode);
             // Ξαναχτίζει ΟΛΟΚΛΗΡΗ τη σελίδα κάθε φορά που αλλάζει το Mode — ζητήθηκε ρητά bug fix:
             // πριν, οι ενότητες "Video Library"/"Theme & Colors"/"Wave Tuning" ήταν ΠΑΝΤΑ ορατές
             // ανεξάρτητα από το επιλεγμένο mode, οπότε η επιλογή βίντεο έμενε στην οθόνη ακόμη κι
@@ -1515,6 +1515,8 @@ namespace MotionDesk.UI
             AddSection(panel, LocalizationManager.T("Wallpaper.SectionAudio"));
             var audioEnabledCheck = new FlatCheckBox { Text = LocalizationManager.T("Wallpaper.AudioEnabled"), AutoSize = true, Checked = settings.AudioEnabled, BackColor = UiTheme.Background, Margin = new Padding(0, 4, 0, 8) };
             panel.Controls.Add(audioEnabledCheck);
+            panel.Controls.Add(SettingsView.Checkbox(LocalizationManager.T("Wallpaper.AutoMuteOtherAudio"), AppSettings.Load().AutoMuteWhenOtherAudio,
+                v => { var a = AppSettings.Load(); a.AutoMuteWhenOtherAudio = v; a.Save(); }));
 
             var volumeTrack = new FlatSlider { Minimum = 0, Maximum = 100, Value = (int)Math.Clamp(settings.AudioVolume * 100, 0, 100), Width = 220 };
             var bassTrack = new FlatSlider { Minimum = -12, Maximum = 12, Value = (int)Math.Clamp(settings.AudioBassGain, -12, 12), Width = 220 };
@@ -1587,6 +1589,7 @@ namespace MotionDesk.UI
             // Theme/Palette και Wave Tuning ισχύουν για Waves ΚΑΙ Particles (μοιράζονται το ίδιο
             // cfg.speed/glowIntensity/palette στο JS engine) — άσχετα μόνο σε Video mode.
             if (settings.Mode is "Page" or "Image") BuildMediaWallpaperSection(panel, settings);
+            if (settings.Mode == "Application") BuildApplicationSection(panel, settings);
             BuildElementsSection(panel, settings);
             if (settings.Mode == "Weather") BuildWeatherWallpaperSection(panel, settings);
             if (settings.Mode == "Desktop") AddText(panel, LocalizationManager.T("Wallpaper.DesktopIntro"));
@@ -1911,7 +1914,7 @@ namespace MotionDesk.UI
         }
 
         // Time-of-day schedule: up to 3 windows, each switching the wallpaper MODE
-        private static readonly string[] ScheduleModes = { "Waves", "Particles", "Weather", "Video", "Image", "Page", "Desktop" };
+        private static readonly string[] ScheduleModes = { "Waves", "Particles", "Weather", "Video", "Image", "Page", "Application", "Desktop" };
 
         private void BuildWallpaperScheduleSection(Panel panel, WallpaperSettings settings)
         {
@@ -4397,6 +4400,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                 stack.Controls.Add(Checkbox(LocalizationManager.T("Settings.MinimizeToTray"), AppSettings.Load().MinimizeToTray,
                     v => { var a = AppSettings.Load(); a.MinimizeToTray = v; a.Save(); }));
                 // Plugins (π.χ. News Crawler): ισχύει στην επόμενη εκκίνηση.
+                BuildDiscordRows(stack);
                 stack.Controls.Add(Checkbox(LocalizationManager.T("Settings.PluginsEnabled"), AppSettings.Load().PluginsEnabled,
                     v => { var a = AppSettings.Load(); a.PluginsEnabled = v; a.Save(); }));
 

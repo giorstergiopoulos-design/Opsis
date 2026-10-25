@@ -18,6 +18,11 @@ namespace MotionDesk.Services
         // After a pause lasts 15 s the WebView2 process tree is suspended (0% CPU/GPU); resumed instantly when the pause ends.
         public bool WallpaperHeavyPause { get; set; } = true;
         public bool PauseOnScreensaver { get; set; } = true;
+        // Wallpaper audio (only when the user switched it on) is muted while another application plays sound.
+        public bool AutoMuteWhenOtherAudio { get; set; } = true;
+        // Optional Discord Rich Presence (off by default; needs the user's own Discord application ID).
+        public bool DiscordPresenceEnabled { get; set; } = false;
+        public string DiscordApplicationId { get; set; } = "";
         public bool KeepPcAwake { get; set; } = false;          // keep the PC and the display awake while the wallpaper is visible
         // Pause while the system is under load: percent thresholds, 0 = off. Entered after 2 checks (10 s) above, left 10 points lower.
         public int PauseCpuAbove { get; set; } = 0;

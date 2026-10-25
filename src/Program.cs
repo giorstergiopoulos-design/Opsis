@@ -69,6 +69,16 @@ namespace MotionDesk
                 Environment.Exit(Services.DesktopDiagnostics.TestWallpaperIcons(args[1]));
                 return;
             }
+            if (args.Length == 3 && args[0] == "--test-audio-detect")        // --test-audio-detect <seconds> <logfile>: polls the other-app audio detector
+            {
+                using var det = new Services.OtherAudioDetector();
+                var lines = new System.Collections.Generic.List<string>();
+                var end = DateTime.UtcNow.AddSeconds(int.Parse(args[1]));
+                while (DateTime.UtcNow < end) { lines.Add(DateTime.Now.ToString("HH:mm:ss.fff") + " otherAppPlaying=" + det.IsOtherAppPlaying()); System.Threading.Thread.Sleep(300); }
+                System.IO.File.WriteAllLines(args[2], lines);
+                Environment.Exit(0);
+                return;
+            }
             if (args.Length == 2 && args[0] == "--test-containers")
             {
                 ApplicationConfiguration.Initialize();

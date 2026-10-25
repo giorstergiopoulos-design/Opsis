@@ -50,6 +50,9 @@ namespace MotionDesk.Widgets
             MotionDesk.Services.AttachLog.Write("heavy pause: thawed");
         }
 
+        /// <summary>The process itself and all its descendants (Opsis + its WebView2 processes).</summary>
+        public static List<int> TreeOf(int rootPid) => Tree(rootPid);
+
         private static List<int> Tree(int rootPid)
         {
             var parents = new Dictionary<int, List<int>>();
