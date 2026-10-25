@@ -1634,6 +1634,14 @@ namespace MotionDesk.UI
             // μπορούν να μπουν στις αντίστοιχες καρτέλες") - αφορούν ΑΠΟΚΛΕΙΣΤΙΚΑ το wallpaper.
             panel.Controls.Add(SettingsView.Checkbox(LocalizationManager.T("Settings.AutoPerformanceMode"), AppSettings.Load().AutoPerformanceMode,
                 v => { var a = AppSettings.Load(); a.AutoPerformanceMode = v; a.Save(); }));
+            panel.Controls.Add(SettingsView.Checkbox(LocalizationManager.T("Settings.PauseOnLock"), AppSettings.Load().PauseOnLock,
+                v => { var a = AppSettings.Load(); a.PauseOnLock = v; a.Save(); }));
+            panel.Controls.Add(SettingsView.Checkbox(LocalizationManager.T("Settings.PauseOnRemote"), AppSettings.Load().PauseOnRemoteSession,
+                v => { var a = AppSettings.Load(); a.PauseOnRemoteSession = v; a.Save(); }));
+            panel.Controls.Add(SettingsView.Checkbox(LocalizationManager.T("Settings.PauseOnBatterySaver"), AppSettings.Load().PauseOnBatterySaver,
+                v => { var a = AppSettings.Load(); a.PauseOnBatterySaver = v; a.Save(); }));
+            panel.Controls.Add(SettingsView.Checkbox(LocalizationManager.T("Settings.HeavyPause"), AppSettings.Load().WallpaperHeavyPause,
+                v => { var a = AppSettings.Load(); a.WallpaperHeavyPause = v; a.Save(); }));
             panel.Controls.Add(SettingsView.BuildHardwareProfileRow());
             panel.Controls.Add(SettingsView.Checkbox(LocalizationManager.T("Settings.StartWallpaperWithApp"), AppSettings.Load().StartWallpaperWithWindows,
                 v => { var a = AppSettings.Load(); a.StartWallpaperWithWindows = v; a.Save(); }));

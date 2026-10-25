@@ -11,6 +11,12 @@ namespace MotionDesk.Services
         public int SnapThreshold { get; set; } = 15;
         public int GridSize { get; set; } = 20;
         public bool AutoPerformanceMode { get; set; } = true;
+        // Pause conditions (AppActivity): the wallpaper and the widgets stop rendering while the session is locked, in a remote (RDP) session or in Battery Saver.
+        public bool PauseOnLock { get; set; } = true;
+        public bool PauseOnRemoteSession { get; set; } = true;
+        public bool PauseOnBatterySaver { get; set; } = true;
+        // After a pause lasts 15 s the WebView2 process tree is suspended (0% CPU/GPU); resumed instantly when the pause ends.
+        public bool WallpaperHeavyPause { get; set; } = true;
         public string WallpaperPerformanceMode { get; set; } = "Balanced";
         // Χειροκίνητο override της ανιχνευμένης ικανότητας υλικού (HardwareProfileService) — "" /
         // null = Auto (ανίχνευση RAM/πυρήνων/GPU). Τιμές: "Low" | "Balanced" | "High" (HardwareTier).

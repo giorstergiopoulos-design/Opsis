@@ -25,6 +25,9 @@ The engine has no About window, update/news check, donation UI or author easter 
 
 **Verified live (isolated data):** engine starts from Opsis and stops with it; legacy containers migrate (3/3); heart→☰ menu opens with the Opsis menu style; Options window opens dark with styled combo boxes; padlock icon; title-bar band; Auto roll-up (rolled to 28 px, expanded on hover); arrow-key + wheel scrolling; welcome note first run. **Not verified:** installer build/run, Customize/About windows after theming, Title Bar colour from the Options UI (only the code path), ticking checkboxes in Options by mouse (an automated click did not register), Export/Import/Delete/Portal/Profiles/SpotSearch of the new engine, light Opsis theme (settings windows stay light there by design), changing the Opsis theme while Fences runs (needs a restart of the engine).
 **Known gaps:** legacy per-container opacity is not carried over (the engine has one global tint); not verified: installer run, drag & drop into an ELEVATED Opsis session (the de-elevated launcher is written but untested), the sidebar growth with a real plugin, text contrast over a moving wallpaper. Migration now also carries spacers, icon size and title font/size. A theme change in Opsis reaches the running engine through `bridge	heme.txt` (new windows/menus use it; already open windows keep the old colours).
+## Wallpaper engine roadmap (2026-10-25)
+Pause conditions (lock/RDP/battery saver/per-monitor fullscreen), heavy pause (WebView2 process freeze) and the crash-loop budget are DONE in 2.2.0. The remaining proposals with detailed instructions are in **`docs/ENGINE_ROADMAP.md`** (read its QUEUE RULE: finish active tasks first, then work through it in order). NOT VERIFIED live: lock, RDP, battery saver, two monitors.
+
 ## Project
 Name: Opsis - Desktop Customization (renamed 2026-10-13 from "MotionDesk Studio" — see the v2.0 rename entry below)
 

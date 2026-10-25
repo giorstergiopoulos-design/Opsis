@@ -34,6 +34,8 @@ namespace MotionDesk.Widgets
         // εκθέτουν host objects (WallpaperBridge/WidgetBridge): κανένα link/σφάλμα δεν πρέπει να μπορεί να
         // φορτώσει εξωτερικό περιεχόμενο στο ίδιο WebView (θα είχε πρόσβαση στα host objects), ούτε να ανοίξει
         // νέο παράθυρο ή DevTools/μενού περιβάλλοντος πάνω στην επιφάνεια εργασίας.
+        private static readonly Queue<DateTime> _failures = new();
+
         public static void Harden(CoreWebView2 core)
         {
             var settings = core.Settings;
@@ -51,6 +53,11 @@ namespace MotionDesk.Widgets
             core.ProcessFailed += (_, e) =>
             {
                 MotionDesk.Services.AttachLog.Write($"WebView2 ProcessFailed: {e.ProcessFailedKind} reason={e.Reason} exit={e.ExitCode}");
+                // A frozen (heavy pause) or just-thawed renderer reports itself as unresponsive: that is not a crash.
+                if (e.ProcessFailedKind == CoreWebView2ProcessFailedKind.RenderProcessUnresponsive && ProcessFreezer.IsFrozenOrRecent) return;
+                // Retry budget: a renderer that keeps dying (bad driver, corrupt page) must not make Opsis reload in a loop.
+                var now = DateTime.UtcNow;
+                lock (_failures) { _failures.Enqueue(now); while (_failures.Count > 0 && (now - _failures.Peek()).TotalSeconds > 120) _failures.Dequeue(); if (_failures.Count > 4) { MotionDesk.Services.AttachLog.Write("WebView2 failure budget exceeded - not reloading"); return; } }
                 if (e.ProcessFailedKind is CoreWebView2ProcessFailedKind.RenderProcessExited
                     or CoreWebView2ProcessFailedKind.RenderProcessUnresponsive
                     or CoreWebView2ProcessFailedKind.GpuProcessExited)

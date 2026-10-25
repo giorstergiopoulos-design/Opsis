@@ -734,6 +734,7 @@ namespace MotionDesk.Widgets
         // roadmap) — καθαρά εξοικονόμηση CPU/μπαταρίας, αφού το wallpaper έτσι κι αλλιώς δεν
         // είναι ορατό πίσω από ένα fullscreen παράθυρο.
         private bool _paused;
+        public int BrowserProcessId { get { try { return (int)(_webView?.CoreWebView2?.BrowserProcessId ?? 0); } catch (Exception) { return 0; } } }
 
         public async Task SetPausedAsync(bool paused)
         {
@@ -743,7 +744,7 @@ namespace MotionDesk.Widgets
             try
             {
                 // Πρώτα ξυπνάμε ένα ενδεχομένως suspended WebView2 — αλλιώς το script δεν εκτελείται.
-                if (!paused) { try { core.Resume(); } catch { } }
+                if (!paused) { ProcessFreezer.Thaw(); try { core.Resume(); } catch { } }
                 await core.ExecuteScriptAsync($"window.motionDeskSetPaused?.({(paused ? "true" : "false")});");
                 // Σε κρυμμένο παράθυρο (wallpaper απενεργοποιημένο) το TrySuspend παγώνει πλήρως τη
                 // διεργασία rendering (0% CPU/GPU, λιγότερη RAM). Απαιτεί IsVisible=false — αν το
@@ -838,7 +839,6 @@ namespace MotionDesk.Widgets
         private bool _overlayOnly;
         private bool Active => _enabled || _overlayOnly;
         public string EffectiveMode(WallpaperSettings settings) => !_enabled && _overlayOnly ? "Desktop" : settings.Mode;
-        private bool _pausedForFullscreen;
         private System.Windows.Forms.Timer? _fullscreenCheckTimer;
         private System.Windows.Forms.Timer? _lockScreenSyncTimer;
         private readonly ExplorerRestartWatcher _explorerWatcher = new();
@@ -861,9 +861,10 @@ namespace MotionDesk.Widgets
             // Παύση/συνέχιση σε fullscreen εφαρμογή — τώρα από το κοινό AppActivity (ίδιο state με τα widgets).
             AppActivity.FullscreenChanged += fullscreen =>
             {
-                _pausedForFullscreen = fullscreen;
                 if (!Active) return;
-                foreach (var w in _windows) _ = w.SetPausedAsync(fullscreen);
+                ApplyHeavyPause();
+                // per monitor: a fullscreen app on one screen does not pause the wallpaper of the others (lock/RDP/battery saver pause all)
+                foreach (var w in _windows) _ = w.SetPausedAsync(AppActivity.IsPausedFor(w.TargetScreen));
             };
 
             // Debounce: το DisplaySettingsChanged στέλνεται σε ριπές (πολλά events για μία αλλαγή
@@ -922,6 +923,35 @@ namespace MotionDesk.Widgets
             _fullscreenCheckTimer.Start();
         }
 
+        // Heavy pause: when EVERY wallpaper window is paused (lock, RDP, battery saver, or a fullscreen app with nothing else to show) for 15 s,
+        // the WebView2 process tree is suspended. The runtime is shared with the web widgets; they are paused by the same state, and Thaw() runs
+        // before any call into the WebView (SetPausedAsync(false)) and at exit.
+        private System.Windows.Forms.Timer? _heavyTimer;
+        private void ApplyHeavyPause()
+        {
+            bool all = Active && _windows.Count > 0 && _windows.All(w => w.IsDisposed || AppActivity.IsPausedFor(w.TargetScreen));
+            if (!all || !AppSettings.Load().WallpaperHeavyPause)
+            {
+                _heavyTimer?.Stop(); _heavyTimer?.Dispose(); _heavyTimer = null;
+                ProcessFreezer.Thaw();
+                return;
+            }
+            if (_heavyTimer != null || ProcessFreezer.IsFrozen) return;
+            _heavyTimer = new System.Windows.Forms.Timer { Interval = 15000 };
+            _heavyTimer.Tick += (_, _) =>
+            {
+                _heavyTimer?.Stop(); _heavyTimer?.Dispose(); _heavyTimer = null;
+                try
+                {
+                    int pid = _windows.Where(w => !w.IsDisposed).Select(w => w.BrowserProcessId).FirstOrDefault(x => x > 0);
+                    bool stillAll = Active && _windows.All(w => w.IsDisposed || AppActivity.IsPausedFor(w.TargetScreen));
+                    if (stillAll && pid > 0) ProcessFreezer.Freeze(pid);
+                }
+                catch (Exception ex) { MotionDesk.Services.AttachLog.Write("heavy pause failed: " + ex.Message); ProcessFreezer.Thaw(); }
+            };
+            _heavyTimer.Start();
+        }
+
         public void EnsureStarted() => Enable();
 
         public void Enable()
@@ -967,7 +997,7 @@ namespace MotionDesk.Widgets
                     if (!w.IsAttached) continue;
                     if (!w.Visible) w.Show();
                     else w.BringToFront();
-                    _ = w.SetPausedAsync(_pausedForFullscreen);
+                    _ = w.SetPausedAsync(AppActivity.IsPausedFor(w.TargetScreen));
                 }
             }
             EnsureFullscreenWatcher();
@@ -986,7 +1016,7 @@ namespace MotionDesk.Widgets
             {
                 foreach (var w in _windows) w.AllowReveal = true;
                 if (_windows.Count == 0) RebuildWindows();
-                else foreach (var w in _windows) { if (w.IsAttached) { if (!w.Visible) w.Show(); _ = w.SetPausedAsync(_pausedForFullscreen); } }
+                else foreach (var w in _windows) { if (w.IsAttached) { if (!w.Visible) w.Show(); _ = w.SetPausedAsync(AppActivity.IsPausedFor(w.TargetScreen)); } }
                 EnsureFullscreenWatcher();
                 _ = RefreshAllAsync();
             }
@@ -999,6 +1029,7 @@ namespace MotionDesk.Widgets
         public void Disable()
         {
             _enabled = false;
+            ProcessFreezer.Thaw();
             // ΔΙΟΡΘΩΣΗ "το disable θέλει 2-3 φορές": (1) τα παλιά παράθυρα ενός rebuild που ΑΚΟΜΑ περίμεναν τον αντικαταστάτη τους δεν
             // κρύβονταν ποτέ από εδώ, (2) ένα παράθυρο με attach σε εξέλιξη εμφανιζόταν ΜΟΝΟ ΤΟΥ όταν τελείωνε το attach, αφού είχε γίνει Disable.
             foreach (var old in _retiringWindows.ToList()) { try { if (!old.IsDisposed) old.Dispose(); } catch (Exception) { } }
@@ -1007,7 +1038,6 @@ namespace MotionDesk.Widgets
             // video/τρέχει canvas σε χαμηλότερο ρυθμό, καταναλώνοντας CPU/GPU για κάτι αόρατο.
             foreach (var w in _windows) { w.HideAndCancelReveal(); _ = w.SetPausedAsync(true); }
             _fullscreenCheckTimer?.Stop();
-            _pausedForFullscreen = false;
             UpdateOverlayOnly();   // the overlay keeps running over the normal Windows wallpaper when it is switched on
         }
 
