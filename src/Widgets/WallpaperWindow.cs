@@ -642,7 +642,7 @@ namespace MotionDesk.Widgets
         private void RevealWhenReady()
         {
             if (!AllowReveal) { _wantShow = false; return; }
-            if (Visible) { BringToFront(); return; }
+            if (Visible) { KeepBehindIcons(); return; }     // never BringToFront: as a child of the desktop it would cover the icons
             if (_contentReady) { ShowRevealed(); return; }
             _wantShow = true;
             if (_revealTimeout == null)
@@ -719,6 +719,7 @@ namespace MotionDesk.Widgets
         // TryAttachAsync είναι το ΜΟΝΟ σημείο που καλεί Show(), αφού πρώτα έχει ήδη γίνει
         // SendToBack πίσω από τα εικονίδια.
         private void KeepBehindIcons() => WallpaperInterop.KeepBehindIcons(Handle);
+        public void EnsureBehindIcons() { if (!IsDisposed && IsHandleCreated) KeepBehindIcons(); }
 
         public void BeginAttach() => _ = TryAttachAsync();
 
@@ -1010,6 +1011,8 @@ namespace MotionDesk.Widgets
         // παράθυρο — το attach πίσω από τα εικονίδια είναι ασύγχρονο, οπότε στο άνοιγμα της εφαρμογής ο πίνακας έδειχνε "ανενεργό"
         // και διορθωνόταν αργότερα. Το IsRunning ισχύει όταν υπάρχει πράγματι ορατό wallpaper window.
         public bool IsEnabled => _enabled;
+        /// <summary>Raised (on the calling thread) after Enable()/Disable(), so the Wallpaper page can keep its Enable/Disable buttons and status in step with the tray, profiles and the schedule.</summary>
+        public event Action? StateChanged;
         public bool IsRunning => _enabled && _windows.Any(w => !w.IsDisposed && w.Visible);
 
         private WallpaperHostEngine()
@@ -1157,13 +1160,14 @@ namespace MotionDesk.Widgets
                 {
                     if (!w.IsAttached) continue;
                     if (!w.Visible) w.Show();
-                    else w.BringToFront();
+                    w.EnsureBehindIcons();      // BringToFront() here put the wallpaper window ABOVE the desktop icons (they "disappeared")
                     _ = w.SetPausedAsync(AppActivity.IsPausedFor(w.TargetScreen));
                 }
             }
             EnsureFullscreenWatcher();
             EnsureLockScreenSync();
             if (wasOverlayOnly && !freshlyBuilt) _ = RefreshAllAsync();   // switch the running windows from "Desktop" to the real mode
+            StateChanged?.Invoke();
         }
 
         // Starts / stops the "overlay-only" state (see _overlayOnly). Called at startup, after Disable(), and whenever the overlay settings change.
@@ -1177,7 +1181,7 @@ namespace MotionDesk.Widgets
             {
                 foreach (var w in _windows) w.AllowReveal = true;
                 if (_windows.Count == 0) RebuildWindows();
-                else foreach (var w in _windows) { if (w.IsAttached) { if (!w.Visible) w.Show(); _ = w.SetPausedAsync(AppActivity.IsPausedFor(w.TargetScreen)); } }
+                else foreach (var w in _windows) { if (w.IsAttached) { if (!w.Visible) w.Show(); w.EnsureBehindIcons(); _ = w.SetPausedAsync(AppActivity.IsPausedFor(w.TargetScreen)); } }
                 EnsureFullscreenWatcher();
                 _ = RefreshAllAsync();
             }
@@ -1200,6 +1204,7 @@ namespace MotionDesk.Widgets
             foreach (var w in _windows) { w.HideAndCancelReveal(); _ = w.SetPausedAsync(true); }
             _fullscreenCheckTimer?.Stop();
             UpdateOverlayOnly();   // the overlay keeps running over the normal Windows wallpaper when it is switched on
+            StateChanged?.Invoke();
         }
 
         private string _layoutKey = "";

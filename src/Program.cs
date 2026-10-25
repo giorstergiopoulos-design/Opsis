@@ -63,6 +63,12 @@ namespace MotionDesk
                 Environment.Exit(Services.DesktopDiagnostics.TestDeskStrip(args[1], args[2]));
                 return;
             }
+            if (args.Length == 2 && args[0] == "--test-wallpaper-icons")
+            {
+                ApplicationConfiguration.Initialize();
+                Environment.Exit(Services.DesktopDiagnostics.TestWallpaperIcons(args[1]));
+                return;
+            }
             if (args.Length == 2 && args[0] == "--test-containers")
             {
                 ApplicationConfiguration.Initialize();

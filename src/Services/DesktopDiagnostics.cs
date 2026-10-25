@@ -468,6 +468,68 @@ namespace MotionDesk.Services
         }
 
         /// <summary>`--test-containers <folder>`: Folder Portal (ζωντανή ενημέρωση, πλοήγηση, αντιγραφή), κανονικό container, επιλογή, screenshot.</summary>
+        // `Opsis.exe --test-wallpaper-icons <log>`: runs the real wallpaper engine through the sequences that used to hide the desktop icons
+        // (clock/date overlay on and off, mode changes, Enable twice, Disable) and checks after every step that SHELLDLL_DefView (the icons)
+        // is still ABOVE every wallpaper window of this process. Use with OPSIS_APPDATA pointing to a temp folder.
+        public static int TestWallpaperIcons(string logFile)
+        {
+            var lines = new System.Collections.Generic.List<string>();
+            bool allOk = true;
+            void Pump(int ms) { var end = DateTime.UtcNow.AddMilliseconds(ms); while (DateTime.UtcNow < end) { Application.DoEvents(); System.Threading.Thread.Sleep(15); } }
+            bool IconsOnTop()
+            {
+                IntPtr progman = FindWindow("Progman", null);
+                var order = new System.Collections.Generic.List<(IntPtr H, string Cls, bool Ours, bool Vis)>();
+                EnumChildWindows(progman, (h, l) =>
+                {
+                    if (GetParentWindow(h) != progman) return true;
+                    var sb = new StringBuilder(128); GetClassName(h, sb, 128);
+                    GetWindowThreadProcessId(h, out uint pid);
+                    order.Add((h, sb.ToString(), pid == (uint)Environment.ProcessId, IsWindowVisible(h)));
+                    return true;
+                }, IntPtr.Zero);
+                int defView = order.FindIndex(o => o.Cls == "SHELLDLL_DefView");
+                if (defView < 0) return true;                       // other layout: wallpaper windows are children of a WorkerW below the icons
+                for (int i = 0; i < defView; i++) if (order[i].Ours && order[i].Vis) return false;   // one of our visible windows is above the icons
+                return true;
+            }
+            void Step(string name)
+            {
+                Pump(2500);
+                bool ok = IconsOnTop(); allOk &= ok;
+                lines.Add((ok ? "PASS " : "FAIL ") + name);
+            }
+            try
+            {
+                var eng = WallpaperHostEngine.Instance;
+                var s = WallpaperSettings.Load(); s.Mode = "Desktop"; s.WeatherShowInfo = false; s.InfoOnAllModes = true; s.WeatherLocationPrompted = true; s.Save();
+                eng.SetMode("Desktop");                                   Step("enable, Desktop mode");
+                eng.SetWeatherInfo(true, true, 50, 34, 100, false);       Step("clock/date ON while the wallpaper is enabled");
+                eng.SetWeatherInfo(false, true, 50, 34, 100, false);      Step("clock/date OFF while the wallpaper is enabled");
+                eng.Enable();                                             Step("Enable pressed again (windows already visible)");
+                eng.SetMode("Waves");                                     Step("switch to Waves");
+                eng.SetMode("Desktop");                                   Step("switch back to Desktop");
+                eng.Disable();                                            Step("disable");
+                eng.SetWeatherInfo(true, true, 50, 34, 100, false);       Step("clock/date ON with the wallpaper disabled (overlay only)");
+                eng.SetWeatherInfo(false, true, 50, 34, 100, false);      Step("clock/date OFF (overlay only)");
+                for (int i = 0; i < 3; i++) { eng.SetWeatherInfo(true, true, 50, 34, 100, false); Pump(600); eng.SetWeatherInfo(false, true, 50, 34, 100, false); Pump(600); }
+                Step("clock/date toggled quickly three times");
+                eng.SetWeatherInfo(true, true, 50, 34, 100, false);       Step("clock/date ON again");
+                eng.Enable();                                             Step("Enable while the overlay is showing");
+                eng.Disable();                                            Step("disable again");
+                eng.SetWeatherInfo(true, true, 50, 34, 100, false);       Pump(1500);
+                eng.SetMode("Desktop");                                   Step("pick Desktop mode while the overlay is showing");
+                eng.SetMode("Waves");                                     Step("pick Waves while the overlay is showing");
+                eng.Disable(); eng.SetWeatherInfo(false, true, 50, 34, 100, false);   Step("everything off");
+            }
+            catch (Exception ex) { lines.Add("EXCEPTION " + ex); allOk = false; }
+            finally { try { WallpaperHostEngine.Instance.Disable(); } catch (Exception) { } }
+            File.WriteAllLines(logFile, lines);
+            return allOk ? 0 : 1;
+        }
+
+        [DllImport("user32.dll", EntryPoint = "GetParent")] private static extern IntPtr GetParentWindow(IntPtr h);
+
         public static int TestContainers(string folder)
         {
             Directory.CreateDirectory(folder);

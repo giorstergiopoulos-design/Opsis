@@ -1373,10 +1373,20 @@ namespace MotionDesk.UI
                 playlistCard.Text = DescribePlaylist(s);
             }
 
-            var enableButtons = AddToggleButtonGrid(panel,
-                ("Enable", (_, _) => { WallpaperHostEngine.Instance.Enable(); RefreshStatus(); }),
-                ("Disable", (_, _) => { WallpaperHostEngine.Instance.Disable(); RefreshStatus(); }));
-            MarkActive(enableButtons, WallpaperHostEngine.Instance.IsEnabled ? "Enable" : "Disable");
+            Dictionary<string, HoverButton>? enableButtons = null;
+            void SyncEnableButtons() { RefreshStatus(); if (enableButtons != null) MarkActive(enableButtons, WallpaperHostEngine.Instance.IsEnabled ? "Enable" : "Disable"); }
+            enableButtons = AddToggleButtonGrid(panel,
+                ("Enable", (_, _) => { WallpaperHostEngine.Instance.Enable(); SyncEnableButtons(); }),
+                ("Disable", (_, _) => { WallpaperHostEngine.Instance.Disable(); SyncEnableButtons(); }));
+            SyncEnableButtons();
+            // the tray menu, profiles, the schedule and the Dashboard also switch the wallpaper: keep the buttons and the status right
+            Action? onState = null;
+            onState = () =>
+            {
+                if (statusCard.IsDisposed || IsDisposed) { WallpaperHostEngine.Instance.StateChanged -= onState!; return; }
+                if (InvokeRequired) BeginInvoke(new Action(SyncEnableButtons)); else SyncEnableButtons();
+            };
+            WallpaperHostEngine.Instance.StateChanged += onState;
 
             AddSection(panel, LocalizationManager.T("Wallpaper.SectionMode"));
             var modeCombo = new FlatComboBox { Width = 200, Margin = new Padding(0, 0, 0, 10) };
