@@ -28,6 +28,8 @@ The engine has no About window, update/news check, donation UI or author easter 
 ## Wallpaper engine roadmap (2026-10-25)
 Pause conditions (lock/RDP/battery saver/per-monitor fullscreen), heavy pause (WebView2 process freeze) and the crash-loop budget are DONE in 2.2.0. The remaining proposals with detailed instructions are in **`docs/ENGINE_ROADMAP.md`** (read its QUEUE RULE: finish active tasks first, then work through it in order). NOT VERIFIED live: lock, RDP, battery saver, two monitors.
 
+UI framework study (WinUI 3 vs WPF, analysis only): **`docs/UI_FRAMEWORK_STUDY.md`** — recommendation: no WinUI 3; optional WPF pilot for one page; plugin contract v2 later. Queue it after `docs/ENGINE_ROADMAP.md`.
+
 ## Project
 Name: Opsis - Desktop Customization (renamed 2026-10-13 from "MotionDesk Studio" — see the v2.0 rename entry below)
 
