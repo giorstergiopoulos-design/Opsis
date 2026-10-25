@@ -1,0 +1,12 @@
+{
+  "name": "System monitor (sample)",
+  "author": "Opsis",
+  "description": "Live CPU, memory, network and audio spectrum drawn on the desktop. Shows how a web wallpaper receives system data and its own settings from Opsis.",
+  "properties": [
+    { "key": "accent",      "type": "color",    "label": "Accent colour",   "labelEl": "Χρώμα έμφασης", "default": "#00c8e6" },
+    { "key": "showClock",   "type": "checkbox", "label": "Show the clock",  "labelEl": "Εμφάνιση ρολογιού", "default": true },
+    { "key": "sensitivity", "type": "slider",   "label": "Audio sensitivity", "labelEl": "Ευαισθησία ήχου", "min": 1, "max": 10, "step": 1, "default": 5 },
+    { "key": "style",       "type": "combo",    "label": "Spectrum style",  "labelEl": "Στυλ φάσματος", "options": ["Bars", "Line"], "default": "Bars" },
+    { "key": "title",       "type": "text",     "label": "Title",           "labelEl": "Τίτλος", "default": "OPSIS" }
+  ]
+}

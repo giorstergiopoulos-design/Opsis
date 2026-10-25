@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>System monitor (sample)</title>
+<style>
+  html,body{margin:0;width:100vw;height:100vh;overflow:hidden;background:#070a12;color:#e8eefc;font-family:"Segoe UI",system-ui,sans-serif}
+  #bg{position:fixed;inset:0;background:radial-gradient(1200px 700px at 70% 20%,#10213a 0%,#070a12 70%)}
+  #wrap{position:fixed;left:6vw;top:8vh;right:6vw;bottom:8vh;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr auto;gap:2.5vh 3vw}
+  #title{grid-column:1/3;font-size:3vh;letter-spacing:.5em;opacity:.8}
+  #clock{font-size:14vh;font-weight:200;line-height:1;font-variant-numeric:tabular-nums}
+  #date{font-size:3vh;opacity:.7;margin-top:1vh}
+  .card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:2vh;padding:2.5vh 2vw}
+  .row{display:flex;justify-content:space-between;font-size:2.4vh;margin:1.4vh 0 .6vh}
+  .bar{height:1.2vh;border-radius:1vh;background:rgba(255,255,255,.1);overflow:hidden}
+  .bar>i{display:block;height:100%;width:0;background:var(--accent);transition:width .8s ease}
+  #spectrum{grid-column:1/3;width:100%;height:100%;min-height:0}
+  :root{--accent:#00c8e6}
+</style>
+</head>
+<body>
+<div id="bg"></div>
+<div id="wrap">
+  <div id="title">OPSIS</div>
+  <div><div id="clock"></div><div id="date"></div></div>
+  <div class="card">
+    <div class="row"><span>CPU</span><b id="cpuV">–</b></div><div class="bar"><i id="cpuB"></i></div>
+    <div class="row"><span>RAM</span><b id="ramV">–</b></div><div class="bar"><i id="ramB"></i></div>
+    <div class="row"><span>Network ↓ / ↑</span><b id="netV">–</b></div>
+    <div class="row"><span>Battery</span><b id="batV">–</b></div>
+  </div>
+  <canvas id="spectrum"></canvas>
+</div>
+<script>
+// ---- the Opsis wallpaper API: everything arrives as window messages ({opsis:true, type: 'hello' | 'props' | 'system' | 'audio'}) ----
+let props = { accent: '#00c8e6', showClock: true, sensitivity: 5, style: 'Bars', title: 'OPSIS' };
+let bands = [];
+const $ = id => document.getElementById(id);
+
+window.addEventListener('message', e => {
+  const m = e.data; if (!m || m.opsis !== true) return;
+  if (m.type === 'hello') parent.postMessage({ opsis: 'subscribe', audio: true, gpu: false }, '*');   // ask for the audio spectrum
+  else if (m.type === 'props') { props = Object.assign(props, m.props); applyProps(); }
+  else if (m.type === 'system') showSystem(m.data);
+  else if (m.type === 'audio') bands = m.bands;
+});
+
+function applyProps() {
+  document.documentElement.style.setProperty('--accent', props.accent);
+  $('title').textContent = props.title;
+  $('clock').style.display = $('date').style.display = props.showClock ? '' : 'none';
+}
+function showSystem(s) {
+  $('cpuV').textContent = s.cpu.toFixed(0) + ' %';   $('cpuB').style.width = s.cpu + '%';
+  $('ramV').textContent = s.ramUsedPercent.toFixed(0) + ' %  (' + (s.ramTotalMb / 1024).toFixed(0) + ' GB)'; $('ramB').style.width = s.ramUsedPercent + '%';
+  $('netV').textContent = (s.netDownKbps / 1024).toFixed(1) + ' / ' + (s.netUpKbps / 1024).toFixed(1) + ' MB/s';
+  $('batV').textContent = s.batteryPercent < 0 ? '—' : s.batteryPercent + ' %' + (s.charging ? ' ⚡' : '');
+}
+function tickClock() {
+  const d = new Date();
+  $('clock').textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  $('date').textContent = d.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' });
+}
+setInterval(tickClock, 1000); tickClock(); applyProps();
+
+const cv = $('spectrum'), ctx = cv.getContext('2d');
+function draw() {
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+  ctx.clearRect(0, 0, w, h);
+  const n = bands.length || 24, gain = props.sensitivity / 5;
+  ctx.fillStyle = ctx.strokeStyle = props.accent; ctx.lineWidth = Math.max(2, h * 0.012);
+  const bw = w / n;
+  if (props.style === 'Line') {
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) { const v = Math.min(1, (bands[i] || 0) * gain); const x = (i + .5) * bw, y = h - v * h * .9 - 2; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+    ctx.stroke();
+  } else {
+    for (let i = 0; i < n; i++) { const v = Math.min(1, (bands[i] || 0) * gain); const bh = Math.max(3, v * h * .95); ctx.globalAlpha = .35 + .65 * v; ctx.fillRect(i * bw + bw * .15, h - bh, bw * .7, bh); }
+    ctx.globalAlpha = 1;
+  }
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>

@@ -16,6 +16,16 @@ namespace MotionDesk.Widgets
             return File.Exists(path) ? new Uri(path).AbsoluteUri : "";
         }
 
+        /// <summary>Full path of the index.html when the "Page" source is a local file or a folder with index.html, otherwise null (website / YouTube).</summary>
+        public static string? LocalPagePath(string? source)
+        {
+            if (string.IsNullOrWhiteSpace(source)) return null;
+            source = source.Trim().Trim('"');
+            if (File.Exists(source)) return Path.GetFullPath(source);
+            if (Directory.Exists(source)) { string i = Path.Combine(source, "index.html"); return File.Exists(i) ? Path.GetFullPath(i) : null; }
+            return null;
+        }
+
         public static string PageUri(string? source)
         {
             if (string.IsNullOrWhiteSpace(source)) return "";

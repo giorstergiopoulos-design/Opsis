@@ -31,6 +31,7 @@ html,body{margin:0;padding:0;width:100vw;height:100vh;overflow:hidden;background
 <div id="wxInfo"><div id="wxTime"></div><div id="wxDate"></div><div id="wxTemp"></div><div id="wxWind"></div><div id="wxCity"></div></div>
 <div id="pulse"></div>
 <script src="weather.js"></script>
+<script src="elements.js"></script>
 <script>
 const canvas = document.getElementById('waves');
 const ctx = canvas.getContext('2d');
@@ -638,6 +639,25 @@ async function startMedia() {
     }
 }
 
+// ---- API for local web wallpapers: the page in the frame talks to Opsis only through window messages ----
+function postToFrame(msg) { try { if (mediaFrame.contentWindow) mediaFrame.contentWindow.postMessage(msg, '*'); } catch (e) { /* frame gone */ } }
+window.opsisPush = postToFrame;
+window.opsisSendProps = async () => {
+    const b = bridge();
+    if (!b || !cfg.pageLocal) return;
+    try { postToFrame({ opsis: true, type: 'props', props: JSON.parse(await b.GetPagePropertiesJson()) }); } catch (e) { /* ignore */ }
+};
+mediaFrame.addEventListener('load', () => {
+    if (!cfg.pageLocal) return;
+    postToFrame({ opsis: true, type: 'hello', version: 1 });
+    window.opsisSendProps();
+});
+window.addEventListener('message', (e) => {
+    const d = e.data;
+    if (!d || d.opsis !== 'subscribe' || e.source !== mediaFrame.contentWindow || !cfg.pageLocal) return;
+    try { const b = bridge(); if (b) b.SetSubscription(!!d.audio, !!d.gpu); } catch (x) { /* ignore */ }
+});
+
 async function playCurrentVideo() {
     const b = bridge();
     if (!b) return;
@@ -763,9 +783,14 @@ async function doRefresh() {
         const wx = cfg.mode === 'Weather';   // οι προσομοιώσεις (καιρός/ώρα/άνεμος) ισχύουν μόνο στο Weather mode — τα υπόλοιπα modes δείχνουν την πραγματική ώρα/θερμοκρασία
         WeatherWallpaper.setConfig({ weatherSim: wx ? (cfg.weatherSim || 'Auto') : 'Auto', timeSim: wx ? (cfg.timeSim || 'Auto') : 'Auto', windSim: wx ? (cfg.windSim || 'Auto') : 'Auto', glass: cfg.weatherGlass !== false, lat: cfg.weatherLat, lon: cfg.weatherLon });
     }
-    clearInterval(rotationTimer);
+    clearTimeout(rotationTimer); clearInterval(rotationTimer);
     rotationTimer = null;
-    if (cfg.mode === 'Video' && cfg.rotateMinutes > 0) rotationTimer = setInterval(() => { if (!isPaused) advanceVideo(); }, cfg.rotateMinutes * 60 * 1000);
+    if (cfg.mode === 'Video' && cfg.rotateMinutes > 0) {
+        // the first switch is counted from the LAST real switch (kept in the settings), so refreshes and restarts do not postpone it
+        const every = cfg.rotateMinutes * 60 * 1000;
+        const tick = () => { if (!isPaused) advanceVideo(); rotationTimer = setTimeout(tick, every); };
+        rotationTimer = setTimeout(tick, Math.max(15000, cfg.rotateFirstMs || every));
+    }
 
     clearInterval(infoTimer);
     infoTimer = null;
@@ -805,6 +830,7 @@ async function doRefresh() {
     } else {
         startWaves();
     }
+    if (window.opsisApplyElements) window.opsisApplyElements();
     if (!readySent) { await prepareFirstFrame(); signalReady(); }
 };
 
@@ -812,6 +838,7 @@ async function doRefresh() {
 // εξοικονόμηση CPU/GPU αφού το wallpaper δεν είναι ορατό πίσω από ένα fullscreen παράθυρο.
 window.motionDeskSetPaused = (paused) => {
     isPaused = !!paused;
+    if (window.opsisPauseElements) window.opsisPauseElements(isPaused);
     if (paused) {
         if (waveLoopHandle) { cancelAnimationFrame(waveLoopHandle); waveLoopHandle = null; }
         activeVideo().pause();

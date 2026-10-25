@@ -335,6 +335,8 @@
   "Settings.PauseOnRemote": "Παύση wallpaper και widgets σε απομακρυσμένη σύνδεση (RDP)",
   "Settings.PauseOnBatterySaver": "Παύση wallpaper και widgets όταν είναι ενεργός ο Εξοικονομητής μπαταρίας",
   "Settings.HeavyPause": "Πλήρες πάγωμα της μηχανής wallpaper μετά από 15 δευτ. παύσης (0% CPU/GPU)",
+  "Settings.PauseOnScreensaver": "Παύση wallpaper και widgets όταν τρέχει screensaver",
+  "Settings.KeepAwake": "Κράτα το PC και την οθόνη ξύπνια όσο φαίνεται το wallpaper",
   "Settings.HardwareProfileLabel": "Προφίλ υλικού",
   "Settings.HardwareProfileAuto": "Αυτόματο (ανίχνευση RAM/CPU/GPU)",
   "Settings.HardwareProfileLow": "Χαμηλό (εξαναγκασμός ελαφρύτερων εφέ)",

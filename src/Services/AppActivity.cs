@@ -20,7 +20,8 @@ public static class AppActivity
     private static SynchronizationContext? _ui;
     private static int _fullscreenHits;
     private static int _slowTick;
-    private static bool _fullscreen, _locked, _remote, _batterySaver;
+    private static bool _fullscreen, _locked, _remote, _batterySaver, _screensaver, _highLoad, _awake;
+    private static int _loadHits;
     private static string? _fullscreenDevice;
 
     /// <summary>True όταν υπάρχει οποιοσδήποτε λόγος παύσης (fullscreen, lock, RDP, battery saver).</summary>
@@ -28,12 +29,12 @@ public static class AppActivity
     public static event Action<bool>? FullscreenChanged;
 
     public static string Describe() =>
-        $"fullscreen={_fullscreen}({_fullscreenDevice ?? "-"}) locked={_locked} remote={_remote} batterySaver={_batterySaver}";
+        $"fullscreen={_fullscreen}({_fullscreenDevice ?? "-"}) locked={_locked} remote={_remote} batterySaver={_batterySaver} screensaver={_screensaver} highLoad={_highLoad}";
 
     /// <summary>Αν το rendering μιας συγκεκριμένης οθόνης πρέπει να είναι σταματημένο. Fullscreen σε άλλη οθόνη ΔΕΝ παύει αυτή.</summary>
     public static bool IsPausedFor(Screen? screen)
     {
-        if (_locked || _remote || _batterySaver) return true;
+        if (_locked || _remote || _batterySaver || _screensaver || _highLoad) return true;
         if (!_fullscreen) return false;
         return _fullscreenDevice == null || screen == null || string.Equals(_fullscreenDevice, screen.DeviceName, StringComparison.OrdinalIgnoreCase);
     }
@@ -75,29 +76,60 @@ public static class AppActivity
             {
                 _remote = settings.PauseOnRemoteSession && GetSystemMetrics(SM_REMOTESESSION) != 0;
                 _batterySaver = settings.PauseOnBatterySaver && IsBatterySaverOn();
+                _screensaver = settings.PauseOnScreensaver && IsScreensaverRunning();
+                UpdateLoad(settings);
             }
             if (!settings.PauseOnLock) _locked = false;
             _fullscreen = fullscreen;
             Publish();
+            UpdateKeepAwake(settings);
         }
         catch (Exception ex) { RotatingLogger.Write("AppActivity: " + ex.Message); }
     }
 
     private static bool _lastPublished;
     private static string? _lastDevice;
-    private static bool _lastLocked, _lastRemote, _lastSaver;
+    private static bool _lastLocked, _lastRemote, _lastSaver, _lastScreensaver, _lastLoad;
 
     private static void Publish()
     {
-        bool now = _fullscreen || _locked || _remote || _batterySaver;
+        bool now = _fullscreen || _locked || _remote || _batterySaver || _screensaver || _highLoad;
         bool changed = now != _lastPublished || _fullscreenDevice != _lastDevice
-                       || _locked != _lastLocked || _remote != _lastRemote || _batterySaver != _lastSaver;
+                       || _locked != _lastLocked || _remote != _lastRemote || _batterySaver != _lastSaver
+                       || _screensaver != _lastScreensaver || _highLoad != _lastLoad;
         if (!changed) return;
         _lastPublished = now; _lastDevice = _fullscreenDevice;
-        _lastLocked = _locked; _lastRemote = _remote; _lastSaver = _batterySaver;
+        _lastLocked = _locked; _lastRemote = _remote; _lastSaver = _batterySaver; _lastScreensaver = _screensaver; _lastLoad = _highLoad;
         IsFullscreenAppActive = now;
         FullscreenChanged?.Invoke(now);
     }
+
+    // CPU / GPU / memory threshold with hysteresis: in after two checks (10 s) above the limit, out when 10 points below it.
+    private static void UpdateLoad(AppSettings s)
+    {
+        if (s.PauseCpuAbove <= 0 && s.PauseGpuAbove <= 0 && s.PauseRamAbove <= 0) { _highLoad = false; _loadHits = 0; return; }
+        var m = SystemMonitorService.Instance.GetSnapshot();
+        double ram = m.TotalMemoryMb > 0 ? (m.TotalMemoryMb - m.AvailableMemoryMb) / m.TotalMemoryMb * 100 : 0;
+        double gpu = s.PauseGpuAbove > 0 ? GpuMonitorService.Instance.GetSnapshot().LoadPercent ?? 0 : 0;
+        int margin = _highLoad ? 10 : 0;
+        bool over = (s.PauseCpuAbove > 0 && m.CpuPercent > s.PauseCpuAbove - margin)
+                 || (s.PauseGpuAbove > 0 && gpu > s.PauseGpuAbove - margin)
+                 || (s.PauseRamAbove > 0 && ram > s.PauseRamAbove - margin);
+        if (over) { if (++_loadHits >= 2) _highLoad = true; }
+        else { _loadHits = 0; _highLoad = false; }
+    }
+
+    // Keeps the PC and the display awake while the wallpaper is running and not paused. Called from the UI-thread timer only
+    // (SetThreadExecutionState belongs to the calling thread).
+    private static void UpdateKeepAwake(AppSettings s)
+    {
+        bool want = s.KeepPcAwake && !IsFullscreenAppActive && MotionDesk.Widgets.WallpaperHostEngine.Instance.IsRunning;
+        if (want == _awake) return;
+        _awake = want;
+        SetThreadExecutionState(want ? (ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED) : ES_CONTINUOUS);
+    }
+
+    private static bool IsScreensaverRunning() => SystemParametersInfo(SPI_GETSCREENSAVERRUNNING, 0, out int running, 0) && running != 0;
 
     private static bool IsBatterySaverOn()
     {
@@ -129,7 +161,10 @@ public static class AppActivity
     [StructLayout(LayoutKind.Sequential)] private struct RECT { public int Left, Top, Right, Bottom; }
     [StructLayout(LayoutKind.Sequential)]
     private struct SYSTEM_POWER_STATUS { public byte ACLineStatus, BatteryFlag, BatteryLifePercent, SystemStatusFlag; public int BatteryLifeTime, BatteryFullLifeTime; }
-    private const int SM_REMOTESESSION = 0x1000;
+    private const int SM_REMOTESESSION = 0x1000, SPI_GETSCREENSAVERRUNNING = 0x0072;
+    private const uint ES_CONTINUOUS = 0x80000000, ES_SYSTEM_REQUIRED = 0x1, ES_DISPLAY_REQUIRED = 0x2;
+    [DllImport("user32.dll")] private static extern bool SystemParametersInfo(int uiAction, int uiParam, out int pvParam, int fWinIni);
+    [DllImport("kernel32.dll")] private static extern uint SetThreadExecutionState(uint esFlags);
     [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
     [DllImport("user32.dll")] private static extern int GetSystemMetrics(int nIndex);

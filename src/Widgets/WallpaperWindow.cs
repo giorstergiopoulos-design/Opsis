@@ -36,7 +36,78 @@ namespace MotionDesk.Widgets
             return _audio.GetPeak();
         }
 
-        public void Dispose() => _audio?.Dispose();
+        public void Dispose() { _audio?.Dispose(); _spectrum?.Dispose(); }
+
+        // ---- API for local web wallpapers (pushed to the page by the window, see WallpaperWindow.SetApiPump) ----
+        private AudioSpectrumService? _spectrum;
+        private bool _apiActive;
+        public Action<bool>? ApiChanged { get; set; }
+        public bool ApiActive { get => _apiActive; private set { if (_apiActive == value) return; _apiActive = value; ApiChanged?.Invoke(value); } }
+        public bool WantsAudio { get; private set; }
+        public bool WantsGpu { get; private set; }
+        public void SetSubscription(bool audio, bool gpu) { WantsAudio = audio; WantsGpu = gpu; }
+
+        public string GetPagePropertiesJson()
+        {
+            var s = WallpaperSettings.Load();
+            string? index = MotionDesk.Widgets.MediaSource.LocalPagePath(s.PageSource);
+            var m = WallpaperManifest.LoadFor(index);
+            return index == null || m == null ? "{}" : WallpaperManifest.ValuesJson(s, index, m);
+        }
+
+        private DateTime _disksAt = DateTime.MinValue;
+        private object? _disks;
+        private object DisksSnapshot()
+        {
+            if (_disks != null && (DateTime.UtcNow - _disksAt).TotalSeconds < 15) return _disks;
+            var list = new List<object>();
+            try
+            {
+                foreach (var d in DriveInfo.GetDrives())
+                {
+                    if (d.DriveType != DriveType.Fixed || !d.IsReady) continue;
+                    double total = d.TotalSize / 1048576.0, free = d.AvailableFreeSpace / 1048576.0;
+                    list.Add(new { name = d.Name.TrimEnd('\\'), totalMb = Math.Round(total), freeMb = Math.Round(free), usedPercent = total > 0 ? Math.Round((total - free) / total * 100, 1) : 0 });
+                }
+            }
+            catch (Exception) { }
+            _disksAt = DateTime.UtcNow; return _disks = list;
+        }
+
+        public string GetSystemJson(bool gpu) => BuildSystemJson(gpu);
+        public string GetAudioBandsJson() => BuildAudioJson();
+
+        internal string BuildSystemJson() => BuildSystemJson(WantsGpu);
+        internal string BuildSystemJson(bool wantGpu)
+        {
+            var m = MotionDesk.Services.AdvancedSystemMonitorService.Instance.GetSnapshot();
+            var power = System.Windows.Forms.SystemInformation.PowerStatus;
+            object? gpu = null;
+            if (wantGpu)
+            {
+                var g = MotionDesk.Services.GpuMonitorService.Instance.GetSnapshot();
+                gpu = new { name = g.Name, load = g.LoadPercent, temperature = g.TemperatureC, memoryUsedMb = g.MemoryUsedMb };
+            }
+            double total = m.TotalMemoryMb, avail = m.AvailableMemoryMb;
+            return JsonSerializer.Serialize(new
+            {
+                cpu = Math.Round(m.CpuPercent, 1),
+                ramTotalMb = Math.Round(total), ramAvailableMb = Math.Round(avail),
+                ramUsedPercent = total > 0 ? Math.Round((total - avail) / total * 100, 1) : 0,
+                netDownKbps = Math.Round(m.NetworkDownKbps, 1), netUpKbps = Math.Round(m.NetworkUpKbps, 1),
+                processes = m.ProcessCount,
+                batteryPercent = power.BatteryLifePercent is >= 0 and <= 1 ? (int)Math.Round(power.BatteryLifePercent * 100) : -1,
+                charging = power.PowerLineStatus == System.Windows.Forms.PowerLineStatus.Online,
+                gpu,
+                disks = DisksSnapshot(),
+            });
+        }
+
+        internal string BuildAudioJson()
+        {
+            try { _spectrum ??= new MotionDesk.Services.AudioSpectrumService(24); return JsonSerializer.Serialize(_spectrum.GetBands().Select(b => Math.Round(b, 3))); }
+            catch (Exception) { return "[]"; }
+        }
 
         public string GetPerformanceMode() => WallpaperSettings.Load().PerformanceMode;
 
@@ -59,6 +130,11 @@ namespace MotionDesk.Widgets
             var palette = WavePalettes.Resolve(settings.PaletteName, light);
             // "overlay-only": the animated wallpaper is off but the info overlay is on -> the window shows the normal Windows wallpaper
             string effectiveMode = WallpaperHostEngine.Instance.EffectiveMode(settings);
+            string pageUri = effectiveMode == "Page" ? MediaSource.PageUri(settings.PageSource) : "";
+            ApiActive = pageUri.StartsWith("file:", StringComparison.OrdinalIgnoreCase);
+            long everyMs = settings.RotateEveryMinutes * 60_000L;
+            long firstMs = everyMs;
+            if (everyMs > 0 && settings.LastRotateUtc is { } last) firstMs = Math.Max(15_000, everyMs - (long)(DateTime.UtcNow - last).TotalMilliseconds);
 
             return JsonSerializer.Serialize(new
             {
@@ -66,7 +142,12 @@ namespace MotionDesk.Widgets
                 desk = effectiveMode == "Desktop" ? DeskInfo() : null,
                 infoFont = string.IsNullOrWhiteSpace(settings.InfoFont) ? "Segoe UI Light" : settings.InfoFont,
                 waveStyle = settings.WaveStyle,
-                pageUri = effectiveMode == "Page" ? MediaSource.PageUri(settings.PageSource) : "",
+                pageUri,
+                elements = settings.Elements.Where(e => e.Enabled).Select(e => new { id = e.Id, x = Math.Clamp(e.X, 0, 100), y = Math.Clamp(e.Y, 0, 100), scale = Math.Clamp(e.Scale, 40, 250) }),
+                elAccent = settings.ElementsAccent,
+                elCard = settings.ElementsCard,
+                pageLocal = ApiActive,
+                rotateFirstMs = firstMs,
                 imageUri = effectiveMode == "Image" ? MediaSource.ImageUri(settings.ImagePath) : "",
                 imageFit = settings.ImageFit,
                 background = palette.Background,
@@ -174,6 +255,7 @@ namespace MotionDesk.Widgets
             {
                 settings.AdvancePlaylist();
                 settings.AdvanceSerial++;
+                settings.LastRotateUtc = DateTime.UtcNow;
                 settings.Save();
             }
             _lastServedSerial = settings.AdvanceSerial;
@@ -238,13 +320,42 @@ namespace MotionDesk.Widgets
             : minutes >= StartMinutes || minutes < EndMinutes;
     }
 
+    public sealed class WallpaperElement
+    {
+        public string Id { get; set; } = "";
+        public bool Enabled { get; set; }
+        public int X { get; set; } = 50;          // centre, % of the screen
+        public int Y { get; set; } = 50;
+        public int Scale { get; set; } = 100;     // %
+
+        public static readonly (string Id, int X, int Y)[] Catalog =
+        {
+            ("analog", 14, 22), ("cpu", 14, 52), ("ram", 14, 72), ("gpu", 14, 90), ("network", 86, 22), ("disks", 86, 50), ("battery", 86, 72), ("audio", 50, 88),
+        };
+    }
+
     public sealed class WallpaperSettings
     {
+        /// <summary>The catalog merged with what the user saved: every known element is present, in catalog order.</summary>
+        public void EnsureElements()
+        {
+            var merged = new List<WallpaperElement>();
+            foreach (var (id, x, y) in WallpaperElement.Catalog)
+                merged.Add(Elements.FirstOrDefault(e => e.Id == id) ?? new WallpaperElement { Id = id, X = x, Y = y });
+            Elements = merged;
+        }
+
         public string Mode { get; set; } = "Waves"; // "Waves" | "Video" | "Particles" | "Weather" | "Desktop" (the normal Windows wallpaper, so the info overlay works over it)
         // "Page" mode: a website (https://…), a YouTube link or a local .html file / folder with index.html. "Image" mode: a GIF / PNG / JPG file.
         public string PageSource { get; set; } = string.Empty;
         public string ImagePath { get; set; } = string.Empty;
         public string ImageFit { get; set; } = "Cover";   // Cover | Contain
+        // Wallpaper elements: the widget pieces (clock, CPU, memory, ...) the user shows on top of ANY wallpaper mode, see wallpaper/elements.js.
+        public List<WallpaperElement> Elements { get; set; } = new();
+        public string ElementsAccent { get; set; } = "#00d2ff";
+        public bool ElementsCard { get; set; } = true;          // frosted card behind every element
+        public Dictionary<string, string> PageProperties { get; set; } = new();   // "<page>|<key>" -> value, see WallpaperManifest
+        public DateTime? LastRotateUtc { get; set; }                               // when the playlist last advanced (the rotation timer survives restarts)
         public string WaveStyle { get; set; } = "Ribbons"; // "Ribbons" | "Aurora" — παραλλαγές ΜΕΣΑ στο Waves mode
         public string VideoPath { get; set; } = string.Empty; // legacy single-video field, kept for back-compat
         public List<string> VideoPaths { get; set; } = new();
@@ -741,6 +852,43 @@ namespace MotionDesk.Widgets
         // roadmap) — καθαρά εξοικονόμηση CPU/μπαταρίας, αφού το wallpaper έτσι κι αλλιώς δεν
         // είναι ορατό πίσω από ένα fullscreen παράθυρο.
         private bool _paused;
+        private System.Windows.Forms.Timer? _apiTimer;
+        private int _apiTick;
+        private void SetApiPump(bool on)
+        {
+            if (IsDisposed) return;
+            if (!on) { _apiTimer?.Stop(); return; }
+            if (_apiTimer == null)
+            {
+                _apiTimer = new System.Windows.Forms.Timer { Interval = 100 };
+                _apiTimer.Tick += (_, _) =>
+                {
+                    var core = _webView?.CoreWebView2;
+                    if (core == null || _bridge == null || _paused || !Visible) return;
+                    _apiTick++;
+                    try
+                    {
+                        if (_bridge.WantsAudio) _ = core.ExecuteScriptAsync("window.opsisPush&&window.opsisPush({opsis:true,type:'audio',bands:" + _bridge.BuildAudioJson() + "})");
+                        if (_apiTick % 10 == 0) _ = core.ExecuteScriptAsync("window.opsisPush&&window.opsisPush({opsis:true,type:'system',data:" + _bridge.BuildSystemJson() + "})");
+                    }
+                    catch (Exception) { }
+                };
+            }
+            _apiTimer.Start();
+        }
+
+        public async Task RunScriptAsync(string js)
+        {
+            if (_webView?.CoreWebView2 == null) return;
+            try { await _webView.CoreWebView2.ExecuteScriptAsync(js); } catch (Exception) { }
+        }
+
+        public async Task PushPropertiesAsync()
+        {
+            if (_webView?.CoreWebView2 == null) return;
+            try { await _webView.CoreWebView2.ExecuteScriptAsync("window.opsisSendProps&&window.opsisSendProps()"); } catch (Exception) { }
+        }
+
         public int BrowserProcessId { get { try { return (int)(_webView?.CoreWebView2?.BrowserProcessId ?? 0); } catch (Exception) { return 0; } } }
 
         public async Task SetPausedAsync(bool paused)
@@ -780,6 +928,7 @@ namespace MotionDesk.Widgets
                 {
                     ContentReady = () => { if (!IsDisposed && IsHandleCreated) BeginInvoke(new Action(MarkContentReady)); }
                 };
+                _bridge.ApiChanged = on => { if (!IsDisposed && IsHandleCreated) BeginInvoke(new Action(() => SetApiPump(on))); };
                 _webView.CoreWebView2.AddHostObjectToScript("wallpaper", _bridge);
                 string htmlPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "widgets", "wallpaper", "index.html");
                 // Μετά από κάθε φόρτωση σελίδας ξαναεφαρμόζουμε την κατάσταση παύσης — αλλιώς ένα
@@ -819,6 +968,7 @@ namespace MotionDesk.Widgets
                 _revealTimeout?.Stop();
                 _revealTimeout?.Dispose();
                 _revealTimeout = null;
+                _apiTimer?.Stop(); _apiTimer?.Dispose(); _apiTimer = null;
                 _bridge?.Dispose();
                 _bridge = null;
                 _webView?.Dispose();
@@ -1094,6 +1244,8 @@ namespace MotionDesk.Widgets
         // (π.χ. σε λειτουργία Waves) δεν μαθαίνει ΠΟΤΕ ότι το Mode/playlist άλλαξε σε Video —
         // ακριβώς το bug "το .wmv μετατράπηκε επιτυχώς αλλά δεν παίζει το βίντεο".
         public void RefreshAll() => _ = RefreshAllAsync();
+        public void RefreshElements() { foreach (var w in _windows) _ = w.RunScriptAsync("window.opsisApplyElements&&window.opsisApplyElements()"); }
+        public void PushProperties() { foreach (var w in _windows) _ = w.PushPropertiesAsync(); }
         public Task RefreshAllAsync() => Task.WhenAll(_windows.Select(w => w.RefreshAsync()));
 
         // MD roadmap item: ακριβές στιγμιότυπο του τρέχοντος wallpaper (waves/βίντεο + overlay) για

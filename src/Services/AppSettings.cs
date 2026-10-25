@@ -17,6 +17,12 @@ namespace MotionDesk.Services
         public bool PauseOnBatterySaver { get; set; } = true;
         // After a pause lasts 15 s the WebView2 process tree is suspended (0% CPU/GPU); resumed instantly when the pause ends.
         public bool WallpaperHeavyPause { get; set; } = true;
+        public bool PauseOnScreensaver { get; set; } = true;
+        public bool KeepPcAwake { get; set; } = false;          // keep the PC and the display awake while the wallpaper is visible
+        // Pause while the system is under load: percent thresholds, 0 = off. Entered after 2 checks (10 s) above, left 10 points lower.
+        public int PauseCpuAbove { get; set; } = 0;
+        public int PauseGpuAbove { get; set; } = 0;
+        public int PauseRamAbove { get; set; } = 0;
         public string WallpaperPerformanceMode { get; set; } = "Balanced";
         // Χειροκίνητο override της ανιχνευμένης ικανότητας υλικού (HardwareProfileService) — "" /
         // null = Auto (ανίχνευση RAM/πυρήνων/GPU). Τιμές: "Low" | "Balanced" | "High" (HardwareTier).

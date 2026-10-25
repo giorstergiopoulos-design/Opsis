@@ -1577,6 +1577,7 @@ namespace MotionDesk.UI
             // Theme/Palette και Wave Tuning ισχύουν για Waves ΚΑΙ Particles (μοιράζονται το ίδιο
             // cfg.speed/glowIntensity/palette στο JS engine) — άσχετα μόνο σε Video mode.
             if (settings.Mode is "Page" or "Image") BuildMediaWallpaperSection(panel, settings);
+            BuildElementsSection(panel, settings);
             if (settings.Mode == "Weather") BuildWeatherWallpaperSection(panel, settings);
             if (settings.Mode == "Desktop") AddText(panel, LocalizationManager.T("Wallpaper.DesktopIntro"));
 
@@ -1643,6 +1644,7 @@ namespace MotionDesk.UI
                 v => { var a = AppSettings.Load(); a.PauseOnBatterySaver = v; a.Save(); }));
             panel.Controls.Add(SettingsView.Checkbox(LocalizationManager.T("Settings.HeavyPause"), AppSettings.Load().WallpaperHeavyPause,
                 v => { var a = AppSettings.Load(); a.WallpaperHeavyPause = v; a.Save(); }));
+            BuildLoadPauseRows(panel);
             panel.Controls.Add(SettingsView.BuildHardwareProfileRow());
             panel.Controls.Add(SettingsView.Checkbox(LocalizationManager.T("Settings.StartWallpaperWithApp"), AppSettings.Load().StartWallpaperWithWindows,
                 v => { var a = AppSettings.Load(); a.StartWallpaperWithWindows = v; a.Save(); }));

@@ -335,6 +335,8 @@
   "Settings.PauseOnRemote": "Pause the wallpaper and widgets in a remote desktop (RDP) session",
   "Settings.PauseOnBatterySaver": "Pause the wallpaper and widgets while Battery Saver is on",
   "Settings.HeavyPause": "Fully freeze the wallpaper engine after 15 s of pause (0% CPU/GPU)",
+  "Settings.PauseOnScreensaver": "Pause the wallpaper and widgets while the screensaver runs",
+  "Settings.KeepAwake": "Keep the PC and the screen awake while the wallpaper is visible",
   "Settings.HardwareProfileLabel": "Hardware profile",
   "Settings.HardwareProfileAuto": "Auto (detect RAM/CPU/GPU)",
   "Settings.HardwareProfileLow": "Low-end (force lighter effects)",

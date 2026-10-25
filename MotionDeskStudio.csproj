@@ -95,6 +95,10 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>widgets\sysmon\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </None>
+    <None Include="wallpapers\samples\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>wallpapers\samples\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </None>
     <None Include="src\Widgets\wallpaper\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>widgets\wallpaper\%(RecursiveDir)%(Filename)%(Extension)</Link>
