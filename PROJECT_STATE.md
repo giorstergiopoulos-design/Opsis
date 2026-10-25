@@ -30,6 +30,8 @@ Pause conditions (lock/RDP/battery saver/per-monitor fullscreen), heavy pause (W
 
 UI framework study (WinUI 3 vs WPF, analysis only): **`docs/UI_FRAMEWORK_STUDY.md`** — recommendation: no WinUI 3; optional WPF pilot for one page; plugin contract v2 later. Queue it after `docs/ENGINE_ROADMAP.md`.
 
+Opsis Appearance plugin (repo `OpsisAppearance`, cloned in `DocumentsOpsisAppearance`): Opsis-style controls DONE (`OpsisControls.cs`) + theme pre-flight check DONE. SecureUxTheme study with the remaining safe ideas: **`docs/SECUREUXTHEME_STUDY.md`** (queue it after `docs/UI_FRAMEWORK_STUDY.md`).
+
 ## Project
 Name: Opsis - Desktop Customization (renamed 2026-10-13 from "MotionDesk Studio" — see the v2.0 rename entry below)
 
