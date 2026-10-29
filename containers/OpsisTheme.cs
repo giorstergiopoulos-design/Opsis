@@ -25,7 +25,22 @@ namespace OpsisContainers
         // Called again (through the bridge) when the Opsis theme changes while the engine runs; windows opened afterwards use the new palette.
         public static void Reload(string spec)
         {
-            try { if (Application.Current != null) Application.Current.Dispatcher.Invoke(() => ApplySpec(spec)); } catch (Exception) { }
+            try
+            {
+                if (Application.Current == null) return;
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    ApplySpec(spec);
+                    // open windows are re-coloured ONCE, now - no polling
+                    foreach (Window w in Application.Current.Windows) if (!IsContainerOrOverlay(w)) PassOn(w);
+                });
+            }
+            catch (Exception) { }
+        }
+
+        private static void PassOn(DependencyObject root)
+        {
+            try { if (_enabled) Recolor(root); if (Loc.Greek) TranslateTree(root); } catch (Exception ex) { Log(ex); }
         }
 
         private static void ApplySpec(string? spec)
@@ -48,7 +63,11 @@ namespace OpsisContainers
             if (dark && !_handlerRegistered)
             {
                 _handlerRegistered = true;
+                // Event driven (bug 5 of the study: a 400 ms polling timer re-coloured every window forever, and an unconditional write once broke the
+                // checked-checkbox fill): a window is coloured when it loads, and every element that loads LATER (tabs, lists, dialogs content) is
+                // coloured at that moment. Nothing runs between events.
                 EventManager.RegisterClassHandler(typeof(Window), FrameworkElement.LoadedEvent, new RoutedEventHandler(OnWindowLoaded));
+                EventManager.RegisterClassHandler(typeof(FrameworkElement), FrameworkElement.LoadedEvent, new RoutedEventHandler(OnElementLoaded));
             }
         }
 
@@ -64,13 +83,21 @@ namespace OpsisContainers
         {
             if (sender is not Window w || IsContainerOrOverlay(w) || !ReferenceEquals(e.OriginalSource, w)) return;
             if (!_enabled && !Loc.Greek) return;
-            void Pass() { try { if (_enabled) Recolor(w); if (Loc.Greek) TranslateTree(w); } catch (Exception ex) { Log(ex); } }
-            Pass();
-            var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };   // content built later (tabs, lists) gets the same treatment
-            timer.Tick += (_, _) => { if (w.IsVisible) Pass(); else timer.Stop(); };
-            timer.Start();
-            w.Closed += (_, _) => timer.Stop();
+            PassOn(w);
         }
+
+        // An element inside an (already themed) window loaded after the window did: colour just that subtree.
+        private static void OnElementLoaded(object sender, RoutedEventArgs e)
+        {
+            if (sender is not FrameworkElement fe || fe is Window || (!_enabled && !Loc.Greek)) return;
+            var w = Window.GetWindow(fe);
+            if (w == null || IsContainerOrOverlay(w) || !w.IsLoaded) return;
+            // many elements load together: one pass per window, after the burst (background priority), not one per element
+            if (!_pending.Add(w)) return;
+            w.Dispatcher.BeginInvoke(new Action(() => { _pending.Remove(w); PassOn(w); }), System.Windows.Threading.DispatcherPriority.Background);
+        }
+
+        private static readonly System.Collections.Generic.HashSet<Window> _pending = new System.Collections.Generic.HashSet<Window>();
 
         private static void Log(Exception ex)
         {
