@@ -7,7 +7,7 @@ namespace Opsis.Tests;
 // Every UI string must exist in EVERY language file, with the same {0}-style placeholders, and none may be empty.
 public sealed class LocaleCoverageTests
 {
-    private const int KnownMissing = 94;
+    private const int KnownMissing = 23;
 
     private static string LocalesDir()
     {
@@ -30,7 +30,7 @@ public sealed class LocaleCoverageTests
         var problems = new List<string>();
         foreach (var (lang, map) in all)
         {
-            // en-US and el-GR are complete. The other 12 languages still lack 94 older keys (widget/wallpaper/DeskContainer page texts, shown in
+            // en-US and el-GR are complete. The other 12 languages still lack 23 long texts (VersionNotes history + the DeskContainers guide, shown in
             // English): a RATCHET - the count may only go down until they are translated (open item for 2.2.1).
             int missing = reference.Except(map.Keys).Count();
             int allowed = lang is "en-US" or "el-GR" ? 0 : KnownMissing;
