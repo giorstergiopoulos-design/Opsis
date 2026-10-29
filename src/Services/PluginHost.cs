@@ -162,6 +162,22 @@ namespace MotionDesk.Services
             return items.OrderBy(i => i.Order).ToList();
         }
 
+        /// <summary>Tray items per plugin (plugin display name -> its items) so the tray menu can group them by plugin.</summary>
+        public IReadOnlyList<(string PluginName, IReadOnlyList<PluginMenuItem> Items)> GetTrayMenuGroups()
+        {
+            var groups = new List<(string, IReadOnlyList<PluginMenuItem>)>();
+            foreach (var p in _plugins.Where(p => p.Started))
+            {
+                try
+                {
+                    var items = p.Plugin.GetTrayMenuItems().ToList();
+                    if (items.Count > 0) groups.Add((p.Plugin.Name, items));
+                }
+                catch (Exception ex) { Log($"Plugin '{p.Plugin.Name}' tray items failed: {ex.Message}"); }
+            }
+            return groups;
+        }
+
         public IReadOnlyList<PluginMenuItem> GetTrayMenuItems()
         {
             var items = new List<PluginMenuItem>();

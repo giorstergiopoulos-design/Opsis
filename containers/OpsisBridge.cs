@@ -114,8 +114,25 @@ namespace Desktop_Fences
 
         private static void Execute(string cmd)
         {
+            // commands with an argument: "profile:<name>", "create-profile:<name>", "show-hidden:<title>"
+            int colon = cmd.IndexOf(':');
+            if (colon > 0)
+            {
+                string verb = cmd.Substring(0, colon), arg = cmd.Substring(colon + 1);
+                switch (verb)
+                {
+                    case "profile": ProfileManager.SwitchToProfile(arg); ProfileManager.SetManualBaseProfile(arg); TrayManager.Instance?.UpdateProfilesMenu(); return;
+                    case "create-profile": if (ProfileManager.CreateProfile(arg)) TrayManager.Instance?.UpdateProfilesMenu(); return;
+                    case "show-hidden": TrayManager.ShowHiddenFenceByTitle(arg); return;
+                }
+            }
             switch (cmd)
             {
+                case "quick-hide": FenceManager.ForceHideFences(); break;
+                case "quick-show": FenceManager.WakeUpFences(); break;
+                case "focus-fence": new FenceFocusFormManager().ShowDialog(); break;
+                case "toggle-automation": SettingsManager.EnableProfileAutomation = !SettingsManager.EnableProfileAutomation; try { SettingsManager.SaveSettings(); } catch { } if (SettingsManager.EnableProfileAutomation) AutomationManager.Start(); PublishState(); break;
+                case "toggle-autoorganize": SettingsManager.EnableAutoOrganize = !SettingsManager.EnableAutoOrganize; try { SettingsManager.SaveSettings(); } catch { } if (SettingsManager.EnableAutoOrganize) AutoOrganizeManager.Start(); else AutoOrganizeManager.Stop(); PublishState(); break;
                 case "backup": BackupManager.BackupData(); break;
                 case "restore": OptionsFormManager.RestoreBackup(); break;
                 case "open-backups": BackupManager.OpenBackupsFolder(); break;
@@ -135,7 +152,28 @@ namespace Desktop_Fences
             }
         }
 
-        // ---- fences -> Opsis ----
+        // ---- state published for the Opsis tray menu (profiles, switches, hidden containers) ----
+        public static void PublishState()
+        {
+            try
+            {
+                Directory.CreateDirectory(BridgeDir);
+                var state = new
+                {
+                    profile = ProfileManager.CurrentProfileName,
+                    profiles = ProfileManager.GetProfiles().Select(p => p.Name).ToArray(),
+                    automation = SettingsManager.EnableProfileAutomation,
+                    autoOrganize = SettingsManager.EnableAutoOrganize,
+                    hidden = TrayManager.HiddenTitles(),
+                };
+                string tmp = Path.Combine(BridgeDir, "state.json.tmp"), dst = Path.Combine(BridgeDir, "state.json");
+                File.WriteAllText(tmp, System.Text.Json.JsonSerializer.Serialize(state));
+                File.Copy(tmp, dst, true); File.Delete(tmp);
+            }
+            catch { }
+        }
+
+        // ---- DeskContainers -> Opsis ----
         public static void OpenOpsisSettings()
         {
             try

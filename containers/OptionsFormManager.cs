@@ -35,7 +35,7 @@ namespace Desktop_Fences
 
                 _optionsWindow = new Window
                 {
-                    Title = Loc.T("Opsis Fences Options"),
+                    Title = Loc.T("Opsis DeskContainers Options"),
                     Width = 800,
                     Height = 850,
                     WindowStartupLocation = WindowStartupLocation.CenterScreen,

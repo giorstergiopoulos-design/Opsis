@@ -17,7 +17,7 @@ namespace Desktop_Fences
         #region Private Fields
         private TextBox _searchBox;
         private TextBlock _watermark; // "Search..." text
-        private TextBlock _appTitle;  // "Opsis Fences" text
+        private TextBlock _appTitle;  // "Opsis DeskContainers" text
         private WrapPanel _resultsPanel;
         private ScrollViewer _scrollViewer;
         private List<SearchResult> _allShortcuts;
@@ -27,7 +27,7 @@ namespace Desktop_Fences
         // Layout Constants
         private const double WINDOW_WIDTH = 600;
         private const double HEADER_HEIGHT = 50; // Height of search box area
-        private const double TITLE_HEIGHT = 30;  // Height of "Opsis Fences" label
+        private const double TITLE_HEIGHT = 30;  // Height of "Opsis DeskContainers" label
         private const double ITEM_HEIGHT = 90;   // Height of one icon row
         private const double ITEM_WIDTH = 80;    // Width of one icon
         private const int ITEMS_PER_ROW = 7;     // 600 / 80 = 7.5
@@ -146,7 +146,7 @@ namespace Desktop_Fences
             // 1. The App Title (Visible initially)
             _appTitle = new TextBlock
             {
-                Text = Loc.T("Opsis Fences"),
+                Text = Loc.T("Opsis DeskContainers"),
                 FontSize = 14,
                 FontWeight = FontWeights.Bold,
                 Foreground = new SolidColorBrush(Utility.GetColorFromName(SettingsManager.SelectedColor)),

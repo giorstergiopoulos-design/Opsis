@@ -9,7 +9,7 @@ Status: **analysis only, no code changed.** Items marked (measure) are expectati
 | Wallpaper host | WinForms `Form` + WebView2, `SetParent` into WorkerW/Progman | `WallpaperWindow.cs` 1.4k lines, depends on Win32 window styles |
 | Widgets, DeskStrip, zone overlays | WinForms layered windows (`TransparencyKey`, acrylic via `SetWindowCompositionAttribute`, click-through) | `src/Widgets` ~11.8k lines |
 | Tray, services | WinForms `NotifyIcon`, plain .NET services | `src/Services` ~4.7k lines |
-| DeskContainers engine | **WPF**, separate process `OpsisFences.exe`, file bridge | already running side by side with the WinForms app |
+| DeskContainers engine | **WPF**, separate process `OpsisContainers.exe`, file bridge | already running side by side with the WinForms app |
 | Plugins | `AssemblyLoadContext` per plugin, contract `OpsisNewsCrawler.Plugin.Abstractions.dll`; a plugin page is returned by `PluginNavigationItem.CreatePage()` and hosted inside the main window (a WinForms control) | `PluginHost.cs` |
 
 Total ≈ 23.5k lines of C#. The two things that make Opsis what it is — the wallpaper and the widgets — are **Win32 window tricks**, not forms UI.
@@ -24,13 +24,13 @@ Total ≈ 23.5k lines of C#. The two things that make Opsis what it is — the w
 ## 3. WPF — viable, but only for the main window, and only gradually
 Why it fits better:
 - Same process can mix both stacks (`ElementHost` / `WindowsFormsHost`), so migration can go page by page.
-- Already used by OpsisFences, so the build, theming (`OpsisTheme.cs`) and installer path exist.
+- Already used by OpsisContainers, so the build, theming (`OpsisTheme.cs`) and installer path exist.
 - .NET 10 ships a Fluent theme for WPF; DPI, accessibility, animation, data binding/MVVM, virtualised lists are far better than owner-drawn WinForms. Most of today's visual glitches (button flicker, manual repaint on theme change, the 400 ms re-colour walker in Fences) come from hand-painted controls.
 - Layered/transparent WPF windows exist (`AllowsTransparency`), but they are software-rendered and heavier; for the wallpaper/widgets the WinForms+Win32 path should stay (measure before touching).
 
 Costs / risks:
 - ~5k lines of owner-drawn page code to rewrite; every page needs a live click-through test (project rule). Realistic effort: several weeks of focused work, not a quick task.
-- WPF runtime loaded in the main process adds RAM and start-up time (measure; OpsisFences already pays it in its own process).
+- WPF runtime loaded in the main process adds RAM and start-up time (measure; OpsisContainers already pays it in its own process).
 - Behaviour regressions in a product whose current priority is stability.
 
 ## 4. Plugins
@@ -48,7 +48,7 @@ The contract exposes WinForms. Do not break it:
 
 ## 6. If the user approves the pilot — steps for the implementing terminal
 - Queue rule: finish active tasks in `PROJECT_STATE.md` / `_handoff/` first, then `docs/ENGINE_ROADMAP.md` items, then this.
-- New project folder `src/UiWpf/` (or a separate assembly) with `UseWPF=true`; main csproj currently has `UseWPF=false` and the `fences\**` exclusion pattern — mirror it, do not mix XAML into the WinForms project blindly.
+- New project folder `src/UiWpf/` (or a separate assembly) with `UseWPF=true`; main csproj currently has `UseWPF=false` and the `containers\**` exclusion pattern — mirror it, do not mix XAML into the WinForms project blindly.
 - Re-use `UiTheme` colours through a bridge (`ThemeManager.Changed/Repainted`) so light/dark switching works.
 - Record RAM (private working set after 60 s idle), cold start to tray, page-open time, before vs after, in `PROJECT_STATE.md`.
 - Test with isolated `OPSIS_APPDATA`; never use SendKeys toward unknown focus.

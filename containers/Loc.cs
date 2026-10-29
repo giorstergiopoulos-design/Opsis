@@ -16,6 +16,33 @@ namespace Desktop_Fences
         // Exact-match translation only (no "fence" renaming): used for texts that were not wrapped at their source.
         public static string Translate(string s) => Greek && !string.IsNullOrEmpty(s) && Map.TryGetValue(s, out var g) ? g : s;
 
+        // Texts of the new Opsis-side menus come from the Opsis locale files (all 14 languages): Opsis passes the path of the current language
+        // file in OPSIS_LOCALE_FILE and the English one in OPSIS_LOCALE_FALLBACK. A missing key falls back to English, then to the literal.
+        private static Dictionary<string, string> _ext, _extEn;
+        private static Dictionary<string, string> LoadLocale(string envName)
+        {
+            var d = new Dictionary<string, string>();
+            try
+            {
+                string path = Environment.GetEnvironmentVariable(envName);
+                if (string.IsNullOrEmpty(path) || !System.IO.File.Exists(path)) return d;
+                using var doc = System.Text.Json.JsonDocument.Parse(System.IO.File.ReadAllText(path));
+                foreach (var prop in doc.RootElement.EnumerateObject())
+                    if (prop.Name.StartsWith("DCM.", StringComparison.Ordinal) && prop.Value.ValueKind == System.Text.Json.JsonValueKind.String) d[prop.Name] = prop.Value.GetString();
+            }
+            catch (Exception) { }
+            return d;
+        }
+        public static string K(string key, string english)
+        {
+            if (string.IsNullOrEmpty(key)) return english;
+            _ext ??= LoadLocale("OPSIS_LOCALE_FILE");
+            if (_ext.TryGetValue(key, out var v) && !string.IsNullOrEmpty(v)) return v;
+            _extEn ??= LoadLocale("OPSIS_LOCALE_FALLBACK");
+            if (_extEn.TryGetValue(key, out var e) && !string.IsNullOrEmpty(e)) return e;
+            return english;
+        }
+
         public static string T(string s)
         {
             if (string.IsNullOrEmpty(s)) return s;
@@ -27,7 +54,7 @@ namespace Desktop_Fences
 
         private static string Rename(string s)
         {
-            s = s.Replace("Desktop Fences Plus", "Opsis DeskContainers").Replace("Desktop Fences +", "Opsis DeskContainers").Replace("Opsis Fences", "Opsis DeskContainers");
+            s = s.Replace("Desktop Fences Plus", "Opsis DeskContainers").Replace("Desktop Fences +", "Opsis DeskContainers").Replace("Opsis DeskContainers", "Opsis DeskContainers");
             return FenceWord.Replace(s, m => m.Value switch { "Fences" => "DeskContainers", "Fence" => "DeskContainer", "fences" => "desk containers", _ => "desk container" });
         }
 
@@ -89,8 +116,8 @@ namespace Desktop_Fences
             ["+ Add Rule"] = "+ Νέος", ["− Remove"] = "− Αφαίρεση", ["Delete Selected"] = "Διαγραφή", ["Enable this rule"] = "Ενεργοποίηση κανόνα", ["Double-click to edit rule"] = "Διπλό κλικ για επεξεργασία κανόνα",
             ["If File Extension Is:"] = "Αν η επέκταση αρχείου είναι:", ["And Filename Contains (Optional, leave blank for any):"] = "Και το όνομα περιέχει (προαιρετικά, άφησέ το κενό για οποιοδήποτε):",
             ["If File Already Exists:"] = "Αν το αρχείο υπάρχει ήδη:", ["Custom Extensions (e.g., *.zip; *.rar):"] = "Προσαρμοσμένες επεκτάσεις (π.χ. *.zip; *.rar):", ["Icon:"] = "Εικονίδιο:",
-            ["Original project"] = "Αρχικό project", ["Opsis Fences"] = "Opsis DeskContainers", ["About Desktop Fences +"] = "Σχετικά με τα Opsis DeskContainers", ["Desktop Fences Plus"] = "Opsis DeskContainers",
-            ["Opsis Fences Notification"] = "Ειδοποίηση Opsis DeskContainers", ["Welcome to Opsis Fences"] = "Καλώς ήρθες στα Opsis DeskContainers"
+            ["Original project"] = "Αρχικό project", ["Opsis DeskContainers"] = "Opsis DeskContainers", ["About Desktop Fences +"] = "Σχετικά με τα Opsis DeskContainers", ["Desktop Fences Plus"] = "Opsis DeskContainers",
+            ["Opsis DeskContainers Notification"] = "Ειδοποίηση Opsis DeskContainers", ["Welcome to Opsis DeskContainers"] = "Καλώς ήρθες στα Opsis DeskContainers"
         };
     }
 }

@@ -162,7 +162,7 @@ namespace Desktop_Fences
         // Opsis: first-run welcome note (replaces the upstream "Desktop Fences+ Startup Tips").
         private static bool OpsisGreek => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "el";
 
-        private static string OpsisWelcomeTitle() => OpsisGreek ? "Καλώς ήρθες στα Opsis Fences" : "Welcome to Opsis Fences";
+        private static string OpsisWelcomeTitle() => OpsisGreek ? "Καλώς ήρθες στα Opsis DeskContainers" : "Welcome to Opsis DeskContainers";
 
         private static string OpsisWelcomeText() => OpsisGreek
             ? "ΚΑΛΩΣ ΗΡΘΕΣ ΣΤΑ OPSIS FENCES\r\n" +
@@ -175,7 +175,7 @@ namespace Desktop_Fences
               "• Αναζήτηση παντού: Ctrl + `.\r\n" +
               "• Δεξί κλικ στη γραμμή τίτλου → Customize (χρώμα, εικονίδια, κείμενο).\r\n" +
               "• Καρτέλες: ☰ → Enable Tabs On This Fence.\r\n\r\n" +
-              "Τα Opsis Fences βασίζονται στο ανοιχτού κώδικα Desktop Fences + (MIT)."
+              "Τα Opsis DeskContainers βασίζονται στο ανοιχτού κώδικα Desktop Fences + (MIT)."
             : "WELCOME TO OPSIS FENCES\r\n" +
               "---------------------------\r\n" +
               "• Drag files, folders and shortcuts onto a fence to group them.\r\n" +
@@ -186,7 +186,7 @@ namespace Desktop_Fences
               "• Search everything: Ctrl + `.\r\n" +
               "• Right-click the title bar → Customize (colour, icons, text).\r\n" +
               "• Tabs: ☰ → Enable Tabs On This Fence.\r\n\r\n" +
-              "Opsis Fences is based on the open-source Desktop Fences + (MIT).";
+              "Opsis DeskContainers is based on the open-source Desktop Fences + (MIT).";
 
         public static void RenameHoveredFence()
         {
@@ -431,7 +431,7 @@ namespace Desktop_Fences
                 LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.General, "Reloading all fences...");
 
                 // 1. Life Support
-                Window lifeSupport = MessageBoxesManager.CreateWaitWindow("Opsis Fences", "Refreshing configuration...");
+                Window lifeSupport = MessageBoxesManager.CreateWaitWindow("Opsis DeskContainers", "Refreshing configuration...");
                 lifeSupport.Show();
                 System.Windows.Forms.Application.DoEvents();
 
@@ -836,7 +836,7 @@ namespace Desktop_Fences
                     LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
                         $"Creating life support window - about to close {fencesToClose} of {totalFenceCount} total fences");
 
-                    lifeSupportWindow = MessageBoxesManager.CreateWaitWindow("Opsis Fences", "Refreshing fences, please wait...");
+                    lifeSupportWindow = MessageBoxesManager.CreateWaitWindow("Opsis DeskContainers", "Refreshing fences, please wait...");
                     lifeSupportWindow.Show();
                 }
 
@@ -1081,28 +1081,8 @@ namespace Desktop_Fences
             menu.MouseLeave += (s, e) => { menuTimer.Stop(); menuTimer.Start(); };
             // ------------------------
 
-            // Settings submenu (the three-bars menu keeps the settings at hand; every setting is also in the Opsis DeskZones page)
-            var settingsItem = new MenuItem { Header = Loc.T("Settings") };
-            void AddToggle(string header, Func<bool> get, Action<bool> set, Action after = null)
-            {
-                var mi = new MenuItem { Header = Loc.T(header), IsCheckable = true, IsChecked = get() };
-                mi.Click += (s, e) => { set(mi.IsChecked); SettingsManager.SaveSettings(); after?.Invoke(); };
-                menu.Opened += (s, e) => mi.IsChecked = get();      // stays in sync with changes made from the Opsis page
-                settingsItem.Items.Add(mi);
-            }
-            AddToggle("Single click to launch", () => SettingsManager.SingleClickToLaunch, v => SettingsManager.SingleClickToLaunch = v);
-            AddToggle("Snap near other containers", () => SettingsManager.IsSnapEnabled, v => SettingsManager.IsSnapEnabled = v);
-            AddToggle("Sounds", () => SettingsManager.EnableSounds, v => SettingsManager.EnableSounds = v);
-            AddToggle("Auto roll-up (expand on hover)", () => SettingsManager.AutoRollUpOnHover, v => SettingsManager.AutoRollUpOnHover = v);
-            AddToggle("Auto-hide when idle", () => SettingsManager.AutoHideFences, v => SettingsManager.AutoHideFences = v, () => ResetAutoHideTimer());
-            AddToggle("Chameleon (colour from the wallpaper)", () => SettingsManager.EnableChameleonMode, v => SettingsManager.EnableChameleonMode = v, () => Utility.UpdateFenceVisuals());
-            AddToggle("Dropped desktop icons leave the desktop", () => SettingsManager.HideDesktopOriginalsOnDrop, v => SettingsManager.HideDesktopOriginalsOnDrop = v);
-            AddToggle("Hide scrollbars", () => SettingsManager.DisableFenceScrollbars, v => SettingsManager.DisableFenceScrollbars = v, () => TrayManager.reloadAllFences());
-            settingsItem.Items.Add(new Separator());
-            var allSettings = new MenuItem { Header = Loc.T("All settings in Opsis...") };
-            allSettings.Click += (s, e) => OpsisBridge.OpenOpsisSettings();   // Opsis: the full settings live in the Opsis application
-            settingsItem.Items.Add(allSettings);
-            menu.Items.Add(settingsItem);
+            // Settings: every DeskContainers setting lives in this submenu tree (see SettingsMenu.cs)
+            menu.Items.Add(SettingsMenu.Build(menu));
 
             // Separator
             menu.Items.Add(new Separator());

@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Opsis.Tests;
 
-public sealed class FencesMigrationTests
+public sealed class ContainersMigrationTests
 {
     [Fact]
     public void Convert_MapsItemsTabsPortalAndNote_AndScalesPixelsToDips()
@@ -20,7 +20,7 @@ public sealed class FencesMigrationTests
             new() { Title = "Note", Width = 300, Height = 200, IsNote = true, NoteText = "hello" },
         };
 
-        var arr = JsonNode.Parse(FencesMigration.Convert(states, 1.5))!.AsArray();
+        var arr = JsonNode.Parse(ContainersMigration.Convert(states, 1.5))!.AsArray();
 
         Assert.Equal(4, arr.Count);
         Assert.Equal("Data", (string)arr[0]!["ItemsType"]!);

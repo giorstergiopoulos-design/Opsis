@@ -53,12 +53,12 @@
          το μάζευε ΚΑΙ εδώ (το tests\ είναι κάτω από τη ρίζα του repo, όπως και το src\), προσπαθώντας
          να μεταγλωττίσει κώδικα xunit μέσα στο ίδιο το Opsis.exe. -->
     <Compile Remove="tests\**" />
-    <!-- fences\: DesktopFences (WPF, MIT) built as its own project (OpsisFences.csproj) and shipped next to Opsis.exe. -->
-    <Compile Remove="fences\**" />
-    <EmbeddedResource Remove="fences\**" />
-    <None Remove="fences\**" />
-    <Page Remove="fences\**" />
-    <ApplicationDefinition Remove="fences\**" />
+    <!-- containers\: DesktopFences (WPF, MIT) built as its own project (OpsisContainers.csproj) and shipped next to Opsis.exe. -->
+    <Compile Remove="containers\**" />
+    <EmbeddedResource Remove="containers\**" />
+    <None Remove="containers\**" />
+    <Page Remove="containers\**" />
+    <ApplicationDefinition Remove="containers\**" />
   </ItemGroup>
 
   <!-- Plugin contract (Opsis - Desktop Customization plugin mechanism). Plugins live in "plugins\<name>\" folders
@@ -135,15 +135,15 @@
   </ItemGroup>
 
 
-  <!-- The DesktopFences engine (WPF) is built as a companion app into "fences\" next to Opsis.exe, and copied into the publish folder. -->
-  <Target Name="BuildFences" AfterTargets="Build" Condition="'$(SkipFences)' != 'true'">
-    <Exec Command="dotnet build &quot;$(MSBuildProjectDirectory)\fences\OpsisFences.csproj&quot; -c $(Configuration) -o &quot;$(OutDir)fences&quot; -p:SkipFences=true --nologo -v:q" />
+  <!-- The DesktopFences engine (WPF) is built as a companion app into "containers\" next to Opsis.exe, and copied into the publish folder. -->
+  <Target Name="BuildContainers" AfterTargets="Build" Condition="'$(SkipContainers)' != 'true'">
+    <Exec Command="dotnet build &quot;$(MSBuildProjectDirectory)\containers\OpsisContainers.csproj&quot; -c $(Configuration) -o &quot;$(OutDir)containers&quot; -p:SkipContainers=true --nologo -v:q" />
   </Target>
-  <Target Name="CopyFencesToPublish" AfterTargets="Publish" Condition="'$(SkipFences)' != 'true'">
+  <Target Name="CopyContainersToPublish" AfterTargets="Publish" Condition="'$(SkipContainers)' != 'true'">
     <ItemGroup>
-      <FencesFiles Include="$(OutDir)fences\**\*" />
+      <ContainersFiles Include="$(OutDir)containers\**\*" />
     </ItemGroup>
-    <Copy SourceFiles="@(FencesFiles)" DestinationFiles="@(FencesFiles->'$(PublishDir)fences\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(ContainersFiles)" DestinationFiles="@(ContainersFiles->'$(PublishDir)containers\%(RecursiveDir)%(Filename)%(Extension)')" />
   </Target>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">

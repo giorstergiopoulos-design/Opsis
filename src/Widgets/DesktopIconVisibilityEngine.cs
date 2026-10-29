@@ -189,7 +189,7 @@ namespace MotionDesk.Widgets
                 try { RestorePositions(hProcess, list); }
                 finally { CloseHandle(hProcess); }
                 _hidden = false;
-                DeskContainerHostEngine.Instance.SetQuickHidden(false);
+                MotionDesk.Services.ContainersBridge.Command("quick-show");
             }
             catch { }
         }
@@ -324,7 +324,7 @@ namespace MotionDesk.Widgets
                 // Ίδια χειρονομία, ίδια συμπεριφορά με τα πραγματικά Fences: το quick-hide της
                 // επιφάνειας εργασίας κρύβει/ξαναδείχνει επίσης όλα τα DeskContainers, εκτός από
                 // όσα ο χρήστης έχει σημειώσει ρητά "Exclude from quick-hide".
-                DeskContainerHostEngine.Instance.SetQuickHidden(_hidden);
+                MotionDesk.Services.ContainersBridge.Command(_hidden ? "quick-hide" : "quick-show");
             }
             catch { }
             finally { CloseHandle(hProcess); }

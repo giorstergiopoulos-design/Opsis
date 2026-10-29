@@ -415,7 +415,7 @@ namespace Desktop_Fences
                 var values = GetProgramManagementValues();
                 string programPath = Assembly.GetEntryAssembly()?.Location ?? "";
                 string programDir = System.IO.Path.GetDirectoryName(programPath) ?? "";
-                string exportFilePath = System.IO.Path.Combine(programDir, "Opsis Fences Registry Values.txt");
+                string exportFilePath = System.IO.Path.Combine(programDir, "Opsis DeskContainers Registry Values.txt");
 
                 using (var writer = new System.IO.StreamWriter(exportFilePath))
                 {

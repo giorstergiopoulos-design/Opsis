@@ -11,11 +11,30 @@ namespace MotionDesk.Services
 {
     // One-time import of the legacy Opsis DeskContainers (AppData\deskcontainers\*_config.json) into the Fences engine's
     // fences.json, run before the engine's first start. The legacy files are only read, never changed or deleted.
-    internal static class FencesMigration
+    internal static class ContainersMigration
     {
         [DllImport("user32.dll")] private static extern uint GetDpiForSystem();
 
-        public static string FencesJsonPath => Path.Combine(AppPaths.AppDataFolder, "fences", "Profiles", "Default", "fences.json");
+        public static string FencesJsonPath => Path.Combine(AppPaths.AppDataFolder, "containers", "Profiles", "Default", "fences.json");
+
+        /// <summary>Carries the legacy container settings (auto-hide, chameleon, daily backup, spot search) into the engine options.json once, before its first start.</summary>
+        public static void MigrateLegacySettings()
+        {
+            try
+            {
+                string optionsPath = Path.Combine(AppPaths.AppDataFolder, "containers", "Profiles", "Default", "options.json");
+                if (File.Exists(optionsPath)) return;
+                var a = AppSettings.Load();
+                var o = new System.Text.Json.Nodes.JsonObject
+                {
+                    ["AutoHideFences"] = a.ContainersAutoHide, ["AutoHideTime"] = Math.Clamp(a.ContainersAutoHideSeconds, 1, 300),
+                    ["EnableChameleonMode"] = a.ContainersChameleon, ["EnableAutoBackup"] = a.ContainersDailyBackup, ["EnableSpotSearchHotkey"] = a.ContainersSpotSearch
+                };
+                Directory.CreateDirectory(Path.GetDirectoryName(optionsPath)!);
+                File.WriteAllText(optionsPath, o.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+        }
 
         /// <summary>Imports legacy containers when the engine has no fences.json yet. Returns how many fences were written.</summary>
         public static int MigrateLegacyContainers()

@@ -362,8 +362,8 @@ Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [UninstallRun]
-Filename: "{app}\fences\OpsisFences.exe"; Parameters: "--unhide-desktop"; Flags: runhidden skipifdoesntexist; RunOnceId: "UnhideDesktopIcons"
-Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM OpsisFences.exe"; Flags: runhidden; RunOnceId: "StopOpsisFences"
+Filename: "{app}\containers\OpsisContainers.exe"; Parameters: "--unhide-desktop"; Flags: runhidden skipifdoesntexist; RunOnceId: "UnhideDesktopIcons"
+Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM OpsisContainers.exe"; Flags: runhidden; RunOnceId: "StopOpsisContainers"
 
 [Registry]
 ; Αυτόματη εκκίνηση μέσω Registry (αν επιλεχθεί στο wizard)
@@ -576,11 +576,11 @@ begin
   end;
 end;
 
-// The Fences engine (fences\OpsisFences.exe) keeps its files locked while it runs: stop it before files are replaced.
+// The Fences engine (containers\OpsisContainers.exe) keeps its files locked while it runs: stop it before files are replaced.
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   ResultCode: Integer;
 begin
-  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM OpsisFences.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM OpsisContainers.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Result := '';
 end;

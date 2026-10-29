@@ -14,7 +14,7 @@ namespace MotionDesk.Widgets
         private readonly NotifyIcon _trayIcon = null!;
         private MainWindow? _mainWindow;
         private readonly HotkeyManager _hotkeys = new();
-        private readonly ToolStripMenuItem _wallpaperToggleItem;
+        private ToolStripMenuItem _wallpaperToggleItem = null!;
         private bool _wallpaperEnabled;
         // E2 (v2.0 handoff PHASE0_REPORT): η μετάφραση της taskbar (GlassBlur.SetTaskbarTranslucency)
         // εφαρμοζόταν ΜΟΝΟ μία φορά στο Program.cs, στην εκκίνηση του Opsis — ποτέ ξανά αν η ίδια η
@@ -49,42 +49,64 @@ namespace MotionDesk.Widgets
             // Δημιουργία Context Menu για το Tray Icon — ομαδοποιημένο σε: παράθυρο, DeskZones,
             // wallpaper, γρήγορα προφίλ, γρήγορες ρυθμίσεις, έξοδος.
             ContextMenuStrip contextMenu = new ContextMenuStrip();
+            // Grouped by function / plugin: window, Wallpaper, DeskContainers, desktop tools, workspace profiles, one submenu per plugin, exit.
             contextMenu.Items.Add(LocalizationManager.T("Tray.Open"), null, (s, e) => ShowMainWindow());
             contextMenu.Items.Add(LocalizationManager.T("Tray.CommandPalette"), null, (s, e) => { ShowMainWindow(); _mainWindow?.OpenCommandPalette(); });
             contextMenu.Items.Add(LocalizationManager.T("Tray.Settings"), null, (s, e) => ShowMainWindow("Settings"));
             contextMenu.Items.Add(new ToolStripSeparator());
 
-            // Τα "Work"/"Gaming"/"Focus" παραμένουν ως έχουν σε κάθε γλώσσα — είναι τα ίδια τα
-            // ονόματα των προεπιλεγμένων προφίλ (ταυτίζονται με το string ID που περνάει στο
-            // ApplyProfile/WorkspaceProfileService), όχι γενικό κείμενο UI προς μετάφραση.
-            var profilesMenu = new ToolStripMenuItem(LocalizationManager.T("Tray.QuickProfile"));
-            profilesMenu.DropDownItems.Add("Work", null, (s, e) => ApplyProfile("Work"));
-            profilesMenu.DropDownItems.Add("Gaming", null, (s, e) => ApplyProfile("Gaming"));
-            profilesMenu.DropDownItems.Add("Focus", null, (s, e) => ApplyProfile("Focus"));
-            contextMenu.Items.Add(profilesMenu);
-            contextMenu.Items.Add(new ToolStripSeparator());
-
-            contextMenu.Items.Add(LocalizationManager.T("Tray.DeskZonesEdit"), null, (s, e) => AddDeskZone());
-            if (AppSettings.Load().UseFencesEngine) contextMenu.Items.Add(BuildDeskContainersMenu());
-            contextMenu.Items.Add(new ToolStripSeparator());
-
+            // ---- Wallpaper
+            var wallpaperMenu = new ToolStripMenuItem(LocalizationManager.T("Tray.GroupWallpaper"));
             _wallpaperToggleItem = new ToolStripMenuItem(LocalizationManager.T("Tray.WallpaperToggle"));
             _wallpaperToggleItem.Click += (s, e) => ToggleWallpaper();
-            contextMenu.Items.Add(_wallpaperToggleItem);
-            contextMenu.Items.Add(LocalizationManager.T("Tray.WallpaperAddVideo"), null, (s, e) => ChooseWallpaperVideo());
-            contextMenu.Items.Add(LocalizationManager.T("Tray.WallpaperAddFolder"), null, (s, e) => ChooseWallpaperFolder());
-            contextMenu.Items.Add(new ToolStripSeparator());
+            wallpaperMenu.DropDownItems.Add(_wallpaperToggleItem);
+            wallpaperMenu.DropDownItems.Add(LocalizationManager.T("Tray.WallpaperAddVideo"), null, (s, e) => ChooseWallpaperVideo());
+            wallpaperMenu.DropDownItems.Add(LocalizationManager.T("Tray.WallpaperAddFolder"), null, (s, e) => ChooseWallpaperFolder());
+            wallpaperMenu.DropDownItems.Add(LocalizationManager.T("Tray.WallpaperSettings"), null, (s, e) => ShowMainWindow("Wallpaper"));
+            contextMenu.Items.Add(wallpaperMenu);
 
-            contextMenu.Items.Add("DeskFlip  (Ctrl+Alt+F)", null, (s, e) => DeskFlipEngine.Show());
+            // ---- DeskContainers (items and state come from the engine through the bridge)
+            if (ContainersEngine.IsAvailable) contextMenu.Items.Add(BuildContainersTrayMenu());
 
+            // ---- Desktop tools
+            var desktopMenu = new ToolStripMenuItem(LocalizationManager.T("Tray.GroupDesktop"));
+            desktopMenu.DropDownItems.Add(LocalizationManager.T("Tray.DeskZonesEdit"), null, (s, e) => AddDeskZone());
+            desktopMenu.DropDownItems.Add("DeskFlip  (Ctrl+Alt+F)", null, (s, e) => DeskFlipEngine.Show());
             ToolStripMenuItem gridSnapItem = new ToolStripMenuItem(LocalizationManager.T("Tray.GridSnap"));
             gridSnapItem.Checked = WidgetSnapEngine.EnableGridSnap;
             gridSnapItem.Click += (s, e) => {
                 WidgetSnapEngine.EnableGridSnap = !gridSnapItem.Checked;
                 gridSnapItem.Checked = WidgetSnapEngine.EnableGridSnap;
             };
-            contextMenu.Items.Add(gridSnapItem);
+            desktopMenu.DropDownItems.Add(gridSnapItem);
+            contextMenu.Items.Add(desktopMenu);
 
+            // ---- Workspace profiles (Work / Gaming / Focus keep their names in every language: they are profile ids)
+            var profilesMenu = new ToolStripMenuItem(LocalizationManager.T("Tray.QuickProfile"));
+            profilesMenu.DropDownItems.Add("Work", null, (s, e) => ApplyProfile("Work"));
+            profilesMenu.DropDownItems.Add("Gaming", null, (s, e) => ApplyProfile("Gaming"));
+            profilesMenu.DropDownItems.Add("Focus", null, (s, e) => ApplyProfile("Focus"));
+            contextMenu.Items.Add(profilesMenu);
+
+            // ---- Plugins: one submenu per plugin (a plugin with a single entry shows it directly in the Plugins group)
+            var pluginGroups = PluginHost.Instance.GetTrayMenuGroups();
+            if (pluginGroups.Count > 0)
+            {
+                contextMenu.Items.Add(new ToolStripSeparator());
+                foreach (var (pluginName, items) in pluginGroups)
+                {
+                    var sub = new ToolStripMenuItem(pluginName);
+                    foreach (var pluginMenu in items)
+                    {
+                        if (pluginMenu.IsSeparator) { sub.DropDownItems.Add(new ToolStripSeparator()); continue; }
+                        var invoke = pluginMenu.Invoke;
+                        sub.DropDownItems.Add(LocalizationManager.CurrentLanguage == "el" ? pluginMenu.TitleEl : pluginMenu.TitleEn, null, (s, e) => { try { invoke(); } catch (Exception) { } });
+                    }
+                    contextMenu.Items.Add(sub);
+                }
+            }
+
+            contextMenu.Items.Add(new ToolStripSeparator());
             ToolStripMenuItem startupItem = new ToolStripMenuItem(LocalizationManager.T("Tray.Startup"));
             startupItem.Checked = StartupManager.IsStartupEnabled();
             startupItem.Click += (s, e) => {
@@ -93,14 +115,6 @@ namespace MotionDesk.Widgets
                 startupItem.Checked = newState;
             };
             contextMenu.Items.Add(startupItem);
-
-            foreach (var pluginMenu in PluginHost.Instance.GetTrayMenuItems())
-            {
-                if (pluginMenu.IsSeparator) { contextMenu.Items.Add(new ToolStripSeparator()); continue; }
-                var invoke = pluginMenu.Invoke;
-                contextMenu.Items.Add(LocalizationManager.CurrentLanguage == "el" ? pluginMenu.TitleEl : pluginMenu.TitleEn, null, (s, e) => { try { invoke(); } catch (Exception) { } });
-            }
-
             contextMenu.Items.Add(new ToolStripSeparator());
             contextMenu.Items.Add(LocalizationManager.T("Common.Exit"), null, (s, e) => PerformExit());
             // Επιτρέπει σε ΟΠΟΙΟΔΗΠΟΤΕ άλλο κομμάτι της εφαρμογής (π.χ. το κουμπί "Λήψη & εγκατάσταση"
@@ -138,9 +152,6 @@ namespace MotionDesk.Widgets
             _updateCheckTimer.Start();
 
             _hotkeys.RegisterCtrlAlt('F', () => DeskFlipEngine.Show());
-            // v2.2.0 (DesktopFences SpotSearch): Ctrl+` - προαιρετικό (προεπιλογή ΚΛΕΙΣΤΟ) γιατί είναι
-            // παγκόσμιο και συγκρούεται με π.χ. το τερματικό του VS Code.
-            if (AppSettings.Load().ContainersSpotSearch) _hotkeys.RegisterCtrl(Keys.Oemtilde, () => DeskContainerSpotSearch.Open());
 
             // Fences-style: διπλό-κλικ σε κενό σημείο της επιφάνειας εργασίας κρύβει/επαναφέρει
             // όλα τα εικονίδια εκτός του Ο Υπολογιστής μου/φάκελος χρήστη/Πίνακας Ελέγχου/Κάδος
@@ -156,8 +167,8 @@ namespace MotionDesk.Widgets
             AppActivity.Start();
             MotionDesk.Services.DiscordPresence.Instance.Apply();
             BackdropContrast.EnsureStarted();
-            if (!safeMode && FencesEngine.Enabled) FencesEngine.Start();
-            FencesEngine.SettingsRequested += () => ShowMainWindow("DeskZones");
+            if (!safeMode && ContainersEngine.Enabled) ContainersEngine.Start();
+            ContainersEngine.SettingsRequested += () => ShowMainWindow("DeskZones");
 
             // Restore lightweight persistent preferences before showing the manager.
             var appSettings = AppSettings.Load();
@@ -414,23 +425,70 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
         // Κοινός, πλήρης καθαρισμός εξόδου — καλείται ΚΑΙ από το μενού "Έξοδος" ΚΑΙ από ένα
         // self-update install (μέσω RequestExit/ExitRequested) ώστε και στις δύο περιπτώσεις να
         // αποθηκεύεται η συνεδρία και να σταματούν σωστά τα plugins/hotkeys πριν το Application.Exit().
-        private ToolStripMenuItem BuildDeskContainersMenu()
+        // DeskContainers group of the tray menu. The engine publishes its state (profiles, switches, hidden containers) in bridge\state.json;
+        // the submenu is rebuilt every time it opens, and every entry sends a command to the engine through the bridge.
+        private ToolStripMenuItem BuildContainersTrayMenu()
         {
-            bool el = LocalizationManager.CurrentLanguage == "el";
-            string L(string en, string gr) => el ? gr : en;
-            var menu = new ToolStripMenuItem("DeskContainers");
-            void Add(string en, string gr, string cmd) => menu.DropDownItems.Add(L(en, gr), null, (s, e) => FencesBridge.Command(cmd));
-            Add("New DeskContainer", "Νέο DeskContainer", "new-fence");
-            Add("New note", "Νέα σημείωση", "new-note");
-            menu.DropDownItems.Add(new ToolStripSeparator());
-            Add("Profiles…", "Προφίλ…", "manage-profiles");
-            Add("Profile automation…", "Αυτοματισμός προφίλ…", "manage-automation");
-            Add("Smart desktop rules…", "Κανόνες έξυπνης επιφάνειας…", "smart-rules");
-            Add("Organize desktop now", "Οργάνωση επιφάνειας τώρα", "organize-now");
-            menu.DropDownItems.Add(new ToolStripSeparator());
-            Add("Reload all DeskContainers", "Επαναφόρτωση DeskContainers", "reload-all");
-            Add("Back up data", "Αντίγραφο ασφαλείας", "backup");
-            menu.DropDownItems.Add(L("Settings…", "Ρυθμίσεις…"), null, (s, e) => ShowMainWindow("DeskZones"));
+            string T(string key) => LocalizationManager.T(key);
+            var menu = new ToolStripMenuItem(T("DCM.GroupTitle"));
+            void Fill()
+            {
+                foreach (ToolStripItem old in menu.DropDownItems) old.Dispose();
+                menu.DropDownItems.Clear();
+                void Add(ToolStripItemCollection to, string key, string cmd) => to.Add(T(key), null, (s, e) => ContainersBridge.Command(cmd));
+                if (!ContainersEngine.IsRunning)
+                {
+                    menu.DropDownItems.Add(T("DCM.StartEngine"), null, (s, e) => ContainersEngine.Start());
+                    menu.DropDownItems.Add(T("DCM.OpenSettingsPage"), null, (s, e) => ShowMainWindow("DeskZones"));
+                    return;
+                }
+                var state = ContainersBridge.ReadState();
+                Add(menu.DropDownItems, "DCM.NewContainer", "new-fence");
+                Add(menu.DropDownItems, "DCM.NewNote", "new-note");
+                menu.DropDownItems.Add(new ToolStripSeparator());
+
+                var profiles = new ToolStripMenuItem(T("DCM.Profiles"));
+                foreach (var name in state.Profiles)
+                {
+                    string n = name;
+                    var it = new ToolStripMenuItem(n) { Checked = string.Equals(n, state.Profile, StringComparison.OrdinalIgnoreCase) };
+                    it.Click += (s, e) => ContainersBridge.Command("profile:" + n);
+                    profiles.DropDownItems.Add(it);
+                }
+                if (profiles.DropDownItems.Count > 0) profiles.DropDownItems.Add(new ToolStripSeparator());
+                Add(profiles.DropDownItems, "DCM.ManageProfiles", "manage-profiles");
+                Add(profiles.DropDownItems, "DCM.ManageAutomation", "manage-automation");
+                var auto = new ToolStripMenuItem(T("DCM.ProfileAutomation")) { Checked = state.Automation };
+                auto.Click += (s, e) => ContainersBridge.Command("toggle-automation");
+                profiles.DropDownItems.Add(auto);
+                menu.DropDownItems.Add(profiles);
+
+                var smart = new ToolStripMenuItem(T("DCM.Smart"));
+                var org = new ToolStripMenuItem(T("DCM.AutoOrganize")) { Checked = state.AutoOrganize };
+                org.Click += (s, e) => ContainersBridge.Command("toggle-autoorganize");
+                smart.DropDownItems.Add(org);
+                Add(smart.DropDownItems, "DCM.SmartRules", "smart-rules");
+                Add(smart.DropDownItems, "DCM.OrganizeNow", "organize-now");
+                menu.DropDownItems.Add(smart);
+
+                var hidden = new ToolStripMenuItem(T("DCM.HiddenContainers")) { Enabled = state.Hidden.Length > 0 };
+                foreach (var title in state.Hidden)
+                {
+                    string t = title;
+                    hidden.DropDownItems.Add(t, null, (s, e) => ContainersBridge.Command("show-hidden:" + t));
+                }
+                menu.DropDownItems.Add(hidden);
+                Add(menu.DropDownItems, "DCM.FocusContainer", "focus-fence");
+                menu.DropDownItems.Add(new ToolStripSeparator());
+                Add(menu.DropDownItems, "DCM.QuickHide", "quick-hide");
+                Add(menu.DropDownItems, "DCM.QuickShow", "quick-show");
+                Add(menu.DropDownItems, "DCM.Reload", "reload-all");
+                Add(menu.DropDownItems, "DCM.Backup", "backup");
+                menu.DropDownItems.Add(new ToolStripSeparator());
+                menu.DropDownItems.Add(T("DCM.OpenSettingsPage"), null, (s, e) => ShowMainWindow("DeskZones"));
+            }
+            menu.DropDownOpening += (s, e) => Fill();
+            Fill();
             return menu;
         }
 

@@ -56,6 +56,14 @@ namespace Desktop_Fences
                 return;
             }
 
+            int selfTest = Array.FindIndex(e.Args, a => a.Equals("--selftest-settings", StringComparison.OrdinalIgnoreCase));
+            if (selfTest >= 0 && selfTest + 1 < e.Args.Length)
+            {
+                Environment.ExitCode = SettingsMenuSelfTest.Run(e.Args[selfTest + 1]);
+                Shutdown(Environment.ExitCode);
+                return;
+            }
+
             // --- 2. SINGLE INSTANCE PROTECTION START ---
             bool isNewInstance;
             // Opsis: an isolated data folder (automated tests) gets its own mutex so it never collides with the user's real engine.

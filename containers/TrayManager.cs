@@ -21,7 +21,23 @@ namespace Desktop_Fences
 {
     public class TrayManager : IDisposable
     {
-        private NotifyIcon _trayIcon;
+        // Opsis: there is NO separate tray icon any more - the Opsis tray icon carries the DeskContainers entries (profiles, automation, smart desktop,
+        // hidden containers...) and talks to this engine through the bridge. This stand-in only keeps the old code paths compiling and is never shown.
+        private sealed class HeadlessTray : IDisposable
+        {
+            public string Text { get; set; }
+            public Icon Icon { get; set; }
+            public bool Visible { get; set; }
+            public ContextMenuStrip ContextMenuStrip { get; set; }
+            public string BalloonTipTitle { get; set; }
+            public string BalloonTipText { get; set; }
+            public ToolTipIcon BalloonTipIcon { get; set; }
+            public event EventHandler DoubleClick { add { } remove { } }
+            public event System.Windows.Forms.MouseEventHandler MouseClick { add { } remove { } }
+            public void ShowBalloonTip(int ms) { }
+            public void Dispose() { }
+        }
+        private HeadlessTray _trayIcon;
       
         private bool _disposed;
         public static bool IsStartWithWindows { get; private set; }
@@ -56,8 +72,13 @@ namespace Desktop_Fences
             public NonActivatingWindow Window { get; set; }
         }
 
+        public static string[] HiddenTitles() { lock (HiddenFences) return HiddenFences.Select(h => h.Title).ToArray(); }
+
+        public static void ShowHiddenFenceByTitle(string title) { ShowHiddenFence(title); }
+
         public void UpdateAutomationMenuCheck(bool isChecked)
         {
+            OpsisBridge.PublishState();
             if (_automationMenuItem != null)
             {
                 // This prevents infinite loops by checking the value first
@@ -221,11 +242,11 @@ namespace Desktop_Fences
             // Dispose old icon if re-initializing to prevent ghosting
             if (_trayIcon != null) { _trayIcon.Visible = false; _trayIcon.Dispose(); }
 
-            _trayIcon = new NotifyIcon
+            _trayIcon = new HeadlessTray
             {
                 Icon = Icon.ExtractAssociatedIcon(exePath),
                 Visible = false,   // Opsis owns the tray: its menu carries the DeskContainers entries
-                Text = $"Desktop Fences ({ProfileManager.CurrentProfileName})"
+                Text = $"Opsis DeskContainers ({ProfileManager.CurrentProfileName})"
             };
 
             _trayIcon.DoubleClick += OnTrayIconDoubleClick;
@@ -317,7 +338,7 @@ namespace Desktop_Fences
         {
             var waitWindow = new System.Windows.Window
             {
-                Title = Loc.T("Opsis Fences"),
+                Title = Loc.T("Opsis DeskContainers"),
                 Width = 300,
                 Height = 150,
                 WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen,
@@ -351,7 +372,7 @@ namespace Desktop_Fences
 
             var titleText = new System.Windows.Controls.TextBlock
             {
-                Text = Loc.T("Opsis Fences"),
+                Text = Loc.T("Opsis DeskContainers"),
                 FontFamily = new System.Windows.Media.FontFamily("Segoe UI"),
                 FontSize = 16,
                 FontWeight = System.Windows.FontWeights.Medium,
@@ -526,6 +547,7 @@ namespace Desktop_Fences
 
         public void UpdateProfilesMenu()
         {
+            OpsisBridge.PublishState();
             if (_profilesMenuItem == null) return;
 
             _profilesMenuItem.DropDownItems.Clear();

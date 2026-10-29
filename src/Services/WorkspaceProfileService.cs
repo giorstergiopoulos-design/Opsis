@@ -9,7 +9,6 @@ public sealed class WorkspaceProfile
     public AppSettings AppSettings { get; set; } = new();
     public WallpaperSettingsSnapshot Wallpaper { get; set; } = new();
     public List<WidgetSnapshot> Widgets { get; set; } = new();
-    public List<DeskContainerSnapshot> DeskContainers { get; set; } = new();
 }
 
 public sealed class WallpaperSettingsSnapshot
@@ -53,8 +52,7 @@ public static class WorkspaceProfileService
                 PerformanceMode = wallpaper.PerformanceMode,
                 Enabled = WallpaperHostEngine.Instance.IsEnabled
             },
-            Widgets = WidgetHostEngine.Instance.GetSnapshots().ToList(),
-            DeskContainers = DeskContainerHostEngine.Instance.GetSnapshots().ToList()
+            Widgets = WidgetHostEngine.Instance.GetSnapshots().ToList()
         };
 
         MotionDesk.Services.AtomicFile.WriteAllText(Path.Combine(Root, name + ".json"), JsonSerializer.Serialize(profile, new JsonSerializerOptions { WriteIndented = true }));
@@ -89,10 +87,7 @@ public static class WorkspaceProfileService
         WidgetSnapEngine.GridSize = Math.Clamp(profile.AppSettings.GridSize, 5, 100);
 
         WidgetHostEngine.Instance.RestoreSnapshots(profile.Widgets ?? new List<WidgetSnapshot>());
-        // ΝΕΟ: τα DeskContainers τώρα θυμούνται/επαναφέρονται σε κάθε session ακριβώς όπως τα
-        // widgets — ζητήθηκε ρητά ("widgets kai deskcontainers ... σε κάθε session του υπολογιστή
-        // να θυμούνται τα windows"). Πριν, μόνο τα widgets ήταν μέρος του "Last Session" profile.
-        if (!FencesEngine.Enabled)         DeskContainerHostEngine.Instance.RestoreSnapshots(profile.DeskContainers ?? new List<DeskContainerSnapshot>());
+        // DeskContainers keep their own profiles inside the DeskContainers engine (menu > Profiles), not in the workspace profile.
         // Τα DeskZones layouts ΔΕΝ είναι πλέον μέρος του workspace profile — ζουν ανεξάρτητα στο
         // δικό τους αρχείο (ZoneLayoutStore), ακριβώς όπως τα πραγματικά FancyZones layouts δεν
         // αλλάζουν όταν εναλλάσσεις "προφίλ" εργασίας.

@@ -530,55 +530,6 @@ namespace MotionDesk.Services
 
         [DllImport("user32.dll", EntryPoint = "GetParent")] private static extern IntPtr GetParentWindow(IntPtr h);
 
-        public static int TestContainers(string folder)
-        {
-            Directory.CreateDirectory(folder);
-            string root = Path.Combine(Path.GetTempPath(), "opsis_portal_test_" + Guid.NewGuid().ToString("N")[..6]);
-            Directory.CreateDirectory(Path.Combine(root, "Photos"));
-            File.WriteAllText(Path.Combine(root, "notes.txt"), "a"); File.WriteAllText(Path.Combine(root, "report.docx"), "b");
-            File.WriteAllText(Path.Combine(root, "Photos", "trip.jpg"), "c");
-            string extra = Path.Combine(Path.GetTempPath(), "opsis_portal_extra_" + Guid.NewGuid().ToString("N")[..6] + ".txt"); File.WriteAllText(extra, "x");
-            void Pump(int ms) { var end = DateTime.UtcNow.AddMilliseconds(ms); while (DateTime.UtcNow < end) { Application.DoEvents(); System.Threading.Thread.Sleep(15); } }
-            var results = new System.Collections.Generic.List<string>();
-            void Check(string name, bool ok) { results.Add((ok ? "PASS " : "FAIL ") + name); }
-            try
-            {
-                var sc = Screen.PrimaryScreen ?? Screen.AllScreens[0];
-                var engine = DeskContainerHostEngine.Instance;
-                var portal = engine.SpawnContainer("diag_portal", "Portal", sc.Bounds.X + 300, sc.Bounds.Y + 150, 380, 300);
-                portal.SetPortal(root);
-                Pump(800);
-                Check("portal lists folder content (3 entries, folders first)", portal.ItemPaths.Count == 3 && Directory.Exists(portal.ItemPaths[0]));
-                File.WriteAllText(Path.Combine(root, "new_file.pdf"), "n");
-                Pump(1500);
-                Check("portal updates live when a file appears", portal.ItemPaths.Any(p => p.EndsWith("new_file.pdf")));
-                portal.NavigatePortal(Path.Combine(root, "Photos")); Pump(500);
-                Check("portal navigates into a subfolder", portal.ItemPaths.Count == 1 && portal.ItemPaths[0].EndsWith("trip.jpg"));
-                portal.AddPaths(new[] { extra }); Pump(800);
-                Check("dropping a file on a portal COPIES it into the folder", File.Exists(Path.Combine(root, "Photos", Path.GetFileName(extra))) && File.Exists(extra));
-                portal.SetPortal(root); Pump(500);
-                var normal = engine.SpawnContainer("diag_normal", "Normal", sc.Bounds.X + 720, sc.Bounds.Y + 150, 380, 300);
-                normal.AddPaths(new[] { Path.Combine(root, "notes.txt"), Path.Combine(root, "report.docx"), extra, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "notepad.exe") });
-                Pump(800);
-                Check("normal container holds 4 items", normal.ItemPaths.Count == 4);
-                normal.IconPx = 64; Pump(300);
-                var all = new[] { portal, normal };
-                using var shot = new Bitmap(900, 380);
-                var origin = new Point(sc.Bounds.X + 280, sc.Bounds.Y + 130);
-                using (var g = Graphics.FromImage(shot)) g.CopyFromScreen(origin, Point.Empty, shot.Size);
-                shot.Save(Path.Combine(folder, "containers.png"), System.Drawing.Imaging.ImageFormat.Png);
-                Check("files untouched (originals still exist)", File.Exists(Path.Combine(root, "notes.txt")) && File.Exists(extra));
-            }
-            finally
-            {
-                foreach (var w in Application.OpenForms.OfType<DeskContainerWindow>().ToList()) { try { w.Close(); } catch (Exception) { } }
-                try { Directory.Delete(root, true); File.Delete(extra); } catch (Exception) { }
-                foreach (var f in Directory.GetFiles(Path.Combine(AppPaths.AppDataFolder, "deskcontainers"), "diag_*_config.json")) { try { File.Delete(f); } catch (Exception) { } }
-            }
-            foreach (var r in results) Console.WriteLine(r);
-            return results.Any(r => r.StartsWith("FAIL")) ? 1 : 0;
-        }
-
         [DllImport("user32.dll")] private static extern IntPtr SendMessage(IntPtr h, uint msg, IntPtr w, IntPtr l);
         [DllImport("kernel32.dll")] private static extern IntPtr OpenProcess(uint access, bool inherit, uint pid);
         [DllImport("kernel32.dll")] private static extern bool CloseHandle(IntPtr h);

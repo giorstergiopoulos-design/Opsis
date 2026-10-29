@@ -306,7 +306,7 @@ namespace Desktop_Fences
             // 2. Branding Subtitle
             var brandBlock = new TextBlock
             {
-                Text = Loc.T("Opsis Fences"),
+                Text = Loc.T("Opsis DeskContainers"),
                 Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#99FFFFFF")), // Dimmed White
                 FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 9,
@@ -731,7 +731,7 @@ namespace Desktop_Fences
         /// <param name="title">The title of the wait window</param>
         /// <param name="message">The message to display</param>
         /// <returns>The wait window instance (caller should close it when done)</returns>
-        public static Window CreateWaitWindow(string title = "Opsis Fences", string message = "Please wait...")
+        public static Window CreateWaitWindow(string title = "Opsis DeskContainers", string message = "Please wait...")
         {
             title = Loc.T(title); message = Loc.T(message);
             try

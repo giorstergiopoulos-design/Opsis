@@ -111,14 +111,13 @@ namespace MotionDesk.Services
         // συμπεριφορά να ΜΗΝ αλλάζει για όσους το χρησιμοποιούσαν ήδη χωρίς να το ξέρουν.
         public bool QuickHideDoubleClickEnabled { get; set; } = true;
         // v2.2.0 (ιδέες από το DesktopFences, MIT): γενικές ρυθμίσεις DeskContainers.
-        // true = DeskContainers are provided by the bundled DesktopFences engine (fencesOpsisFences.exe); false = the legacy built-in containers.
-        public bool UseFencesEngine { get; set; } = true;
+        // DeskContainers are provided by the bundled engine (containers\OpsisContainers.exe); false = the engine is not started.
+        public bool DeskContainersEnabled { get; set; } = true;
+        // The four settings below belong to the removed built-in containers; they are only READ once by ContainersMigration.MigrateLegacySettings.
         public bool ContainersAutoHide { get; set; } = false;          // κρύβονται μετά από αδράνεια χρήστη
         public int ContainersAutoHideSeconds { get; set; } = 20;
         public bool ContainersChameleon { get; set; } = false;         // χρώμα από το κυρίαρχο χρώμα του wallpaper
         public bool ContainersDailyBackup { get; set; } = true;        // καθημερινό backup των ρυθμίσεων/περιεχομένων
-        // Profile (named container layout) that applies itself when a given display layout appears; key = DeskContainerProfiles.DisplaySignature().
-        public Dictionary<string, string> ContainerProfileByDisplay { get; set; } = new();
         public bool ContainersSpotSearch { get; set; } = false;       // Ctrl+` : γρήγορη αναζήτηση/εκκίνηση (ισχύει μετά από επανεκκίνηση)
         // Ποια εικονίδια ΜΕΝΟΥΝ ορατά όταν το διπλό κλικ κρύβει την επιφάνεια εργασίας. Προεπιλογή: Ο Υπολογιστής μου, ο φάκελος του χρήστη,
         // ο Πίνακας Ελέγχου και ο Κάδος Ανακύκλωσης· μπορείς να τα αλλάξεις/να προσθέσεις ό,τι θέλεις (QuickHideExtraKept = ονόματα εικονιδίων).

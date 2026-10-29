@@ -7,12 +7,16 @@ using System.Text.Json.Nodes;
 
 namespace MotionDesk.Services
 {
-    // Opsis side of the settings bridge for the fences engine: the settings UI on the DeskZones page edits the engine's
+    // Opsis side of the settings bridge for the DeskContainers engine: the settings UI on the DeskZones page edits the engine's
     // options.json directly (the engine watches the file and applies changes live) and sends one-shot commands through small files
-    // in <AppData>\fences\bridge (see fences\OpsisBridge.cs).
-    internal static class FencesBridge
+    // in <AppData>\containers\bridge (see containers\OpsisBridge.cs).
+    internal static class ContainersBridge
     {
-        private static string Root => Path.Combine(AppPaths.AppDataFolder, "fences");
+        private static string Root { get { MigrateOldFolder(); return Path.Combine(AppPaths.AppDataFolder, "containers"); } }
+        private static void MigrateOldFolder()
+        {
+            try { string o = Path.Combine(AppPaths.AppDataFolder, "fences"), n = Path.Combine(AppPaths.AppDataFolder, "containers"); if (!Directory.Exists(n) && Directory.Exists(o)) Directory.Move(o, n); } catch (Exception) { }
+        }
         public static string BridgeDir => Path.Combine(Root, "bridge");
 
         private static string ActiveProfile()
@@ -62,6 +66,23 @@ namespace MotionDesk.Services
         public static void Set(string key, int v) => Save(o => o[key] = v);
         public static void Set(string key, string v) => Save(o => o[key] = v);
         public static void SetStrings(string key, IEnumerable<string> v) => Save(o => o[key] = new JsonArray(v.Select(s => (JsonNode?)JsonValue.Create(s)).ToArray()));
+
+        public sealed record EngineState(string Profile, string[] Profiles, bool Automation, bool AutoOrganize, string[] Hidden);
+
+        /// <summary>State published by the engine (bridgestate.json): profiles, switches, hidden containers. Empty state when the engine has not written it yet.</summary>
+        public static EngineState ReadState()
+        {
+            try
+            {
+                if (JsonNode.Parse(File.ReadAllText(Path.Combine(BridgeDir, "state.json"))) is JsonObject o)
+                {
+                    string[] Arr(string k) => (o[k] as JsonArray)?.Select(x => x?.ToString() ?? "").Where(x => x.Length > 0).ToArray() ?? Array.Empty<string>();
+                    return new EngineState(o["profile"]?.ToString() ?? "Default", Arr("profiles"), o["automation"]?.GetValue<bool>() ?? false, o["autoOrganize"]?.GetValue<bool>() ?? false, Arr("hidden"));
+                }
+            }
+            catch (Exception) { }
+            return new EngineState("Default", Array.Empty<string>(), false, false, Array.Empty<string>());
+        }
 
         public static void Command(string name)
         {
