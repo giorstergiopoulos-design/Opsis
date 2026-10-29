@@ -1,5 +1,13 @@
 # PROJECT STATE
 
+## 2.2.0 status (2026-10-29) — read with the section below
+- The engine is now `containers/` -> `OpsisContainers.exe` (all "fence" names gone; `LegacyNames.cs` migrates old data). Settings are in the engine's ☰ ▸ Settings menu (`containers/SettingsMenu.cs`, self-test: `OpsisContainers.exe --selftest-settings <report>` with isolated `OPSIS_APPDATA`; last full run 365 ok / 0 fail BEFORE the event-driven theme change — rerun NOT done).
+- `containers/OpsisTheme.cs` is event-driven (no 400 ms timer). Shared controls: `libs/Opsis.UI.dll` via `src/UI/OpsisUiTokens.cs`.
+- Security 1-4 done (`PluginTrust`, `UpdateInstallerService.OpenVerified`, `SafeLaunch`, `SafeZip`; `tests/Opsis.Tests/SecurityTests.cs`). Items 5-7 open. Installer is machine-wide and removes per-user installs.
+- Tests: 92 pass (`dotnet test tests/Opsis.Tests -m:1 -p:UseSharedCompilation=false -nodeReuse:false`). Build 0 errors.
+- Open for 2.2.1: see CHANGELOG 2.2.0 "Υπόλοιπο". Landscape wallpaper is frozen (backup `C:\w\landscape-backup`).
+- Machine is memory-constrained: build/test sequentially with `-m:1 -p:UseSharedCompilation=false -nodeReuse:false`, then `dotnet build-server shutdown`; never leave test instances running.
+
 ## >>> READ FIRST — 2.2.0: DeskContainers are now powered by the bundled DesktopFences engine (updated 2026-10-24)
 **What changed (all pushed to `main`, last commit of this work: see `git log -- fences`):**
 - The genuine DesktopFences source (limbo666/DesktopFences, WPF, MIT, v2.6.6.234) lives in **`containers/`** as its own project **`containers/OpsisContainers.csproj`** (net10.0-windows, UseWPF). It builds into **`<Opsis output>\containers\OpsisContainers.exe`** and is started/stopped by Opsis. **Opsis.exe itself stays WinForms** (no UseWPF in `MotionDeskStudio.csproj`).
