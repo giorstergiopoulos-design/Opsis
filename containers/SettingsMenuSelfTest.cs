@@ -51,7 +51,7 @@ namespace OpsisContainers
                     item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
                     string after = ReadRetry(optionsPath);
                     if (after != before) { ok++; sb.AppendLine("OK    " + here); }
-                    else { fail++; sb.AppendLine("FAIL  " + here + "  (options.json did not change)"); }
+                    else { fail++; sb.AppendLine("FAIL  " + here + "  (options.json did not change; mem tint=" + SettingsManager.TintValue + " idle=" + SettingsManager.AutoHideTime + " file len=" + after.Length + ")"); }
                 }
                 catch (Exception ex) { fail++; sb.AppendLine("FAIL  " + here + "  (" + ex.GetType().Name + ": " + ex.Message + ")"); }
                 finally

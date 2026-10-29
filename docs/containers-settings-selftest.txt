@@ -1,0 +1,397 @@
+SETTINGS MENU SELF-TEST: ok=365 fail=0 skipped=31
+OK    /Allgemein/Mit einem Klick starten
+OK    /Allgemein/Hineingezogene Desktop-Symbole verschwinden vom Desktop
+OK    /Allgemein/An anderen Containern einrasten
+OK    /Allgemein/Größen angleichen
+OK    /Allgemein/Papierkorb bei Portal-Containern verwenden
+OK    /Allgemein/„Neuer DeskContainer“ im Desktop-Menü anzeigen
+OK    /Allgemein/Nach Inaktivität automatisch ausblenden
+OK    /Allgemein/Leerlaufzeit bis zum Ausblenden/15 Sekunden
+OK    /Allgemein/Leerlaufzeit bis zum Ausblenden/30 Sekunden
+SKIP  /Allgemein/Leerlaufzeit bis zum Ausblenden/60 Sekunden  (already the selected choice)
+OK    /Allgemein/Leerlaufzeit bis zum Ausblenden/120 Sekunden
+OK    /Allgemein/Leerlaufzeit bis zum Ausblenden/300 Sekunden
+OK    /Darstellung/Wasserzeichen bei Portal-Containern
+OK    /Darstellung/Bildlaufleisten ausblenden
+OK    /Darstellung/Töne
+OK    /Darstellung/Chamäleon (Farbe vom Hintergrund)
+OK    /Darstellung/Automatisch einklappen (beim Überfahren aufklappen)
+OK    /Darstellung/Container-Tönung/0 %
+OK    /Darstellung/Container-Tönung/10 %
+OK    /Darstellung/Container-Tönung/20 %
+OK    /Darstellung/Container-Tönung/30 %
+OK    /Darstellung/Container-Tönung/40 %
+OK    /Darstellung/Container-Tönung/50 %
+OK    /Darstellung/Container-Tönung/60 %
+OK    /Darstellung/Container-Tönung/70 %
+SKIP  /Darstellung/Container-Tönung/80 %  (already the selected choice)
+OK    /Darstellung/Container-Tönung/90 %
+OK    /Darstellung/Container-Tönung/100 %
+OK    /Darstellung/Deckkraft des Menüsymbols/0 %
+OK    /Darstellung/Deckkraft des Menüsymbols/10 %
+OK    /Darstellung/Deckkraft des Menüsymbols/20 %
+OK    /Darstellung/Deckkraft des Menüsymbols/30 %
+OK    /Darstellung/Deckkraft des Menüsymbols/40 %
+OK    /Darstellung/Deckkraft des Menüsymbols/50 %
+OK    /Darstellung/Deckkraft des Menüsymbols/60 %
+OK    /Darstellung/Deckkraft des Menüsymbols/70 %
+SKIP  /Darstellung/Deckkraft des Menüsymbols/80 %  (already the selected choice)
+OK    /Darstellung/Deckkraft des Menüsymbols/90 %
+OK    /Darstellung/Deckkraft des Menüsymbols/100 %
+OK    /Darstellung/Farbe/Grau
+SKIP  /Darstellung/Farbe/Schwarz  (already the selected choice)
+OK    /Darstellung/Farbe/Weiß
+OK    /Darstellung/Farbe/Beige
+OK    /Darstellung/Farbe/Grün
+OK    /Darstellung/Farbe/Violett
+OK    /Darstellung/Farbe/Fuchsia
+OK    /Darstellung/Farbe/Gelb
+OK    /Darstellung/Farbe/Orange
+OK    /Darstellung/Farbe/Rot
+OK    /Darstellung/Farbe/Blau
+OK    /Darstellung/Farbe/Bismarck (Blaugrau)
+OK    /Darstellung/Farbe/Petrol
+SKIP  /Darstellung/Titelleistenfarbe/Automatisch  (already the selected choice)
+OK    /Darstellung/Titelleistenfarbe/Grau
+OK    /Darstellung/Titelleistenfarbe/Schwarz
+OK    /Darstellung/Titelleistenfarbe/Weiß
+OK    /Darstellung/Titelleistenfarbe/Beige
+OK    /Darstellung/Titelleistenfarbe/Grün
+OK    /Darstellung/Titelleistenfarbe/Violett
+OK    /Darstellung/Titelleistenfarbe/Fuchsia
+OK    /Darstellung/Titelleistenfarbe/Gelb
+OK    /Darstellung/Titelleistenfarbe/Orange
+OK    /Darstellung/Titelleistenfarbe/Rot
+OK    /Darstellung/Titelleistenfarbe/Blau
+OK    /Darstellung/Titelleistenfarbe/Bismarck (Blaugrau)
+OK    /Darstellung/Titelleistenfarbe/Petrol
+OK    /Darstellung/Deckkraft der Titelleiste/0 %
+OK    /Darstellung/Deckkraft der Titelleiste/10 %
+OK    /Darstellung/Deckkraft der Titelleiste/20 %
+OK    /Darstellung/Deckkraft der Titelleiste/30 %
+OK    /Darstellung/Deckkraft der Titelleiste/40 %
+OK    /Darstellung/Deckkraft der Titelleiste/50 %
+OK    /Darstellung/Deckkraft der Titelleiste/60 %
+OK    /Darstellung/Deckkraft der Titelleiste/70 %
+OK    /Darstellung/Deckkraft der Titelleiste/80 %
+SKIP  /Darstellung/Deckkraft der Titelleiste/90 %  (already the selected choice)
+OK    /Darstellung/Deckkraft der Titelleiste/100 %
+OK    /Darstellung/Höhe der Titelleiste/24 px
+SKIP  /Darstellung/Höhe der Titelleiste/28 px  (already the selected choice)
+OK    /Darstellung/Höhe der Titelleiste/32 px
+OK    /Darstellung/Höhe der Titelleiste/40 px
+OK    /Darstellung/Höhe der Titelleiste/48 px
+OK    /Darstellung/Höhe der Titelleiste/64 px
+SKIP  /Darstellung/Starteffekt/Zoom  (already the selected choice)
+OK    /Darstellung/Starteffekt/Hüpfen
+OK    /Darstellung/Starteffekt/Ausblenden
+OK    /Darstellung/Starteffekt/Nach oben gleiten
+OK    /Darstellung/Starteffekt/Drehen
+OK    /Darstellung/Starteffekt/Schütteln
+OK    /Darstellung/Starteffekt/Wachsen und fliegen
+OK    /Darstellung/Starteffekt/Pulsieren
+OK    /Darstellung/Starteffekt/Elastisch
+OK    /Darstellung/Starteffekt/3D-Flip
+OK    /Darstellung/Starteffekt/Spirale
+OK    /Darstellung/Starteffekt/Schockwelle
+OK    /Darstellung/Starteffekt/Matrix
+OK    /Darstellung/Starteffekt/Supernova
+OK    /Darstellung/Starteffekt/Teleport
+OK    /Darstellung/Menüsymbol/⋯
+SKIP  /Darstellung/Menüsymbol/☰  (already the selected choice)
+OK    /Darstellung/Menüsymbol/≣
+OK    /Darstellung/Menüsymbol/𓃑
+SKIP  /Werkzeuge/Jetzt sichern  (command, not invoked)
+SKIP  /Werkzeuge/Aus Sicherung wiederherstellen…  (command, not invoked)
+SKIP  /Werkzeuge/Sicherungsordner öffnen  (command, not invoked)
+OK    /Werkzeuge/Automatische tägliche Sicherung
+SKIP  /Werkzeuge/Container zurück auf den Bildschirm holen  (command, not invoked)
+SKIP  /Werkzeuge/Darstellung zurücksetzen  (command, not invoked)
+SKIP  /Werkzeuge/Alle DeskContainers-Daten löschen…  (command, not invoked)
+SKIP  /Profile/Profile verwalten…  (command, not invoked)
+SKIP  /Profile/Automatisierungsregeln verwalten…  (command, not invoked)
+OK    /Profile/Profile automatisch wechseln (Automatisierungsregeln)
+OK    /Tastenkombinationen/Profilwechsel: direkt [0-9]/Aktiviert
+OK    /Tastenkombinationen/Profilwechsel: direkt [0-9]/Zusatztaste/Ctrl
+OK    /Tastenkombinationen/Profilwechsel: direkt [0-9]/Zusatztaste/Alt
+OK    /Tastenkombinationen/Profilwechsel: direkt [0-9]/Zusatztaste/Shift
+SKIP  /Tastenkombinationen/Profilwechsel: direkt [0-9]/Zusatztaste/Ctrl+Alt  (already the selected choice)
+OK    /Tastenkombinationen/Profilwechsel: direkt [0-9]/Zusatztaste/Ctrl+Shift
+OK    /Tastenkombinationen/Profilwechsel: direkt [0-9]/Zusatztaste/Alt+Shift
+OK    /Tastenkombinationen/Profilwechsel: direkt [0-9]/Zusatztaste/Ctrl+Alt+Shift
+OK    /Tastenkombinationen/Profilwechsel: direkt [0-9]/Zusatztaste/Win
+OK    /Tastenkombinationen/Vorheriges Profil/Aktiviert
+OK    /Tastenkombinationen/Vorheriges Profil/Zusatztaste/Ctrl
+OK    /Tastenkombinationen/Vorheriges Profil/Zusatztaste/Alt
+OK    /Tastenkombinationen/Vorheriges Profil/Zusatztaste/Shift
+SKIP  /Tastenkombinationen/Vorheriges Profil/Zusatztaste/Ctrl+Alt  (already the selected choice)
+OK    /Tastenkombinationen/Vorheriges Profil/Zusatztaste/Ctrl+Shift
+OK    /Tastenkombinationen/Vorheriges Profil/Zusatztaste/Alt+Shift
+OK    /Tastenkombinationen/Vorheriges Profil/Zusatztaste/Ctrl+Alt+Shift
+OK    /Tastenkombinationen/Vorheriges Profil/Zusatztaste/Win
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Buchstaben/A
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Buchstaben/B
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Buchstaben/C
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Buchstaben/D
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Buchstaben/E
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Buchstaben/F
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Buchstaben/G
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Buchstaben/H
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Buchstaben/I
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Buchstaben/J
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Buchstaben/K
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Buchstaben/L
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Buchstaben/M
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Buchstaben/N
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Buchstaben/O
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Buchstaben/P
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Buchstaben/Q
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Buchstaben/R
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Buchstaben/S
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Buchstaben/T
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Buchstaben/U
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Buchstaben/V
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Buchstaben/W
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Buchstaben/X
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Buchstaben/Y
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Buchstaben/Z
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Ziffern/0
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Ziffern/1
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Ziffern/2
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Ziffern/3
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Ziffern/4
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Ziffern/5
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Ziffern/6
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Ziffern/7
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Ziffern/8
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Ziffern/9
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Funktionstasten/F1
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Funktionstasten/F2
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Funktionstasten/F3
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Funktionstasten/F4
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Funktionstasten/F5
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Funktionstasten/F6
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Funktionstasten/F7
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Funktionstasten/F8
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Funktionstasten/F9
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Funktionstasten/F10
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Funktionstasten/F11
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Funktionstasten/F12
+SKIP  /Tastenkombinationen/Vorheriges Profil/Taste/Andere/,  (already the selected choice)
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Andere/.
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Andere/`
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Andere/Space
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Andere/Tab
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Andere/Enter
+OK    /Tastenkombinationen/Vorheriges Profil/Taste/Andere/Esc
+OK    /Tastenkombinationen/Nächstes Profil/Aktiviert
+OK    /Tastenkombinationen/Nächstes Profil/Zusatztaste/Ctrl
+OK    /Tastenkombinationen/Nächstes Profil/Zusatztaste/Alt
+OK    /Tastenkombinationen/Nächstes Profil/Zusatztaste/Shift
+SKIP  /Tastenkombinationen/Nächstes Profil/Zusatztaste/Ctrl+Alt  (already the selected choice)
+OK    /Tastenkombinationen/Nächstes Profil/Zusatztaste/Ctrl+Shift
+OK    /Tastenkombinationen/Nächstes Profil/Zusatztaste/Alt+Shift
+OK    /Tastenkombinationen/Nächstes Profil/Zusatztaste/Ctrl+Alt+Shift
+OK    /Tastenkombinationen/Nächstes Profil/Zusatztaste/Win
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Buchstaben/A
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Buchstaben/B
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Buchstaben/C
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Buchstaben/D
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Buchstaben/E
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Buchstaben/F
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Buchstaben/G
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Buchstaben/H
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Buchstaben/I
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Buchstaben/J
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Buchstaben/K
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Buchstaben/L
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Buchstaben/M
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Buchstaben/N
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Buchstaben/O
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Buchstaben/P
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Buchstaben/Q
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Buchstaben/R
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Buchstaben/S
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Buchstaben/T
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Buchstaben/U
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Buchstaben/V
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Buchstaben/W
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Buchstaben/X
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Buchstaben/Y
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Buchstaben/Z
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Ziffern/0
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Ziffern/1
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Ziffern/2
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Ziffern/3
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Ziffern/4
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Ziffern/5
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Ziffern/6
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Ziffern/7
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Ziffern/8
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Ziffern/9
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Funktionstasten/F1
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Funktionstasten/F2
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Funktionstasten/F3
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Funktionstasten/F4
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Funktionstasten/F5
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Funktionstasten/F6
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Funktionstasten/F7
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Funktionstasten/F8
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Funktionstasten/F9
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Funktionstasten/F10
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Funktionstasten/F11
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Funktionstasten/F12
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Andere/,
+SKIP  /Tastenkombinationen/Nächstes Profil/Taste/Andere/.  (already the selected choice)
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Andere/`
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Andere/Space
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Andere/Tab
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Andere/Enter
+OK    /Tastenkombinationen/Nächstes Profil/Taste/Andere/Esc
+OK    /Tastenkombinationen/Container fokussieren/Aktiviert
+OK    /Tastenkombinationen/Container fokussieren/Zusatztaste/Ctrl
+OK    /Tastenkombinationen/Container fokussieren/Zusatztaste/Alt
+OK    /Tastenkombinationen/Container fokussieren/Zusatztaste/Shift
+SKIP  /Tastenkombinationen/Container fokussieren/Zusatztaste/Ctrl+Alt  (already the selected choice)
+OK    /Tastenkombinationen/Container fokussieren/Zusatztaste/Ctrl+Shift
+OK    /Tastenkombinationen/Container fokussieren/Zusatztaste/Alt+Shift
+OK    /Tastenkombinationen/Container fokussieren/Zusatztaste/Ctrl+Alt+Shift
+OK    /Tastenkombinationen/Container fokussieren/Zusatztaste/Win
+OK    /Tastenkombinationen/Container fokussieren/Taste/Buchstaben/A
+OK    /Tastenkombinationen/Container fokussieren/Taste/Buchstaben/B
+OK    /Tastenkombinationen/Container fokussieren/Taste/Buchstaben/C
+OK    /Tastenkombinationen/Container fokussieren/Taste/Buchstaben/D
+OK    /Tastenkombinationen/Container fokussieren/Taste/Buchstaben/E
+OK    /Tastenkombinationen/Container fokussieren/Taste/Buchstaben/F
+OK    /Tastenkombinationen/Container fokussieren/Taste/Buchstaben/G
+OK    /Tastenkombinationen/Container fokussieren/Taste/Buchstaben/H
+OK    /Tastenkombinationen/Container fokussieren/Taste/Buchstaben/I
+OK    /Tastenkombinationen/Container fokussieren/Taste/Buchstaben/J
+OK    /Tastenkombinationen/Container fokussieren/Taste/Buchstaben/K
+OK    /Tastenkombinationen/Container fokussieren/Taste/Buchstaben/L
+OK    /Tastenkombinationen/Container fokussieren/Taste/Buchstaben/M
+OK    /Tastenkombinationen/Container fokussieren/Taste/Buchstaben/N
+OK    /Tastenkombinationen/Container fokussieren/Taste/Buchstaben/O
+OK    /Tastenkombinationen/Container fokussieren/Taste/Buchstaben/P
+OK    /Tastenkombinationen/Container fokussieren/Taste/Buchstaben/Q
+OK    /Tastenkombinationen/Container fokussieren/Taste/Buchstaben/R
+OK    /Tastenkombinationen/Container fokussieren/Taste/Buchstaben/S
+OK    /Tastenkombinationen/Container fokussieren/Taste/Buchstaben/T
+OK    /Tastenkombinationen/Container fokussieren/Taste/Buchstaben/U
+OK    /Tastenkombinationen/Container fokussieren/Taste/Buchstaben/V
+OK    /Tastenkombinationen/Container fokussieren/Taste/Buchstaben/W
+OK    /Tastenkombinationen/Container fokussieren/Taste/Buchstaben/X
+OK    /Tastenkombinationen/Container fokussieren/Taste/Buchstaben/Y
+SKIP  /Tastenkombinationen/Container fokussieren/Taste/Buchstaben/Z  (already the selected choice)
+OK    /Tastenkombinationen/Container fokussieren/Taste/Ziffern/0
+OK    /Tastenkombinationen/Container fokussieren/Taste/Ziffern/1
+OK    /Tastenkombinationen/Container fokussieren/Taste/Ziffern/2
+OK    /Tastenkombinationen/Container fokussieren/Taste/Ziffern/3
+OK    /Tastenkombinationen/Container fokussieren/Taste/Ziffern/4
+OK    /Tastenkombinationen/Container fokussieren/Taste/Ziffern/5
+OK    /Tastenkombinationen/Container fokussieren/Taste/Ziffern/6
+OK    /Tastenkombinationen/Container fokussieren/Taste/Ziffern/7
+OK    /Tastenkombinationen/Container fokussieren/Taste/Ziffern/8
+OK    /Tastenkombinationen/Container fokussieren/Taste/Ziffern/9
+OK    /Tastenkombinationen/Container fokussieren/Taste/Funktionstasten/F1
+OK    /Tastenkombinationen/Container fokussieren/Taste/Funktionstasten/F2
+OK    /Tastenkombinationen/Container fokussieren/Taste/Funktionstasten/F3
+OK    /Tastenkombinationen/Container fokussieren/Taste/Funktionstasten/F4
+OK    /Tastenkombinationen/Container fokussieren/Taste/Funktionstasten/F5
+OK    /Tastenkombinationen/Container fokussieren/Taste/Funktionstasten/F6
+OK    /Tastenkombinationen/Container fokussieren/Taste/Funktionstasten/F7
+OK    /Tastenkombinationen/Container fokussieren/Taste/Funktionstasten/F8
+OK    /Tastenkombinationen/Container fokussieren/Taste/Funktionstasten/F9
+OK    /Tastenkombinationen/Container fokussieren/Taste/Funktionstasten/F10
+OK    /Tastenkombinationen/Container fokussieren/Taste/Funktionstasten/F11
+OK    /Tastenkombinationen/Container fokussieren/Taste/Funktionstasten/F12
+OK    /Tastenkombinationen/Container fokussieren/Taste/Andere/,
+OK    /Tastenkombinationen/Container fokussieren/Taste/Andere/.
+OK    /Tastenkombinationen/Container fokussieren/Taste/Andere/`
+OK    /Tastenkombinationen/Container fokussieren/Taste/Andere/Space
+OK    /Tastenkombinationen/Container fokussieren/Taste/Andere/Tab
+OK    /Tastenkombinationen/Container fokussieren/Taste/Andere/Enter
+OK    /Tastenkombinationen/Container fokussieren/Taste/Andere/Esc
+OK    /Tastenkombinationen/Spot-Suche/Aktiviert
+SKIP  /Tastenkombinationen/Spot-Suche/Zusatztaste/Ctrl  (already the selected choice)
+OK    /Tastenkombinationen/Spot-Suche/Zusatztaste/Alt
+OK    /Tastenkombinationen/Spot-Suche/Zusatztaste/Shift
+OK    /Tastenkombinationen/Spot-Suche/Zusatztaste/Ctrl+Alt
+OK    /Tastenkombinationen/Spot-Suche/Zusatztaste/Ctrl+Shift
+OK    /Tastenkombinationen/Spot-Suche/Zusatztaste/Alt+Shift
+OK    /Tastenkombinationen/Spot-Suche/Zusatztaste/Ctrl+Alt+Shift
+OK    /Tastenkombinationen/Spot-Suche/Zusatztaste/Win
+OK    /Tastenkombinationen/Spot-Suche/Taste/Buchstaben/A
+OK    /Tastenkombinationen/Spot-Suche/Taste/Buchstaben/B
+OK    /Tastenkombinationen/Spot-Suche/Taste/Buchstaben/C
+OK    /Tastenkombinationen/Spot-Suche/Taste/Buchstaben/D
+OK    /Tastenkombinationen/Spot-Suche/Taste/Buchstaben/E
+OK    /Tastenkombinationen/Spot-Suche/Taste/Buchstaben/F
+OK    /Tastenkombinationen/Spot-Suche/Taste/Buchstaben/G
+OK    /Tastenkombinationen/Spot-Suche/Taste/Buchstaben/H
+OK    /Tastenkombinationen/Spot-Suche/Taste/Buchstaben/I
+OK    /Tastenkombinationen/Spot-Suche/Taste/Buchstaben/J
+OK    /Tastenkombinationen/Spot-Suche/Taste/Buchstaben/K
+OK    /Tastenkombinationen/Spot-Suche/Taste/Buchstaben/L
+OK    /Tastenkombinationen/Spot-Suche/Taste/Buchstaben/M
+OK    /Tastenkombinationen/Spot-Suche/Taste/Buchstaben/N
+OK    /Tastenkombinationen/Spot-Suche/Taste/Buchstaben/O
+OK    /Tastenkombinationen/Spot-Suche/Taste/Buchstaben/P
+OK    /Tastenkombinationen/Spot-Suche/Taste/Buchstaben/Q
+OK    /Tastenkombinationen/Spot-Suche/Taste/Buchstaben/R
+OK    /Tastenkombinationen/Spot-Suche/Taste/Buchstaben/S
+OK    /Tastenkombinationen/Spot-Suche/Taste/Buchstaben/T
+OK    /Tastenkombinationen/Spot-Suche/Taste/Buchstaben/U
+OK    /Tastenkombinationen/Spot-Suche/Taste/Buchstaben/V
+OK    /Tastenkombinationen/Spot-Suche/Taste/Buchstaben/W
+OK    /Tastenkombinationen/Spot-Suche/Taste/Buchstaben/X
+OK    /Tastenkombinationen/Spot-Suche/Taste/Buchstaben/Y
+OK    /Tastenkombinationen/Spot-Suche/Taste/Buchstaben/Z
+OK    /Tastenkombinationen/Spot-Suche/Taste/Ziffern/0
+OK    /Tastenkombinationen/Spot-Suche/Taste/Ziffern/1
+OK    /Tastenkombinationen/Spot-Suche/Taste/Ziffern/2
+OK    /Tastenkombinationen/Spot-Suche/Taste/Ziffern/3
+OK    /Tastenkombinationen/Spot-Suche/Taste/Ziffern/4
+OK    /Tastenkombinationen/Spot-Suche/Taste/Ziffern/5
+OK    /Tastenkombinationen/Spot-Suche/Taste/Ziffern/6
+OK    /Tastenkombinationen/Spot-Suche/Taste/Ziffern/7
+OK    /Tastenkombinationen/Spot-Suche/Taste/Ziffern/8
+OK    /Tastenkombinationen/Spot-Suche/Taste/Ziffern/9
+OK    /Tastenkombinationen/Spot-Suche/Taste/Funktionstasten/F1
+OK    /Tastenkombinationen/Spot-Suche/Taste/Funktionstasten/F2
+OK    /Tastenkombinationen/Spot-Suche/Taste/Funktionstasten/F3
+OK    /Tastenkombinationen/Spot-Suche/Taste/Funktionstasten/F4
+OK    /Tastenkombinationen/Spot-Suche/Taste/Funktionstasten/F5
+OK    /Tastenkombinationen/Spot-Suche/Taste/Funktionstasten/F6
+OK    /Tastenkombinationen/Spot-Suche/Taste/Funktionstasten/F7
+OK    /Tastenkombinationen/Spot-Suche/Taste/Funktionstasten/F8
+OK    /Tastenkombinationen/Spot-Suche/Taste/Funktionstasten/F9
+OK    /Tastenkombinationen/Spot-Suche/Taste/Funktionstasten/F10
+OK    /Tastenkombinationen/Spot-Suche/Taste/Funktionstasten/F11
+OK    /Tastenkombinationen/Spot-Suche/Taste/Funktionstasten/F12
+OK    /Tastenkombinationen/Spot-Suche/Taste/Andere/,
+OK    /Tastenkombinationen/Spot-Suche/Taste/Andere/.
+SKIP  /Tastenkombinationen/Spot-Suche/Taste/Andere/`  (already the selected choice)
+OK    /Tastenkombinationen/Spot-Suche/Taste/Andere/Space
+OK    /Tastenkombinationen/Spot-Suche/Taste/Andere/Tab
+OK    /Tastenkombinationen/Spot-Suche/Taste/Andere/Enter
+OK    /Tastenkombinationen/Spot-Suche/Taste/Andere/Esc
+OK    /Intelligenter Desktop (automatisch ordnen)/Automatisches Ordnen aktivieren
+OK    /Intelligenter Desktop (automatisch ordnen)/Benachrichtigung, wenn eine Regel ausgeführt wird
+SKIP  /Intelligenter Desktop (automatisch ordnen)/Regeln…  (command, not invoked)
+SKIP  /Intelligenter Desktop (automatisch ordnen)/Jetzt ordnen  (command, not invoked)
+OK    /Protokollierung/Protokollierung aktivieren
+OK    /Protokollierung/Stufe/Debug
+SKIP  /Protokollierung/Stufe/Info  (already the selected choice)
+OK    /Protokollierung/Stufe/Warn
+OK    /Protokollierung/Stufe/Error
+OK    /Protokollierung/Kategorien/General
+OK    /Protokollierung/Kategorien/ContainerCreation
+OK    /Protokollierung/Kategorien/ContainerUpdate
+OK    /Protokollierung/Kategorien/UI
+OK    /Protokollierung/Kategorien/IconHandling
+OK    /Protokollierung/Kategorien/ImportExport
+OK    /Protokollierung/Kategorien/Settings
+OK    /Protokollierung/Kategorien/BackgroundValidation
+SKIP  /Protokollierung/Protokolldatei öffnen  (command, not invoked)
+SKIP  /Opsis-Einstellungen…  (command, not invoked)
