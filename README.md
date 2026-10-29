@@ -29,7 +29,7 @@
 
 **Opsis** (πρώην *MotionDesk Studio*) είναι μια native εφαρμογή WinForms για Windows 10/11 που φέρνει
 σε ένα μέρος ό,τι χρειάζεται για να προσαρμόσεις και να οργανώσεις την επιφάνεια εργασίας σου: ζωντανό
-wallpaper πάνω στο ίδιο το desktop (όχι ξεχωριστό παράθυρο), containers για τα εικονίδια στυλ Fences,
+wallpaper πάνω στο ίδιο το desktop (όχι ξεχωριστό παράθυρο), DeskContainers για την ομαδοποίηση εικονιδίων,
 ζώνες στοίχισης παραθύρων στυλ FancyZones/PowerToys, native πάντα-από-πάνω widgets, ένα πραγματικό
 σύστημα plugin, και δεκάδες μικρότερες λειτουργίες ποιότητας ζωής — χωρίς Electron, χωρίς περιττό
 runtime.
@@ -121,7 +121,7 @@ installer.iss   Script Inno Setup
 
 **Opsis** (formerly *MotionDesk Studio*) is a native WinForms desktop-customization suite for
 Windows 10/11. It renders live wallpapers directly on the desktop (WorkerW/Progman injection, the
-same technique behind tools like Lively Wallpaper), gives you Fences-style icon containers,
+same technique behind tools like Lively Wallpaper), gives you icon DeskContainers,
 FancyZones-style window snapping, native always-on-top widgets, a real plugin system, and
 system-wide quality-of-life tooling — all as a single lightweight app with no browser runtime
 bundled in.
