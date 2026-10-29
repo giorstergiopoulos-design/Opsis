@@ -13,6 +13,9 @@ namespace MotionDesk.UI
     // Ισχύει αμέσως για κάθε owner-draw στοιχείο (NavButton/StatCard/κ.λπ.) στο επόμενο paint.
     public static class UiTheme
     {
+        // the shared Opsis.UI controls read their colours from these tokens (installed once, before the first control paints)
+        static UiTheme() => OpsisUiTokens.Install();
+
         public static Color Background => ThemeManager.Current.Background;
         public static Color Sidebar => ThemeManager.Current.Sidebar;
         public static Color Surface => ThemeManager.Current.Surface;

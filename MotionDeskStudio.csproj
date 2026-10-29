@@ -68,6 +68,12 @@
       <HintPath>libs\OpsisNewsCrawler.Plugin.Abstractions.dll</HintPath>
       <Private>true</Private>
     </Reference>
+    <Using Include="Opsis.UI" />
+    <!-- Shared flat controls of the Opsis family (FlatCheckBox / FlatSlider / FlatComboBox / FlatButton / FlatTabs); version in libs\Opsis.UI.version.txt -->
+    <Reference Include="Opsis.UI">
+      <HintPath>libs\Opsis.UI.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
