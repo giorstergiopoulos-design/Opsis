@@ -7,11 +7,11 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     // Opsis integration: the upstream settings windows hard-code a light theme. When Opsis starts the engine it passes its
     // current palette in OPSIS_THEME ("dark;bg;surface;hover;border;text;text2;muted;accent", hex RRGGBB). Every settings /
-    // dialog window (never the fences themselves) is re-coloured to that palette after it loads and while it is open.
+    // dialog window (never the containers themselves) is re-coloured to that palette after it loads and while it is open.
     internal static class OpsisTheme
     {
         private static bool _enabled;
@@ -56,13 +56,13 @@ namespace Desktop_Fences
 
         private static Color Hex(string s) => (Color)ColorConverter.ConvertFromString("#" + s.TrimStart('#'));
 
-        private static bool IsFenceOrOverlay(Window w) =>
-            w is NonActivatingWindow || w is SmartToast || w is DrawFenceOverlay || w is FenceFocusFormManager
+        private static bool IsContainerOrOverlay(Window w) =>
+            w is NonActivatingWindow || w is SmartToast || w is DrawContainerOverlay || w is ContainerFocusFormManager
             || w.GetType().Name.Contains("WaitWindow") || w.Title == "" && w.WindowStyle == WindowStyle.None && w.AllowsTransparency && w.Width < 400 && w.Height < 120;
 
         private static void OnWindowLoaded(object sender, RoutedEventArgs e)
         {
-            if (sender is not Window w || IsFenceOrOverlay(w) || !ReferenceEquals(e.OriginalSource, w)) return;
+            if (sender is not Window w || IsContainerOrOverlay(w) || !ReferenceEquals(e.OriginalSource, w)) return;
             if (!_enabled && !Loc.Greek) return;
             void Pass() { try { if (_enabled) Recolor(w); if (Loc.Greek) TranslateTree(w); } catch (Exception ex) { Log(ex); } }
             Pass();

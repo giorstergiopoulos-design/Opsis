@@ -17,7 +17,7 @@ using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using Microsoft.Win32;
 
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     public class TrayManager : IDisposable
     {
@@ -43,19 +43,19 @@ namespace Desktop_Fences
         public static bool IsStartWithWindows { get; private set; }
 
         private const string RUN_KEY_PATH = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
-        private const string APP_NAME = "Desktop Fences";
+        private const string APP_NAME = "Opsis DeskContainers";
 
 
-        private static readonly List<HiddenFence> HiddenFences = new List<HiddenFence>();
+        private static readonly List<HiddenContainer> HiddenContainers = new List<HiddenContainer>();
     
-        private ToolStripMenuItem _showHiddenFencesItem;
+        private ToolStripMenuItem _showHiddenContainersItem;
 
         private ToolStripMenuItem _profilesMenuItem;
         public static TrayManager Instance { get; private set; } // Singleton instance
 
-        private bool _areFencesTempHidden = false;
+        private bool _areContainersTempHidden = false;
     
-        private List<NonActivatingWindow> _tempHiddenFences = new List<NonActivatingWindow>();
+        private List<NonActivatingWindow> _tempHiddenContainers = new List<NonActivatingWindow>();
 
         private bool Showintray = SettingsManager.ShowInTray;
 
@@ -66,15 +66,15 @@ namespace Desktop_Fences
         private ToolStripMenuItem _automationMenuItem; //
         private ToolStripMenuItem _autoOrganizeMenuItem; // NEW
 
-        private class HiddenFence
+        private class HiddenContainer
         {
             public string Title { get; set; }
             public NonActivatingWindow Window { get; set; }
         }
 
-        public static string[] HiddenTitles() { lock (HiddenFences) return HiddenFences.Select(h => h.Title).ToArray(); }
+        public static string[] HiddenTitles() { lock (HiddenContainers) return HiddenContainers.Select(h => h.Title).ToArray(); }
 
-        public static void ShowHiddenFenceByTitle(string title) { ShowHiddenFence(title); }
+        public static void ShowHiddenContainerByTitle(string title) { ShowHiddenContainer(title); }
 
         public void UpdateAutomationMenuCheck(bool isChecked)
         {
@@ -117,17 +117,17 @@ namespace Desktop_Fences
 
         private void OnTrayIconDoubleClick(object sender, EventArgs e)
         {
-            // 1. If the fences are officially hidden (either by timer or tray), wake them up!
-            if (FenceManager._areFencesAutoHidden)
+            // 1. If the containers are officially hidden (either by timer or tray), wake them up!
+            if (ContainerManager._areContainersAutoHidden)
             {
-                FenceManager.WakeUpFences();
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, "Tray Double-Click: Woke up fences.");
+                ContainerManager.WakeUpContainers();
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, "Tray Double-Click: Woke up containers.");
             }
             // 2. Otherwise, they are visible, so force them into the official hidden state.
             else
             {
-                FenceManager.ForceHideFences();
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, "Tray Double-Click: Forced fences to hide.");
+                ContainerManager.ForceHideContainers();
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, "Tray Double-Click: Forced containers to hide.");
             }
 
             UpdateTrayIcon();
@@ -160,7 +160,7 @@ namespace Desktop_Fences
                     if (success)
                     {
                         // Show notification that export was successful
-                        _trayIcon.BalloonTipTitle = "Desktop Fences Plus";
+                        _trayIcon.BalloonTipTitle = "Opsis DeskContainers";
                         _trayIcon.BalloonTipText = "Registry values exported successfully to program folder.";
                         _trayIcon.BalloonTipIcon = ToolTipIcon.Info;
                         _trayIcon.ShowBalloonTip(3000); // Show for 3 seconds
@@ -171,7 +171,7 @@ namespace Desktop_Fences
                     else
                     {
                         // Show error notification
-                        _trayIcon.BalloonTipTitle = "Desktop Fences Plus - Error";
+                        _trayIcon.BalloonTipTitle = "Opsis DeskContainers - Error";
                         _trayIcon.BalloonTipText = "Failed to export registry values. Check log for details.";
                         _trayIcon.BalloonTipIcon = ToolTipIcon.Error;
                         _trayIcon.ShowBalloonTip(3000);
@@ -197,12 +197,12 @@ namespace Desktop_Fences
             }
         }
 
-        private string GetFocusFenceHotkeyString()
+        private string GetFocusContainerHotkeyString()
         {
             try
             {
-                string mod = SettingsManager.FocusFenceModifier ?? "";
-                int key = SettingsManager.FocusFenceKey;
+                string mod = SettingsManager.FocusContainerModifier ?? "";
+                int key = SettingsManager.FocusContainerKey;
 
                 if (string.IsNullOrWhiteSpace(mod) && key == 0) return "Not Set";
 
@@ -306,19 +306,19 @@ namespace Desktop_Fences
             trayMenu.Items.Add(new ToolStripSeparator());
             // --- END SMART DESKTOP OPTIONS ---
 
-            trayMenu.Items.Add(Loc.T("Reload All Fences"), null, async (s, e) => { await reloadAllFences(); });
+            trayMenu.Items.Add(Loc.T("Reload All Containers"), null, async (s, e) => { await reloadAllContainers(); });
 
             trayMenu.Items.Add(new ToolStripSeparator());
 
-            _showHiddenFencesItem = new ToolStripMenuItem(Loc.T("Show Hidden Fences")) { Enabled = false };
-            trayMenu.Items.Add(_showHiddenFencesItem);
+            _showHiddenContainersItem = new ToolStripMenuItem(Loc.T("Show Hidden Containers")) { Enabled = false };
+            trayMenu.Items.Add(_showHiddenContainersItem);
 
-            string focusHotkeyStr = GetFocusFenceHotkeyString();
-            trayMenu.Items.Add($"Focus Fence... ({focusHotkeyStr})", null, (s, e) =>
+            string focusHotkeyStr = GetFocusContainerHotkeyString();
+            trayMenu.Items.Add($"Focus Container... ({focusHotkeyStr})", null, (s, e) =>
             {
                 System.Windows.Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    FenceFocusFormManager focusManager = new FenceFocusFormManager();
+                    ContainerFocusFormManager focusManager = new ContainerFocusFormManager();
                     focusManager.ShowDialog();
                 }));
             });
@@ -329,12 +329,12 @@ namespace Desktop_Fences
             _trayIcon.ContextMenuStrip = trayMenu;
 
             UpdateProfilesMenu();
-            UpdateHiddenFencesMenu();
+            UpdateHiddenContainersMenu();
             UpdateTrayIcon();
         }
 
 
-        public static async Task reloadAllFences()
+        public static async Task reloadAllContainers()
         {
             var waitWindow = new System.Windows.Window
             {
@@ -394,7 +394,7 @@ namespace Desktop_Fences
             try
             {
                 var assembly = Assembly.GetExecutingAssembly();
-                var resourceStream = assembly.GetManifestResourceStream("Desktop_Fences.Resources.logo1.png");
+                var resourceStream = assembly.GetManifestResourceStream("OpsisContainers.Resources.logo1.png");
                 if (resourceStream != null)
                 {
                     var bitmap = new System.Windows.Media.Imaging.BitmapImage();
@@ -433,7 +433,7 @@ namespace Desktop_Fences
 
             var waitText = new System.Windows.Controls.TextBlock
             {
-                Text = Loc.T("Reloading all fences, please wait..."),
+                Text = Loc.T("Reloading all containers, please wait..."),
                 FontFamily = new System.Windows.Media.FontFamily("Segoe UI"),
                 FontSize = 12,
                 Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(95, 99, 104)),
@@ -456,13 +456,13 @@ namespace Desktop_Fences
                     {
                         // 1. Close all windows
                         var windows = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>().ToList();
-                        foreach (var fence in windows)
+                        foreach (var container in windows)
                         {
-                            fence.Close();
+                            container.Close();
                         }
 
-                        // 2. Reload Logic (This calls FenceManager)
-                        FenceManager.ReloadFences();
+                        // 2. Reload Logic (This calls ContainerManager)
+                        ContainerManager.ReloadContainers();
 
                         // FIX 2: Force Garbage Collection
                         // Since we just closed heavy WPF windows, we force a collection to release 
@@ -475,7 +475,7 @@ namespace Desktop_Fences
             }
             catch (Exception ex)
             {
-                MessageBoxesManager.ShowOKOnlyMessageBoxFormStatic($"An error occurred while reloading fences: {ex.Message}", "Error");
+                MessageBoxesManager.ShowOKOnlyMessageBoxFormStatic($"An error occurred while reloading containers: {ex.Message}", "Error");
             }
             finally
             {
@@ -487,60 +487,60 @@ namespace Desktop_Fences
         }
 
 
-        public static void AddHiddenFence(NonActivatingWindow fence)
+        public static void AddHiddenContainer(NonActivatingWindow container)
         {
-            if (fence == null || string.IsNullOrEmpty(fence.Title)) return;
-            fence.Dispatcher.Invoke(() =>
+            if (container == null || string.IsNullOrEmpty(container.Title)) return;
+            container.Dispatcher.Invoke(() =>
             {
-                fence.Visibility = Visibility.Hidden;
+                container.Visibility = Visibility.Hidden;
             });
 
-            if (!HiddenFences.Any(f => f.Title == fence.Title))
+            if (!HiddenContainers.Any(f => f.Title == container.Title))
             {
-                HiddenFences.Add(new HiddenFence { Title = fence.Title, Window = fence });
-                fence.Visibility = System.Windows.Visibility.Hidden;
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Added fence '{fence.Title}' to hidden list");
-                Instance?.UpdateHiddenFencesMenu();
+                HiddenContainers.Add(new HiddenContainer { Title = container.Title, Window = container });
+                container.Visibility = System.Windows.Visibility.Hidden;
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Added container '{container.Title}' to hidden list");
+                Instance?.UpdateHiddenContainersMenu();
                 Instance?.UpdateTrayIcon();
             }
         }
 
-        public static void ShowHiddenFence(string title)
+        public static void ShowHiddenContainer(string title)
         {
-            var hiddenFence = HiddenFences.FirstOrDefault(f => f.Title == title);
-            if (hiddenFence != null)
+            var hiddenContainer = HiddenContainers.FirstOrDefault(f => f.Title == title);
+            if (hiddenContainer != null)
             {
-                hiddenFence.Window.Dispatcher.Invoke(() =>
+                hiddenContainer.Window.Dispatcher.Invoke(() =>
                 {
-                    hiddenFence.Window.Visibility = Visibility.Visible;
-                    hiddenFence.Window.Activate();
-                    hiddenFence.Window.Show();
+                    hiddenContainer.Window.Visibility = Visibility.Visible;
+                    hiddenContainer.Window.Activate();
+                    hiddenContainer.Window.Show();
                 });
 
-                var fenceData = FenceManager.GetFenceData().FirstOrDefault(f => f.Title == title);
-                if (fenceData != null)
+                var containerData = ContainerManager.GetContainerData().FirstOrDefault(f => f.Title == title);
+                if (containerData != null)
                 {
-                    FenceManager.UpdateFenceProperty(fenceData, "IsHidden", "false", $"Showed fence '{title}'");
+                    ContainerManager.UpdateContainerProperty(containerData, "IsHidden", "false", $"Showed container '{title}'");
                 }
-                HiddenFences.Remove(hiddenFence);
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Showed fence '{title}'");
-                Instance?.UpdateHiddenFencesMenu();
+                HiddenContainers.Remove(hiddenContainer);
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Showed container '{title}'");
+                Instance?.UpdateHiddenContainersMenu();
                 Instance?.UpdateTrayIcon();
             }
         }
 
-        public void UpdateHiddenFencesMenu()
+        public void UpdateHiddenContainersMenu()
         {
-            if (_showHiddenFencesItem == null) return;
+            if (_showHiddenContainersItem == null) return;
 
-            _showHiddenFencesItem.DropDownItems.Clear();
-            _showHiddenFencesItem.Enabled = HiddenFences.Count > 0;
+            _showHiddenContainersItem.DropDownItems.Clear();
+            _showHiddenContainersItem.Enabled = HiddenContainers.Count > 0;
 
-            foreach (var fence in HiddenFences)
+            foreach (var container in HiddenContainers)
             {
-                var menuItem = new ToolStripMenuItem(fence.Title);
-                menuItem.Click += (s, e) => ShowHiddenFence(fence.Title);
-                _showHiddenFencesItem.DropDownItems.Add(menuItem);
+                var menuItem = new ToolStripMenuItem(container.Title);
+                menuItem.Click += (s, e) => ShowHiddenContainer(container.Title);
+                _showHiddenContainersItem.DropDownItems.Add(menuItem);
             }
         }
 
@@ -575,7 +575,7 @@ namespace Desktop_Fences
                         ProfileManager.SwitchToProfile(profile.Name);
                         // Update the 'Home' profile so automation reverts to this manual choice later
                         ProfileManager.SetManualBaseProfile(profile.Name);
-                        _trayIcon.Text = $"Desktop Fences ({profile.Name})";
+                        _trayIcon.Text = $"Opsis DeskContainers ({profile.Name})";
                         UpdateProfilesMenu();
                     };
                 }
@@ -634,7 +634,7 @@ namespace Desktop_Fences
                 // B. AGGRESSIVE CLEANUP: Always try to delete the old shortcut 
                 // to ensure we never have double-launching or "ghost" shortcuts.
                 string startupPath = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
-                string shortcutPath = Path.Combine(startupPath, "Desktop Fences.lnk");
+                string shortcutPath = Path.Combine(startupPath, "Opsis DeskContainers.lnk");
 
                 if (File.Exists(shortcutPath))
                 {
@@ -659,7 +659,7 @@ namespace Desktop_Fences
             if (RegistryHelper.IsStartupMigrated()) return;
 
             string startupPath = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
-            string shortcutPath = Path.Combine(startupPath, "Desktop Fences.lnk");
+            string shortcutPath = Path.Combine(startupPath, "Opsis DeskContainers.lnk");
 
             // If the old shortcut exists, it means the user WANTED start-up enabled.
             // We must transfer that intent to the Registry.
@@ -716,7 +716,7 @@ namespace Desktop_Fences
 
             // Fallback: Check if the old shortcut exists (in case migration hasn't run yet)
             string startupPath = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
-            return File.Exists(Path.Combine(startupPath, "Desktop Fences.lnk"));
+            return File.Exists(Path.Combine(startupPath, "Opsis DeskContainers.lnk"));
         }
         // --- NEW METHODS END ---
 
@@ -762,11 +762,11 @@ namespace Desktop_Fences
             if (Showintray == true)
             {
                 // FIX: Update the tooltip text to match the current profile
-                _trayIcon.Text = $"Desktop Fences ({ProfileManager.CurrentProfileName})";
+                _trayIcon.Text = $"Opsis DeskContainers ({ProfileManager.CurrentProfileName})";
 
-                if (HiddenFences.Count > 0)
+                if (HiddenContainers.Count > 0)
                 {
-                    _trayIcon.Icon = GenerateIconWithNumber(HiddenFences.Count + _tempHiddenFences.Count);
+                    _trayIcon.Icon = GenerateIconWithNumber(HiddenContainers.Count + _tempHiddenContainers.Count);
                 }
                 else
                 {
@@ -782,16 +782,16 @@ namespace Desktop_Fences
         }
 
         /// <summary>
-        /// Clears all references to hidden fences. 
-        /// Call this when switching profiles or reloading fences to prevent "Zombie" windows.
+        /// Clears all references to hidden containers. 
+        /// Call this when switching profiles or reloading containers to prevent "Zombie" windows.
         /// </summary>
 // Add inside TrayManager class
-        public void ClearHiddenFences()
+        public void ClearHiddenContainers()
         {
-            HiddenFences.Clear();
-            _tempHiddenFences.Clear();
-            _areFencesTempHidden = false;
-            UpdateHiddenFencesMenu();
+            HiddenContainers.Clear();
+            _tempHiddenContainers.Clear();
+            _areContainersTempHidden = false;
+            UpdateHiddenContainersMenu();
             UpdateTrayIcon();
         }
 

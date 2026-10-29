@@ -5,11 +5,11 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using Desktop_Fences;
+using OpsisContainers;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
-    public class FenceFocusFormManager : Window
+    public class ContainerFocusFormManager : Window
     {
         // --- Win32 API for Z-Order Management ---
         [System.Runtime.InteropServices.DllImport("user32.dll")]
@@ -21,28 +21,28 @@ namespace Desktop_Fences
         // ----------------------------------------
 
         private TextBox searchBox;
-        private ListBox fenceListBox;
-        private List<FenceItem> allFences;
+        private ListBox containerListBox;
+        private List<ContainerItem> allContainers;
 
-        // Helper class to store fence data
+        // Helper class to store container data
 
-        // Helper class to store fence data
-        private class FenceItem
+        // Helper class to store container data
+        private class ContainerItem
         {
             public string Title { get; set; }
             public NonActivatingWindow WindowRef { get; set; }
             public override string ToString() => Title;
         }
 
-        public FenceFocusFormManager()
+        public ContainerFocusFormManager()
         {
             InitializeModernComponent();
-            LoadActiveFences();
+            LoadActiveContainers();
         }
 
         private void InitializeModernComponent()
         {
-            Title = Loc.T("Focus Fence");
+            Title = Loc.T("Focus Container");
             Width = 450;
             Height = 550;
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
@@ -86,7 +86,7 @@ namespace Desktop_Fences
         {
             if (e.Key == Key.Enter)
             {
-                FocusSelectedFence();
+                FocusSelectedContainer();
                 e.Handled = true;
             }
             else if (e.Key == Key.Escape)
@@ -97,9 +97,9 @@ namespace Desktop_Fences
             }
             else if (e.Key == Key.Down && searchBox.IsFocused)
             {
-                fenceListBox.Focus();
-                if (fenceListBox.Items.Count > 0 && fenceListBox.SelectedIndex == -1)
-                    fenceListBox.SelectedIndex = 0;
+                containerListBox.Focus();
+                if (containerListBox.Items.Count > 0 && containerListBox.SelectedIndex == -1)
+                    containerListBox.SelectedIndex = 0;
             }
         }
 
@@ -118,7 +118,7 @@ namespace Desktop_Fences
 
             TextBlock titleText = new TextBlock
             {
-                Text = Loc.T("Focus Fence"),
+                Text = Loc.T("Focus Container"),
                 FontSize = 14,
                 FontWeight = FontWeights.Bold,
                 Foreground = Brushes.White,
@@ -181,7 +181,7 @@ namespace Desktop_Fences
 
             TextBlock searchLabel = new TextBlock
             {
-                Text = Loc.T("Search active fences:"),
+                Text = Loc.T("Search active containers:"),
                 FontSize = 12,
                 FontWeight = FontWeights.Medium,
                 Foreground = new SolidColorBrush(Color.FromRgb(95, 99, 104)),
@@ -200,7 +200,7 @@ namespace Desktop_Fences
             };
             searchBox.TextChanged += SearchBox_TextChanged;
 
-            fenceListBox = new ListBox
+            containerListBox = new ListBox
             {
                 Height = 280, // Fixed height for scrollable area
                 BorderBrush = new SolidColorBrush(Color.FromRgb(218, 220, 224)),
@@ -209,7 +209,7 @@ namespace Desktop_Fences
                 FontSize = 13,
                 Padding = new Thickness(4)
             };
-            fenceListBox.MouseDoubleClick += (s, e) => FocusSelectedFence();
+            containerListBox.MouseDoubleClick += (s, e) => FocusSelectedContainer();
 
             fieldGrid.Children.Add(searchLabel);
             Grid.SetRow(searchLabel, 0);
@@ -217,8 +217,8 @@ namespace Desktop_Fences
             fieldGrid.Children.Add(searchBox);
             Grid.SetRow(searchBox, 1);
 
-            fieldGrid.Children.Add(fenceListBox);
-            Grid.SetRow(fenceListBox, 2);
+            fieldGrid.Children.Add(containerListBox);
+            Grid.SetRow(containerListBox, 2);
 
             fieldBorder.Child = fieldGrid;
             contentPanel.Children.Add(fieldBorder);
@@ -267,7 +267,7 @@ namespace Desktop_Fences
 
             Button focusButton = new Button
             {
-                Content = Loc.T("Focus Fence"),
+                Content = Loc.T("Focus Container"),
                 Height = 36,
                 MinWidth = 80,
                 FontSize = 13,
@@ -278,7 +278,7 @@ namespace Desktop_Fences
                 Background = GetAccentColorBrush(),
                 Foreground = Brushes.White
             };
-            focusButton.Click += (s, e) => FocusSelectedFence();
+            focusButton.Click += (s, e) => FocusSelectedContainer();
 
             buttonPanel.Children.Add(cancelButton);
             buttonPanel.Children.Add(focusButton);
@@ -288,49 +288,49 @@ namespace Desktop_Fences
             rootGrid.Children.Add(footerBorder);
         }
 
-        private void LoadActiveFences()
+        private void LoadActiveContainers()
         {
-            allFences = new List<FenceItem>();
+            allContainers = new List<ContainerItem>();
 
-            // Find all active fence windows
-            var fenceWindows = Application.Current.Windows.OfType<NonActivatingWindow>().ToList();
+            // Find all active container windows
+            var containerWindows = Application.Current.Windows.OfType<NonActivatingWindow>().ToList();
 
-            foreach (var win in fenceWindows)
+            foreach (var win in containerWindows)
             {
                 string title = win.Title;
-                if (string.IsNullOrWhiteSpace(title)) title = "Unnamed Fence";
+                if (string.IsNullOrWhiteSpace(title)) title = "Unnamed Container";
 
-                allFences.Add(new FenceItem { Title = title, WindowRef = win });
+                allContainers.Add(new ContainerItem { Title = title, WindowRef = win });
             }
 
             // Alphabetical sort
-            allFences = allFences.OrderBy(f => f.Title).ToList();
-            UpdateListBox(allFences);
+            allContainers = allContainers.OrderBy(f => f.Title).ToList();
+            UpdateListBox(allContainers);
         }
 
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (allFences == null) return;
+            if (allContainers == null) return;
 
             string query = searchBox.Text.ToLower();
-            var filtered = allFences.Where(f => f.Title.ToLower().Contains(query)).ToList();
+            var filtered = allContainers.Where(f => f.Title.ToLower().Contains(query)).ToList();
             UpdateListBox(filtered);
         }
 
-        private void UpdateListBox(List<FenceItem> items)
+        private void UpdateListBox(List<ContainerItem> items)
         {
-            fenceListBox.Items.Clear();
+            containerListBox.Items.Clear();
             foreach (var item in items)
             {
-                fenceListBox.Items.Add(item);
+                containerListBox.Items.Add(item);
             }
-            if (fenceListBox.Items.Count > 0)
-                fenceListBox.SelectedIndex = 0;
+            if (containerListBox.Items.Count > 0)
+                containerListBox.SelectedIndex = 0;
         }
 
-        private void FocusSelectedFence()
+        private void FocusSelectedContainer()
         {
-            if (fenceListBox.SelectedItem is FenceItem selected)
+            if (containerListBox.SelectedItem is ContainerItem selected)
             {
                 NonActivatingWindow targetWin = selected.WindowRef;
 
@@ -345,25 +345,25 @@ namespace Desktop_Fences
                         // 1. Yield foreground focus back to the previous app
                         await System.Threading.Tasks.Task.Delay(100);
 
-                        // 2. Wake up fences quietly in the background
-                        if (FenceManager._areFencesAutoHidden)
+                        // 2. Wake up containers quietly in the background
+                        if (ContainerManager._areContainersAutoHidden)
                         {
-                            FenceManager.WakeUpFences();
+                            ContainerManager.WakeUpContainers();
                             await System.Threading.Tasks.Task.Delay(50);
                         }
 
                         // 3. Grab the target window
                         targetWin.Topmost = true;
 
-                        // 4. THE TRIGGER: This activates the fence, causing Windows to pull ALL fences up.
+                        // 4. THE TRIGGER: This activates the container, causing Windows to pull ALL containers up.
                         targetWin.Activate();
                         targetWin.Focus();
 
                         // 5. THE BRUTAL FIX: Let the OS finish its group-pull, then slam the others down.
                         await System.Threading.Tasks.Task.Delay(20);
 
-                        var otherFences = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>().Where(w => w != targetWin).ToList();
-                        foreach (var f in otherFences)
+                        var otherContainers = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>().Where(w => w != targetWin).ToList();
+                        foreach (var f in otherContainers)
                         {
                             var hwnd = new System.Windows.Interop.WindowInteropHelper(f).Handle;
                             SetWindowPos(hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
@@ -374,7 +374,7 @@ namespace Desktop_Fences
                         {
                             targetWin.Topmost = false;
                             targetWin.Deactivated -= deactivatedHandler;
-                            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Fence '{selected.Title}' released from Topmost.");
+                            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Container '{selected.Title}' released from Topmost.");
                         };
 
                         targetWin.Deactivated += deactivatedHandler;

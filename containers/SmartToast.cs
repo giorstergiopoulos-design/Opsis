@@ -5,7 +5,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     public class SmartToast : Window
     {

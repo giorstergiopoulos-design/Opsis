@@ -6,7 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     public class AutoOrganizeForm : Window
     {
@@ -51,7 +51,7 @@ namespace Desktop_Fences
                 NameContains = r.NameContains,
                 TargetFolderPath = r.TargetFolderPath,
                 ConflictAction = r.ConflictAction,
-                AutoCreateFence = r.AutoCreateFence,
+                AutoCreateContainer = r.AutoCreateContainer,
                 IsEnabled = r.IsEnabled,
                 Priority = r.Priority,
                 LastRun = r.LastRun // <--- FIX: Actually copy the timestamp!
@@ -340,13 +340,13 @@ namespace Desktop_Fences
 
             sp3.Children.Add(new TextBlock { Text = Loc.T("Move To:"), FontSize = 12, FontWeight = FontWeights.Medium, Foreground = new SolidColorBrush(Color.FromRgb(95, 99, 104)), Margin = new Thickness(0, 0, 0, 8) });
             _cmbTarget = new ComboBox { FontSize = 13, Padding = new Thickness(8, 6, 8, 6), BorderBrush = new SolidColorBrush(Color.FromRgb(218, 220, 224)), BorderThickness = new Thickness(1), Background = Brushes.White, Foreground = new SolidColorBrush(Color.FromRgb(32, 33, 36)) };
-            LoadPortalFencesIntoDropdown();
+            LoadPortalContainersIntoDropdown();
             _cmbTarget.SelectionChanged += CmbTarget_SelectionChanged;
             sp3.Children.Add(_cmbTarget);
 
-            _chkAutoCreate = new CheckBox { Content = Loc.T("Generate new Portal Fence for this folder"), FontSize = 12, Foreground = new SolidColorBrush(Color.FromRgb(95, 99, 104)), Margin = new Thickness(4, 6, 0, 6), Visibility = Visibility.Collapsed };
-            _chkAutoCreate.Checked += (s, e) => { if (!_isLoadingRule && _selectedRule != null) _selectedRule.AutoCreateFence = true; };
-            _chkAutoCreate.Unchecked += (s, e) => { if (!_isLoadingRule && _selectedRule != null) _selectedRule.AutoCreateFence = false; };
+            _chkAutoCreate = new CheckBox { Content = Loc.T("Generate new Portal Container for this folder"), FontSize = 12, Foreground = new SolidColorBrush(Color.FromRgb(95, 99, 104)), Margin = new Thickness(4, 6, 0, 6), Visibility = Visibility.Collapsed };
+            _chkAutoCreate.Checked += (s, e) => { if (!_isLoadingRule && _selectedRule != null) _selectedRule.AutoCreateContainer = true; };
+            _chkAutoCreate.Unchecked += (s, e) => { if (!_isLoadingRule && _selectedRule != null) _selectedRule.AutoCreateContainer = false; };
             sp3.Children.Add(_chkAutoCreate);
 
             sp3.Children.Add(new TextBlock { Text = Loc.T("If File Already Exists:"), FontSize = 12, FontWeight = FontWeights.Medium, Foreground = new SolidColorBrush(Color.FromRgb(95, 99, 104)), Margin = new Thickness(0, 12, 0, 8) });
@@ -446,12 +446,12 @@ namespace Desktop_Fences
             };
         }
 
-        private void LoadPortalFencesIntoDropdown()
+        private void LoadPortalContainersIntoDropdown()
         {
             _cmbTarget.Items.Clear();
 
             // FIX: Pull live data and use the correct "Title" and "Path" schema properties!
-            foreach (var f in FenceManager.GetFenceData())
+            foreach (var f in ContainerManager.GetContainerData())
             {
                 try
                 {
@@ -463,7 +463,7 @@ namespace Desktop_Fences
 
                         if (!string.IsNullOrEmpty(fPath))
                         {
-                            ComboBoxItem item = new ComboBoxItem { Content = $"Portal fence: {fTitle}", Tag = fPath };
+                            ComboBoxItem item = new ComboBoxItem { Content = $"Portal container: {fTitle}", Tag = fPath };
                             _cmbTarget.Items.Add(item);
                         }
                     }
@@ -508,7 +508,7 @@ namespace Desktop_Fences
                 Extensions = newExt,
                 TargetFolderPath = newTarget,
                 ConflictAction = newConflict,
-                AutoCreateFence = _chkAutoCreate.IsChecked == true,
+                AutoCreateContainer = _chkAutoCreate.IsChecked == true,
                 IsEnabled = true
             };
 
@@ -558,7 +558,7 @@ namespace Desktop_Fences
             // Add this to update the timestamp!
             _txtLastRun.Text = rule.LastRun.HasValue ? $"Last successful run: {rule.LastRun.Value.ToString("g")}" : "Last successful run: Never";
             _cmbConflict.SelectedIndex = (int)rule.ConflictAction;
-            _chkAutoCreate.IsChecked = rule.AutoCreateFence;
+            _chkAutoCreate.IsChecked = rule.AutoCreateContainer;
 
             var matchingPreset = _presets.FirstOrDefault(p => p.Value == rule.Extensions).Key;
             if (matchingPreset != null)

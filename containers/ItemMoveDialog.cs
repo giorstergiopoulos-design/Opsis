@@ -19,11 +19,11 @@ using IWshRuntimeLibrary;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     /// <summary>
     /// Handles all item move operations with modern, tab-aware dialog interface.
-    /// Separated from FenceManager for better code organization and maintainability.
+    /// Separated from ContainerManager for better code organization and maintainability.
     /// </summary>
     public static class ItemMoveDialog
     {
@@ -33,7 +33,7 @@ namespace Desktop_Fences
         /// Shows the modern tab-aware Move dialog and handles the complete move operation
         /// </summary>
         /// <param name="item">The item to move</param>
-        /// <param name="sourceFence">The source fence containing the item</param>
+        /// <param name="sourceContainer">The source container containing the item</param>
         /// <param name="dispatcher">Dispatcher for UI operations</param>
 
 
@@ -56,7 +56,7 @@ namespace Desktop_Fences
         }
 
 
-        public static void ShowMoveDialog(dynamic item, dynamic sourceFence, Dispatcher dispatcher)
+        public static void ShowMoveDialog(dynamic item, dynamic sourceContainer, Dispatcher dispatcher)
         {
             // Create modern hierarchical Move dialog
             var moveWindow = new Window
@@ -167,7 +167,7 @@ namespace Desktop_Fences
             Grid.SetRow(headerBorder, 0);
             rootGrid.Children.Add(headerBorder);
 
-            // CONTENT: Hierarchical fence and tab list
+            // CONTENT: Hierarchical container and tab list
             Border contentBorder = new Border
             {
                 Padding = new Thickness(0),
@@ -177,7 +177,7 @@ namespace Desktop_Fences
             // Instructions
             TextBlock instructionsText = new TextBlock
             {
-                Text = Loc.T("Select a destination fence or tab:"),
+                Text = Loc.T("Select a destination container or tab:"),
                 FontSize = 13,
                 FontWeight = FontWeights.Medium,
                 Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(95, 99, 104)),
@@ -196,7 +196,7 @@ namespace Desktop_Fences
             StackPanel targetsPanel = new StackPanel();
 
             // Build hierarchical target list
-            BuildTargetsList(targetsPanel, sourceFence, item, moveWindow);
+            BuildTargetsList(targetsPanel, sourceContainer, item, moveWindow);
 
             scrollViewer.Content = targetsPanel;
 
@@ -257,51 +257,51 @@ namespace Desktop_Fences
         #region Private Helper Methods
 
         /// <summary>
-        /// Builds the hierarchical list of move targets (fences and tabs)
-        /// Updated to allow moving items between tabs within the SAME fence.
+        /// Builds the hierarchical list of move targets (containers and tabs)
+        /// Updated to allow moving items between tabs within the SAME container.
         /// </summary>
-        private static void BuildTargetsList(StackPanel targetsPanel, dynamic sourceFence, dynamic item, Window moveWindow)
+        private static void BuildTargetsList(StackPanel targetsPanel, dynamic sourceContainer, dynamic item, Window moveWindow)
         {
-            string sourceFenceId = sourceFence.Id?.ToString();
+            string sourceContainerId = sourceContainer.Id?.ToString();
 
             // Determine source state to filter out the "Current" location
-            bool sourceHasTabs = sourceFence.TabsEnabled?.ToString().ToLower() == "true";
+            bool sourceHasTabs = sourceContainer.TabsEnabled?.ToString().ToLower() == "true";
             int sourceActiveTab = -1;
             if (sourceHasTabs)
             {
-                sourceActiveTab = Convert.ToInt32(sourceFence.CurrentTab?.ToString() ?? "0");
+                sourceActiveTab = Convert.ToInt32(sourceContainer.CurrentTab?.ToString() ?? "0");
             }
 
-            var fenceData = FenceManager.GetFenceData();
+            var containerData = ContainerManager.GetContainerData();
 
-            foreach (var fence in fenceData)
+            foreach (var container in containerData)
             {
-                // 1. Global Exclusions: Portal and Note Fences cannot receive items via this dialog
-                if (fence.ItemsType?.ToString() == "Portal" || fence.ItemsType?.ToString() == "Note")
+                // 1. Global Exclusions: Portal and Note Containers cannot receive items via this dialog
+                if (container.ItemsType?.ToString() == "Portal" || container.ItemsType?.ToString() == "Note")
                     continue;
 
-                string currentFenceId = fence.Id?.ToString();
-                bool isSourceFence = (currentFenceId == sourceFenceId);
-                bool fenceHasTabs = fence.TabsEnabled?.ToString().ToLower() == "true";
+                string currentContainerId = container.Id?.ToString();
+                bool isSourceContainer = (currentContainerId == sourceContainerId);
+                bool containerHasTabs = container.TabsEnabled?.ToString().ToLower() == "true";
 
-                // 2. Source Fence Logic:
-                // If this is the source fence AND it doesn't have tabs, skip it entirely 
-                if (isSourceFence && !fenceHasTabs)
+                // 2. Source Container Logic:
+                // If this is the source container AND it doesn't have tabs, skip it entirely 
+                if (isSourceContainer && !containerHasTabs)
                     continue;
 
-                string fenceTitle = fence.Title?.ToString() ?? "Unnamed Fence";
+                string containerTitle = container.Title?.ToString() ?? "Unnamed Container";
 
-                if (!fenceHasTabs)
+                if (!containerHasTabs)
                 {
-                    // Regular fence - single target
-                    CreateMoveTargetButton(targetsPanel, fenceTitle, "🏠", fence, null, item, sourceFence, moveWindow, false);
+                    // Regular container - single target
+                    CreateMoveTargetButton(targetsPanel, containerTitle, "🏠", container, null, item, sourceContainer, moveWindow, false);
                 }
                 else
                 {
-                    // Tabbed fence - show parent fence + tabs
+                    // Tabbed container - show parent container + tabs
 
-                    // Parent fence header (non-clickable info)
-                    Border fenceHeaderBorder = new Border
+                    // Parent container header (non-clickable info)
+                    Border containerHeaderBorder = new Border
                     {
                         Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(248, 249, 250)),
                         BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(218, 220, 224)),
@@ -311,9 +311,9 @@ namespace Desktop_Fences
                         Padding = new Thickness(12, 8, 12, 8)
                     };
 
-                    StackPanel fenceHeaderPanel = new StackPanel { Orientation = Orientation.Horizontal };
+                    StackPanel containerHeaderPanel = new StackPanel { Orientation = Orientation.Horizontal };
 
-                    TextBlock fenceIcon = new TextBlock
+                    TextBlock containerIcon = new TextBlock
                     {
                         Text = Loc.T("📂"),
                         FontSize = 16,
@@ -321,9 +321,9 @@ namespace Desktop_Fences
                         VerticalAlignment = VerticalAlignment.Center
                     };
 
-                    TextBlock fenceNameText = new TextBlock
+                    TextBlock containerNameText = new TextBlock
                     {
-                        Text = fenceTitle,
+                        Text = containerTitle,
                         FontSize = 13,
                         FontWeight = FontWeights.SemiBold,
                         Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(32, 33, 36)),
@@ -331,9 +331,9 @@ namespace Desktop_Fences
                     };
 
                     // FIX: Smart label indicating omitted tab
-                    int tCount = GetTabCount(fence);
+                    int tCount = GetTabCount(container);
                     string countLabel = $"({tCount} tabs)";
-                    if (isSourceFence)
+                    if (isSourceContainer)
                     {
                         countLabel += " 1 omitted";
                     }
@@ -347,37 +347,37 @@ namespace Desktop_Fences
                         VerticalAlignment = VerticalAlignment.Center
                     };
 
-                    fenceHeaderPanel.Children.Add(fenceIcon);
-                    fenceHeaderPanel.Children.Add(fenceNameText);
-                    fenceHeaderPanel.Children.Add(tabCountText);
-                    fenceHeaderBorder.Child = fenceHeaderPanel;
-                    targetsPanel.Children.Add(fenceHeaderBorder);
+                    containerHeaderPanel.Children.Add(containerIcon);
+                    containerHeaderPanel.Children.Add(containerNameText);
+                    containerHeaderPanel.Children.Add(tabCountText);
+                    containerHeaderBorder.Child = containerHeaderPanel;
+                    targetsPanel.Children.Add(containerHeaderBorder);
 
-                    // Option to move to fence "Main Items" (Hidden storage)
-                    // We HIDE this if it is the Source Fence, to prevent confusion
-                    if (!isSourceFence)
+                    // Option to move to container "Main Items" (Hidden storage)
+                    // We HIDE this if it is the Source Container, to prevent confusion
+                    if (!isSourceContainer)
                     {
-                        CreateMoveTargetButton(targetsPanel, "📋 Main Items", "↳", fence, null, item, sourceFence, moveWindow, true);
+                        CreateMoveTargetButton(targetsPanel, "📋 Main Items", "↳", container, null, item, sourceContainer, moveWindow, true);
                     }
 
                     // Individual tabs
-                    var tabs = fence.Tabs as JArray ?? new JArray();
+                    var tabs = container.Tabs as JArray ?? new JArray();
                     for (int i = 0; i < tabs.Count; i++)
                     {
                         // EXCLUSION LOGIC:
-                        // If this is the Source Fence AND this is the Active Tab, skip it.
-                        if (isSourceFence && i == sourceActiveTab)
+                        // If this is the Source Container AND this is the Active Tab, skip it.
+                        if (isSourceContainer && i == sourceActiveTab)
                             continue;
 
                         var tab = tabs[i] as JObject;
                         if (tab != null)
                         {
                             string tabName = tab["TabName"]?.ToString() ?? $"Tab {i}";
-                            CreateMoveTargetButton(targetsPanel, $"📄 {tabName}", "↳", fence, i, item, sourceFence, moveWindow, true);
+                            CreateMoveTargetButton(targetsPanel, $"📄 {tabName}", "↳", container, i, item, sourceContainer, moveWindow, true);
                         }
                     }
 
-                    // Add separator after tabbed fence group
+                    // Add separator after tabbed container group
                     Border separator = new Border
                     {
                         Height = 1,
@@ -390,13 +390,13 @@ namespace Desktop_Fences
         }
 
         /// <summary>
-        /// Gets the number of tabs for a fence (for display purposes)
+        /// Gets the number of tabs for a container (for display purposes)
         /// </summary>
-        private static int GetTabCount(dynamic fence)
+        private static int GetTabCount(dynamic container)
         {
             try
             {
-                var tabs = fence.Tabs as JArray;
+                var tabs = container.Tabs as JArray;
                 return tabs?.Count ?? 0;
             }
             catch
@@ -406,10 +406,10 @@ namespace Desktop_Fences
         }
 
         /// <summary>
-        /// Creates a clickable move target button for fence or tab
+        /// Creates a clickable move target button for container or tab
         /// </summary>
         private static void CreateMoveTargetButton(StackPanel parent, string displayText, string prefix,
-            dynamic targetFence, int? targetTabIndex, dynamic item, dynamic sourceFence, Window moveWindow, bool isIndented)
+            dynamic targetContainer, int? targetTabIndex, dynamic item, dynamic sourceContainer, Window moveWindow, bool isIndented)
         {
             Button targetButton = new Button
             {
@@ -468,15 +468,15 @@ namespace Desktop_Fences
             };
 
             // Handle click - perform the actual move
-            targetButton.Click += (s, e) => HandleMoveToTarget(item, sourceFence, targetFence, targetTabIndex, moveWindow);
+            targetButton.Click += (s, e) => HandleMoveToTarget(item, sourceContainer, targetContainer, targetTabIndex, moveWindow);
 
             parent.Children.Add(targetButton);
         }
 
         /// <summary>
-        /// Handles the actual move operation to fence or tab
+        /// Handles the actual move operation to container or tab
         /// </summary>
-        private static void HandleMoveToTarget(dynamic item, dynamic sourceFence, dynamic targetFence,
+        private static void HandleMoveToTarget(dynamic item, dynamic sourceContainer, dynamic targetContainer,
             int? targetTabIndex, Window moveWindow)
         {
             try
@@ -487,12 +487,12 @@ namespace Desktop_Fences
 
                 // Determine source location (main Items or tab)
                 JArray sourceItems = null;
-                bool sourceIsTabbed = sourceFence.TabsEnabled?.ToString().ToLower() == "true";
+                bool sourceIsTabbed = sourceContainer.TabsEnabled?.ToString().ToLower() == "true";
 
                 if (sourceIsTabbed)
                 {
-                    var sourceTabs = sourceFence.Tabs as JArray ?? new JArray();
-                    int sourceCurrentTab = Convert.ToInt32(sourceFence.CurrentTab?.ToString() ?? "0");
+                    var sourceTabs = sourceContainer.Tabs as JArray ?? new JArray();
+                    int sourceCurrentTab = Convert.ToInt32(sourceContainer.CurrentTab?.ToString() ?? "0");
                     if (sourceCurrentTab >= 0 && sourceCurrentTab < sourceTabs.Count)
                     {
                         var sourceActiveTab = sourceTabs[sourceCurrentTab] as JObject;
@@ -501,7 +501,7 @@ namespace Desktop_Fences
                 }
                 else
                 {
-                    sourceItems = sourceFence.Items as JArray ?? new JArray();
+                    sourceItems = sourceContainer.Items as JArray ?? new JArray();
                 }
 
                 // Find item in source
@@ -520,20 +520,20 @@ namespace Desktop_Fences
                 if (targetTabIndex.HasValue)
                 {
                     // Moving to specific tab
-                    var targetTabs = targetFence.Tabs as JArray ?? new JArray();
+                    var targetTabs = targetContainer.Tabs as JArray ?? new JArray();
                     if (targetTabIndex.Value >= 0 && targetTabIndex.Value < targetTabs.Count)
                     {
                         var targetTab = targetTabs[targetTabIndex.Value] as JObject;
                         destItems = targetTab?["Items"] as JArray ?? new JArray();
                         string tabName = targetTab?["TabName"]?.ToString() ?? $"Tab {targetTabIndex.Value}";
-                        destinationDescription = $"tab '{tabName}' in fence '{targetFence.Title}'";
+                        destinationDescription = $"tab '{tabName}' in container '{targetContainer.Title}'";
                     }
                 }
                 else
                 {
-                    // Moving to fence main Items
-                    destItems = targetFence.Items as JArray ?? new JArray();
-                    destinationDescription = $"main area of fence '{targetFence.Title}'";
+                    // Moving to container main Items
+                    destItems = targetContainer.Items as JArray ?? new JArray();
+                    destinationDescription = $"main area of container '{targetContainer.Title}'";
                 }
 
                 if (destItems == null)
@@ -548,16 +548,16 @@ namespace Desktop_Fences
                 destItems.Add(itemToMove);
 
                 // Save changes
-                FenceDataManager.SaveFenceData();
+                ContainerDataManager.SaveContainerData();
 
                 LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.IconHandling,
-                    $"Successfully moved item '{filename}' from '{sourceFence.Title}' to {destinationDescription}");
+                    $"Successfully moved item '{filename}' from '{sourceContainer.Title}' to {destinationDescription}");
 
                 moveWindow.Close();
 
                 // Show success feedback and refresh UI
                 // Show success feedback and refresh UI
-                ShowMoveSuccessAndRefresh(filename, destinationDescription, sourceFence, targetFence);
+                ShowMoveSuccessAndRefresh(filename, destinationDescription, sourceContainer, targetContainer);
             }
             catch (Exception ex)
             {
@@ -571,26 +571,26 @@ namespace Desktop_Fences
         /// Shows success message and refreshes UI after move
         /// </summary>
         /// <summary>
-        /// Shows success message and refreshes UI after move - only affects source and target fences
+        /// Shows success message and refreshes UI after move - only affects source and target containers
         /// </summary>
-        private static void ShowMoveSuccessAndRefresh(string itemName, string destination, dynamic sourceFence, dynamic targetFence)
+        private static void ShowMoveSuccessAndRefresh(string itemName, string destination, dynamic sourceContainer, dynamic targetContainer)
         {
             //// Show brief success notification
             //MessageBoxesManager.ShowOKOnlyMessageBoxForm(
             //    $"'{itemName}' moved successfully to {destination}.",
             //    "Move Complete");
 
-            // Reload only the source and target fences to prevent duplicates
+            // Reload only the source and target containers to prevent duplicates
             Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
                 try
                 {
-                    FenceManager.ReloadSpecificFences(sourceFence, targetFence);
+                    ContainerManager.ReloadSpecificContainers(sourceContainer, targetContainer);
                 }
                 catch (Exception ex)
                 {
                     LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI,
-                        $"Error refreshing specific fences after move: {ex.Message}");
+                        $"Error refreshing specific containers after move: {ex.Message}");
                 }
             }), System.Windows.Threading.DispatcherPriority.Background);
         }

@@ -8,17 +8,17 @@ using System.Windows.Media;
 using System.Windows.Media.Effects;
 using Newtonsoft.Json.Linq;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     /// <summary>
-    /// Handles importing tabs from other fences.
+    /// Handles importing tabs from other containers.
     /// Rebuilt to match the visual style and UX of ItemMoveDialog.
     /// </summary>
     public static class ImportTabManager
     {
         #region Public Entry Point
 
-        public static void HandleImportRequest(dynamic targetFence, NonActivatingWindow targetWindow)
+        public static void HandleImportRequest(dynamic targetContainer, NonActivatingWindow targetWindow)
         {
             try
             {
@@ -79,7 +79,7 @@ namespace Desktop_Fences
                 };
                 TextBlock subTitle = new TextBlock
                 {
-                    Text = $"Target: {targetFence.Title}",
+                    Text = $"Target: {targetContainer.Title}",
                     FontSize = 12,
                     Foreground = new SolidColorBrush(System.Windows.Media.Color.FromArgb(200, 255, 255, 255)),
                     FontStyle = FontStyles.Italic
@@ -118,7 +118,7 @@ namespace Desktop_Fences
                 StackPanel contentStack = new StackPanel();
                 contentStack.Children.Add(new TextBlock
                 {
-                    Text = Loc.T("Select a source fence or tab to import:"),
+                    Text = Loc.T("Select a source container or tab to import:"),
                     FontSize = 13,
                     FontWeight = FontWeights.Medium,
                     Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(95, 99, 104)),
@@ -136,7 +136,7 @@ namespace Desktop_Fences
                 StackPanel targetsPanel = new StackPanel();
 
                 // Build the list using the same style as ItemMoveDialog
-                BuildSourceList(targetsPanel, targetFence, targetWindow, importWindow);
+                BuildSourceList(targetsPanel, targetContainer, targetWindow, importWindow);
 
                 scrollViewer.Content = targetsPanel;
                 contentStack.Children.Add(scrollViewer);
@@ -189,32 +189,32 @@ namespace Desktop_Fences
 
         #region UI Helpers & Builders
 
-        private static void BuildSourceList(StackPanel targetsPanel, dynamic targetFence, NonActivatingWindow targetWindow, Window importWindow)
+        private static void BuildSourceList(StackPanel targetsPanel, dynamic targetContainer, NonActivatingWindow targetWindow, Window importWindow)
         {
-            string targetId = targetFence.Id?.ToString();
-            var fenceData = FenceManager.GetFenceData();
+            string targetId = targetContainer.Id?.ToString();
+            var containerData = ContainerManager.GetContainerData();
             bool foundSources = false;
 
-            foreach (var fence in fenceData)
+            foreach (var container in containerData)
             {
                 // Logic: 
                 // 1. Skip Self
-                // 2. Skip non-Data fences (Portal/Notes can't be imported as tabs)
-                if (fence.Id?.ToString() == targetId) continue;
-                if (fence.ItemsType?.ToString() != "Data") continue;
+                // 2. Skip non-Data containers (Portal/Notes can't be imported as tabs)
+                if (container.Id?.ToString() == targetId) continue;
+                if (container.ItemsType?.ToString() != "Data") continue;
 
                 foundSources = true;
-                string fenceTitle = fence.Title?.ToString() ?? "Unnamed Fence";
-                bool hasTabs = fence.TabsEnabled?.ToString().ToLower() == "true";
+                string containerTitle = container.Title?.ToString() ?? "Unnamed Container";
+                bool hasTabs = container.TabsEnabled?.ToString().ToLower() == "true";
 
                 if (!hasTabs)
                 {
-                    // Case A: Import entire non-tabbed fence as a new tab
-                    CreateImportButton(targetsPanel, fenceTitle, "🏠", fence, null, targetFence, targetWindow, importWindow, false);
+                    // Case A: Import entire non-tabbed container as a new tab
+                    CreateImportButton(targetsPanel, containerTitle, "🏠", container, null, targetContainer, targetWindow, importWindow, false);
                 }
                 else
                 {
-                    // Case B: Tabbed fence - Show Header + Individual Tabs
+                    // Case B: Tabbed container - Show Header + Individual Tabs
 
                     // Create Group Header (Non-clickable visual only)
                     Border groupHeader = new Border
@@ -230,7 +230,7 @@ namespace Desktop_Fences
                     headerStack.Children.Add(new TextBlock { Text = Loc.T("📂"), FontSize = 16, Margin = new Thickness(0, 0, 10, 0) });
                     headerStack.Children.Add(new TextBlock
                     {
-                        Text = fenceTitle,
+                        Text = containerTitle,
                         FontSize = 13,
                         FontWeight = FontWeights.SemiBold,
                         Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(32, 33, 36)),
@@ -241,14 +241,14 @@ namespace Desktop_Fences
                     targetsPanel.Children.Add(groupHeader);
 
                     // Add individual tabs as sources
-                    var tabs = fence.Tabs as JArray ?? new JArray();
+                    var tabs = container.Tabs as JArray ?? new JArray();
                     for (int i = 0; i < tabs.Count; i++)
                     {
                         var tab = tabs[i] as JObject;
                         if (tab != null)
                         {
                             string tabName = tab["TabName"]?.ToString() ?? $"Tab {i + 1}";
-                            CreateImportButton(targetsPanel, $"📄 {tabName}", "↳", fence, i, targetFence, targetWindow, importWindow, true);
+                            CreateImportButton(targetsPanel, $"📄 {tabName}", "↳", container, i, targetContainer, targetWindow, importWindow, true);
                         }
                     }
 
@@ -266,7 +266,7 @@ namespace Desktop_Fences
             {
                 targetsPanel.Children.Add(new TextBlock
                 {
-                    Text = Loc.T("No other Data Fences found to import."),
+                    Text = Loc.T("No other Data Containers found to import."),
                     Foreground = Brushes.Gray,
                     FontStyle = FontStyles.Italic,
                     Margin = new Thickness(5)
@@ -275,7 +275,7 @@ namespace Desktop_Fences
         }
 
         private static void CreateImportButton(StackPanel parent, string text, string prefix,
-            dynamic sourceFence, int? sourceTabIndex, dynamic targetFence, NonActivatingWindow targetWindow, Window importWindow, bool isIndented)
+            dynamic sourceContainer, int? sourceTabIndex, dynamic targetContainer, NonActivatingWindow targetWindow, Window importWindow, bool isIndented)
         {
             Button btn = new Button
             {
@@ -324,7 +324,7 @@ namespace Desktop_Fences
                     $"Import contents of '{text}' into a new tab?",
                     "Confirm Import"))
                 {
-                    PerformImport(targetFence, targetWindow, sourceFence, sourceTabIndex);
+                    PerformImport(targetContainer, targetWindow, sourceContainer, sourceTabIndex);
                     importWindow.Close();
                 }
             };
@@ -346,7 +346,7 @@ namespace Desktop_Fences
 
         #region Import Logic
 
-        private static void PerformImport(dynamic targetFence, NonActivatingWindow targetWindow, dynamic sourceFence, int? sourceTabIndex)
+        private static void PerformImport(dynamic targetContainer, NonActivatingWindow targetWindow, dynamic sourceContainer, int? sourceTabIndex)
         {
             try
             {
@@ -357,7 +357,7 @@ namespace Desktop_Fences
                 if (sourceTabIndex.HasValue)
                 {
                     // Source is a specific tab
-                    var tabs = sourceFence.Tabs as JArray;
+                    var tabs = sourceContainer.Tabs as JArray;
                     if (tabs != null && sourceTabIndex.Value < tabs.Count)
                     {
                         var tabData = tabs[sourceTabIndex.Value] as JObject;
@@ -367,13 +367,13 @@ namespace Desktop_Fences
                 }
                 else
                 {
-                    // Source is an entire non-tabbed fence
-                    newTabName = sourceFence.Title.ToString();
-                    itemsToCopy = sourceFence.Items as JArray ?? new JArray();
+                    // Source is an entire non-tabbed container
+                    newTabName = sourceContainer.Title.ToString();
+                    itemsToCopy = sourceContainer.Items as JArray ?? new JArray();
                 }
 
                 // 2. Prepare Target
-                var targetTabs = targetFence.Tabs as JArray ?? new JArray();
+                var targetTabs = targetContainer.Tabs as JArray ?? new JArray();
 
                 // Deep Clone Items (Critical for safety)
                 JArray clonedItems = JArray.FromObject(itemsToCopy);
@@ -386,27 +386,27 @@ namespace Desktop_Fences
                 targetTabs.Add(newTab);
 
                 // 3. Save
-                string fenceId = targetFence.Id?.ToString();
-                int fenceIndex = FenceDataManager.FenceData.FindIndex(f => f.Id?.ToString() == fenceId);
+                string containerId = targetContainer.Id?.ToString();
+                int containerIndex = ContainerDataManager.ContainerData.FindIndex(f => f.Id?.ToString() == containerId);
 
-                if (fenceIndex >= 0)
+                if (containerIndex >= 0)
                 {
-                    IDictionary<string, object> fenceDict = targetFence is IDictionary<string, object> dict ?
-                        dict : ((JObject)targetFence).ToObject<IDictionary<string, object>>();
+                    IDictionary<string, object> containerDict = targetContainer is IDictionary<string, object> dict ?
+                        dict : ((JObject)targetContainer).ToObject<IDictionary<string, object>>();
 
-                    fenceDict["Tabs"] = targetTabs;
-                    fenceDict["CurrentTab"] = targetTabs.Count - 1; // Switch to new tab
+                    containerDict["Tabs"] = targetTabs;
+                    containerDict["CurrentTab"] = targetTabs.Count - 1; // Switch to new tab
 
-                    FenceDataManager.FenceData[fenceIndex] = JObject.FromObject(fenceDict);
-                    FenceDataManager.SaveFenceData();
+                    ContainerDataManager.ContainerData[containerIndex] = JObject.FromObject(containerDict);
+                    ContainerDataManager.SaveContainerData();
 
                     // 4. Refresh UI
-                    var updatedFence = FenceDataManager.FenceData[fenceIndex];
-                    FenceManager.RefreshFenceContentSimple(targetWindow, updatedFence, targetTabs.Count - 1);
-                    FenceManager.RefreshTabStyling(targetWindow, targetTabs.Count - 1);
-                    FenceManager.RefreshTabStripUI(targetWindow, updatedFence);
+                    var updatedContainer = ContainerDataManager.ContainerData[containerIndex];
+                    ContainerManager.RefreshContainerContentSimple(targetWindow, updatedContainer, targetTabs.Count - 1);
+                    ContainerManager.RefreshTabStyling(targetWindow, targetTabs.Count - 1);
+                    ContainerManager.RefreshTabStripUI(targetWindow, updatedContainer);
 
-                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ImportExport, $"Imported tab '{newTabName}' into fence '{targetFence.Title}'");
+                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ImportExport, $"Imported tab '{newTabName}' into container '{targetContainer.Title}'");
                 }
             }
             catch (Exception ex)

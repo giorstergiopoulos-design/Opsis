@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     public static class WallpaperColorManager
     {

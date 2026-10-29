@@ -5,17 +5,17 @@ using System.Windows;
 using System.Windows.Forms; // For Screen.AllScreens
 using System.Windows.Media; // For VisualTreeHelper
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     public static class SnapManager
     {
         private const double SnapThreshold = 20; // Reduced slightly for tighter feel
-        private const double MinGap = 10;        // Gap between snapped fences
+        private const double MinGap = 10;        // Gap between snapped containers
 
         // Recursion guard to prevent the "fighting" loop
         private static bool _isSnapping = false;
 
-        public static void AddSnapping(NonActivatingWindow win, IDictionary<string, object> fenceData)
+        public static void AddSnapping(NonActivatingWindow win, IDictionary<string, object> containerData)
         {
             win.LocationChanged += (sender, e) =>
             {
@@ -30,17 +30,17 @@ namespace Desktop_Fences
 
                 try
                 {
-                    var allFences = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>().ToList();
-                    var (newLeft, newTop) = CalculateSnapPosition(win, allFences);
+                    var allContainers = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>().ToList();
+                    var (newLeft, newTop) = CalculateSnapPosition(win, allContainers);
 
                     // Only apply if changed to reduce render jitter
                     if (Math.Abs(win.Left - newLeft) > 0.1 || Math.Abs(win.Top - newTop) > 0.1)
                     {
                         win.Left = newLeft;
                         win.Top = newTop;
-                        fenceData["X"] = newLeft;
-                        fenceData["Y"] = newTop;
-                        FenceDataManager.SaveFenceData();
+                        containerData["X"] = newLeft;
+                        containerData["Y"] = newTop;
+                        ContainerDataManager.SaveContainerData();
                     }
                 }
                 finally
@@ -50,7 +50,7 @@ namespace Desktop_Fences
             };
         }
 
-        private static (double, double) CalculateSnapPosition(NonActivatingWindow current, List<NonActivatingWindow> allFences)
+        private static (double, double) CalculateSnapPosition(NonActivatingWindow current, List<NonActivatingWindow> allContainers)
         {
             if (!SettingsManager.IsSnapEnabled) return (current.Left, current.Top);
 
@@ -63,8 +63,8 @@ namespace Desktop_Fences
             double minDeltaX = double.MaxValue;
             double minDeltaY = double.MaxValue;
 
-            // 1. Snap to Other Fences
-            foreach (var other in allFences)
+            // 1. Snap to Other Containers
+            foreach (var other in allContainers)
             {
                 if (other == current) continue;
 

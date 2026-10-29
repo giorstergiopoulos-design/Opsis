@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     public static class LogManager
     {
@@ -12,8 +12,8 @@ namespace Desktop_Fences
         public enum LogCategory
         {
             General,
-            FenceCreation,
-            FenceUpdate,
+            ContainerCreation,
+            ContainerUpdate,
             UI,
             IconHandling,
             Error,
@@ -29,8 +29,8 @@ namespace Desktop_Fences
         static LogManager()
         {
             _logFilePath = System.IO.Path.Combine(
-                Desktop_Fences.DataRoot.Dir,
-                "Desktop_Fences.log");
+                OpsisContainers.DataRoot.Dir,
+                "OpsisContainers.log");
         }
 
         public static void Log(LogLevel level, LogCategory category, string message)
@@ -94,7 +94,7 @@ namespace Desktop_Fences
 
                 string archivePath = System.IO.Path.Combine(
                     System.IO.Path.GetDirectoryName(_logFilePath),
-                    $"Desktop_Fences_{DateTime.Now:yyyyMMdd_HHmmss}.log");
+                    $"OpsisContainers_{DateTime.Now:yyyyMMdd_HHmmss}.log");
 
                 System.IO.File.Move(_logFilePath, archivePath);
                 CleanupOldLogs();
@@ -107,7 +107,7 @@ namespace Desktop_Fences
             try
             {
                 string logDirectory = System.IO.Path.GetDirectoryName(_logFilePath);
-                var logFiles = Directory.GetFiles(logDirectory, "Desktop_Fences_*.log")
+                var logFiles = Directory.GetFiles(logDirectory, "OpsisContainers_*.log")
                     .OrderByDescending(f => System.IO.File.GetCreationTime(f))
                     .Skip(5); // Keep 5
 

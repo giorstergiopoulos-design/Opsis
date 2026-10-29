@@ -7,10 +7,10 @@ using System.Windows.Media;
 using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Input;
-using Desktop_Fences;
+using OpsisContainers;
 using System.Linq;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     public class IconPickerDialog : Window
     {
@@ -71,7 +71,7 @@ namespace Desktop_Fences
 
         private void CreateHeader(Grid rootGrid)
         {
-            // Header with accent color background (same as CustomizeFenceForm)
+            // Header with accent color background (same as CustomizeContainerForm)
             Border headerBorder = new Border
             {
                 Height = 50,
@@ -83,18 +83,18 @@ namespace Desktop_Fences
             headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-            // Title with white text (same as CustomizeFenceForm)
+            // Title with white text (same as CustomizeContainerForm)
             TextBlock titleText = new TextBlock
             {
                 Text = Loc.T("Select Icon"),
                 FontSize = 14,
-                FontWeight = FontWeights.Bold, // Bold like CustomizeFenceForm
+                FontWeight = FontWeights.Bold, // Bold like CustomizeContainerForm
                 Foreground = Brushes.White, // White text on colored background
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(16, 0, 0, 0)
             };
 
-            // Close button with hover effects (same as CustomizeFenceForm)
+            // Close button with hover effects (same as CustomizeContainerForm)
             Button closeButton = new Button
             {
                 Content = Loc.T("✕"),
@@ -110,7 +110,7 @@ namespace Desktop_Fences
                 VerticalAlignment = VerticalAlignment.Center
             };
 
-            // Add hover effect like CustomizeFenceForm
+            // Add hover effect like CustomizeContainerForm
             closeButton.MouseEnter += (s, e) => closeButton.Background = new SolidColorBrush(Color.FromArgb(50, 255, 255, 255));
             closeButton.MouseLeave += (s, e) => closeButton.Background = Brushes.Transparent;
             closeButton.Click += (s, e) => { DialogResult = false; Close(); };
@@ -304,7 +304,7 @@ namespace Desktop_Fences
         }
 
         /// <summary>
-        /// Gets the user's selected accent color (same method as CustomizeFenceForm)
+        /// Gets the user's selected accent color (same method as CustomizeContainerForm)
         /// </summary>
         private SolidColorBrush GetAccentColorBrush()
         {

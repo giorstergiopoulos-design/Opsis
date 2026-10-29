@@ -10,16 +10,16 @@ using IWshRuntimeLibrary;
 using Newtonsoft.Json.Linq;
 using Microsoft.VisualBasic;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
-    public class PortalFenceManager
+    public class PortalContainerManager
     {
         // New field for the active filter
         private string _currentFilter = null;
         private int _sortMode = 0; // 0=Name, 1=Date Modified, 2=Type, 3=Size
 
 
-        private readonly dynamic _fence;
+        private readonly dynamic _container;
         private readonly WrapPanel _wpcont;
         private readonly FileSystemWatcher _watcher;
         private string _targetFolderPath;
@@ -33,7 +33,7 @@ namespace Desktop_Fences
 
         /// <summary>
         /// Updates the current filter and refreshes the visibility of all items.
-        /// Publicly called by FenceManager when the user types in the filter bar.
+        /// Publicly called by ContainerManager when the user types in the filter bar.
         /// </summary>
         public void ApplyFilter(string filterText)
         {
@@ -149,12 +149,12 @@ namespace Desktop_Fences
             if (_sortMode > 3) _sortMode = 0;
 
             // Save state using the existing updater
-            FenceManager.UpdateFenceProperty(_fence, "SortMode", _sortMode.ToString(), "Updated portal sort mode");
+            ContainerManager.UpdateContainerProperty(_container, "SortMode", _sortMode.ToString(), "Updated portal sort mode");
 
             string[] modeNames = { "Name", "Date Modified", "Type", "Size" };
             string activeMode = modeNames[_sortMode];
 
-            LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.General, $"Portal fence sorted by: {activeMode}");
+            LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.General, $"Portal container sorted by: {activeMode}");
 
             SortContents();
 
@@ -213,9 +213,9 @@ namespace Desktop_Fences
         // --- SORTING ENGINE END ---
 
 
-        public PortalFenceManager(dynamic fence, WrapPanel wpcont)
+        public PortalContainerManager(dynamic container, WrapPanel wpcont)
         {
-            _fence = fence;
+            _container = container;
             _wpcont = wpcont;
             _dispatcher = _wpcont.Dispatcher;
 
@@ -227,29 +227,29 @@ namespace Desktop_Fences
             _debounceTimer.Tick += ProcessPendingEvents;
 
             // Extract folder path
-            IDictionary<string, object> fenceDict = fence is IDictionary<string, object> dict ? dict : ((JObject)fence).ToObject<IDictionary<string, object>>();
-            _targetFolderPath = fenceDict.ContainsKey("Path") ? fenceDict["Path"]?.ToString() : null;
+            IDictionary<string, object> containerDict = container is IDictionary<string, object> dict ? dict : ((JObject)container).ToObject<IDictionary<string, object>>();
+            _targetFolderPath = containerDict.ContainsKey("Path") ? containerDict["Path"]?.ToString() : null;
 
             // FIX: Load saved filter immediately on startup
-            if (fenceDict.ContainsKey("FilterString"))
+            if (containerDict.ContainsKey("FilterString"))
             {
-                _currentFilter = fenceDict["FilterString"]?.ToString();
+                _currentFilter = containerDict["FilterString"]?.ToString();
             }
 
             // NEW: Load saved sort mode
-            if (fenceDict.ContainsKey("SortMode"))
+            if (containerDict.ContainsKey("SortMode"))
             {
-                _sortMode = Convert.ToInt32(fenceDict["SortMode"]?.ToString() ?? "0");
+                _sortMode = Convert.ToInt32(containerDict["SortMode"]?.ToString() ?? "0");
             }
 
             if (string.IsNullOrEmpty(_targetFolderPath))
             {
-                throw new Exception("No folder path defined for Portal Fence. Please recreate the fence.");
+                throw new Exception("No folder path defined for Portal Container. Please recreate the container.");
             }
 
             if (!Directory.Exists(_targetFolderPath))
             {
-                throw new Exception($"The folder '{_targetFolderPath}' does not exist. Please update the Portal Fence settings.");
+                throw new Exception($"The folder '{_targetFolderPath}' does not exist. Please update the Portal Container settings.");
             }
 
             _watcher = new FileSystemWatcher(_targetFolderPath)
@@ -261,7 +261,7 @@ namespace Desktop_Fences
             _watcher.Deleted += (s, e) => QueueEvent(e);
             _watcher.Renamed += (s, e) => QueueEvent(e, e.OldFullPath);
 
-            InitializeFenceContents();
+            InitializeContainerContents();
 
           //  // --- TEST CODE START ---
           //  // Hardcode a filter to prove the engine works.
@@ -328,7 +328,7 @@ namespace Desktop_Fences
                             break;
                     }
                 }
-                VerifyFenceContents();
+                VerifyContainerContents();
 
                 // Ensure items are properly sorted after updates
                 if (events.Count > 0)
@@ -398,7 +398,7 @@ namespace Desktop_Fences
             try { isFolder = Directory.Exists(path); } catch { }
             iconDict["IsFolder"] = isFolder;
             // --- RESTORED: Network Path Detection ---
-            iconDict["IsNetwork"] = FenceManager.IsNetworkPath(path);
+            iconDict["IsNetwork"] = ContainerManager.IsNetworkPath(path);
 
 
             string displayName;
@@ -434,9 +434,9 @@ namespace Desktop_Fences
             iconDict["DisplayName"] = displayName;
 
             // --- FIX: ONE CALL ONLY ---
-            // We use the new signature that passes '_fence' context.
+            // We use the new signature that passes '_container' context.
             // This applies the custom settings (Size, Color, etc.) immediately.
-            FenceManager.AddIcon(icon, _wpcont, _fence);
+            ContainerManager.AddIcon(icon, _wpcont, _container);
 
             // Now we grab the StackPanel that was just added to attach logic
             StackPanel sp = _wpcont.Children[_wpcont.Children.Count - 1] as StackPanel;
@@ -445,7 +445,7 @@ namespace Desktop_Fences
                 // FIX: Apply filter immediately upon creation
                 sp.Visibility = ShouldShowItem(path) ? Visibility.Visible : Visibility.Collapsed;
 
-                FenceManager.ClickEventAdder(sp, path, Directory.Exists(path));
+                ContainerManager.ClickEventAdder(sp, path, Directory.Exists(path));
 
           
                 // Create and attach context menu
@@ -570,7 +570,7 @@ namespace Desktop_Fences
             }
         }
 
-        private void InitializeFenceContents()
+        private void InitializeContainerContents()
         {
             _wpcont.Children.Clear();
             if (Directory.Exists(_targetFolderPath))
@@ -602,13 +602,13 @@ namespace Desktop_Fences
                     AddIcon(path);
                 }
             }
-            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.General, $"Initialized fence contents for {_targetFolderPath} with {_wpcont.Children.Count} items (hidden and temporary files excluded)");
+            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.General, $"Initialized container contents for {_targetFolderPath} with {_wpcont.Children.Count} items (hidden and temporary files excluded)");
 
             // Apply sorting rules after initialization
             SortContents();
         }
 
-        private void VerifyFenceContents()
+        private void VerifyContainerContents()
         {
             if (!Directory.Exists(_targetFolderPath))
             {
@@ -677,7 +677,7 @@ namespace Desktop_Fences
                 }
                 else
                 {
-                    // Otherwise, copy the folder path (portal fence path)
+                    // Otherwise, copy the folder path (portal container path)
                     pathToCopy = Path.GetDirectoryName(path); // Gets the parent directory
                 }
 
@@ -811,7 +811,7 @@ namespace Desktop_Fences
 
 
         /// <summary>
-        /// Safely switches the monitored folder without destroying the fence window.
+        /// Safely switches the monitored folder without destroying the container window.
         /// Used for the "Dive In" navigation feature.
         /// </summary>
         public void NavigateTo(string newPath)
@@ -836,12 +836,12 @@ namespace Desktop_Fences
                 _watcher.Path = newPath; // FileSystemWatcher supports dynamic path changing
 
                 // 4. Reload Content
-                InitializeFenceContents();
+                InitializeContainerContents();
 
                 // 5. Resume Watcher
                 _watcher.EnableRaisingEvents = wasEnable;
 
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.General, $"Portal Fence navigated to: {newPath}");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.General, $"Portal Container navigated to: {newPath}");
             }
             catch (Exception ex)
             {

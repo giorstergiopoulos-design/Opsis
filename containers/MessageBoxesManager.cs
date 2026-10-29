@@ -9,7 +9,7 @@ using System.Windows.Media;
 using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     /// <summary>
     /// Manager class for modern WPF message boxes and dialogs
@@ -19,7 +19,7 @@ namespace Desktop_Fences
     {
         #region ShowCustomMessageBoxForm - Delete Confirmation Dialog
         /// <summary>
-        /// Shows a modern WPF confirmation dialog for fence deletion
+        /// Shows a modern WPF confirmation dialog for container deletion
         /// Converted from Windows Forms with identical functionality and layout
         /// </summary>
         /// <returns>True if user clicked Yes, False if user clicked No</returns>
@@ -274,7 +274,7 @@ namespace Desktop_Fences
         }
 
 
-        // --- ADD TO UTILITY.CS or FENCEMANAGER.CS ---
+        // --- ADD TO UTILITY.CS or CONTAINERMANAGER.CS ---
 
         public static Border CreateUnifiedMessage(string message)
         {
@@ -652,7 +652,7 @@ namespace Desktop_Fences
                 try
                 {
                     var assembly = System.Reflection.Assembly.GetExecutingAssembly();
-                    var resourceStream = assembly.GetManifestResourceStream("Desktop_Fences.Resources.logo1.png");
+                    var resourceStream = assembly.GetManifestResourceStream("OpsisContainers.Resources.logo1.png");
                     if (resourceStream != null)
                     {
                         var bitmap = new BitmapImage();
@@ -1327,7 +1327,7 @@ namespace Desktop_Fences
 
             try
             {
-                using (Stream soundStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Desktop_Fences.Resources.ui-8-warning-sound-effect-336254.wav"))
+                using (Stream soundStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("OpsisContainers.Resources.ui-8-warning-sound-effect-336254.wav"))
                 {
                     if (soundStream != null)
                     {
@@ -1475,7 +1475,7 @@ namespace Desktop_Fences
 
                 TextBlock titleLabel = new TextBlock
                 {
-                    Text = Loc.T("Delete Fence"),
+                    Text = Loc.T("Delete Container"),
                     FontFamily = new FontFamily("Segoe UI"),
                     FontSize = 18,
                     FontWeight = FontWeights.Bold,
@@ -1485,7 +1485,7 @@ namespace Desktop_Fences
 
                 TextBlock messageLabel = new TextBlock
                 {
-                    Text = Loc.T("Are you sure you want to delete this fence?"),
+                    Text = Loc.T("Are you sure you want to delete this container?"),
                     FontFamily = new FontFamily("Segoe UI"),
                     FontSize = 14,
                     Foreground = new SolidColorBrush(Color.FromRgb(95, 99, 104)),

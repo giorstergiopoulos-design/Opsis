@@ -12,7 +12,7 @@ using System.Windows.Threading;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     /// <summary>
     /// Manages multi-profile support, directory paths, and ID-based navigation.
@@ -49,8 +49,8 @@ namespace Desktop_Fences
         }
 
         // Profile Specific Files/Folders to Migrate
-        private static readonly string[] FILES_TO_MOVE = { "fences.json", "options.json" };
-        private static readonly string[] FOLDERS_TO_MOVE = { "Shortcuts", "Temp Shortcuts", "Last Fence Deleted", "CopiedItem", "Backups" };
+        private static readonly string[] FILES_TO_MOVE = { "containers.json", "options.json" };
+        private static readonly string[] FOLDERS_TO_MOVE = { "Shortcuts", "Temp Shortcuts", "Last Container Deleted", "CopiedItem", "Backups" };
 
         public static string CurrentProfileName => _currentProfileName;
 
@@ -66,7 +66,7 @@ namespace Desktop_Fences
 
         static ProfileManager()
         {
-            _appBaseDir = Desktop_Fences.DataRoot.Dir;
+            _appBaseDir = OpsisContainers.DataRoot.Dir;
             _profilesRootDir = Path.Combine(_appBaseDir, "Profiles");
         }
 
@@ -75,7 +75,7 @@ namespace Desktop_Fences
             try
             {
                 // 1. Check Migration
-                bool legacyDataExists = File.Exists(Path.Combine(_appBaseDir, "fences.json"));
+                bool legacyDataExists = File.Exists(Path.Combine(_appBaseDir, "containers.json"));
                 bool profilesDirExists = Directory.Exists(_profilesRootDir);
 
                 if (legacyDataExists && !profilesDirExists)
@@ -124,7 +124,7 @@ namespace Desktop_Fences
             {
                 Directory.CreateDirectory(Path.Combine(_profilesRootDir, "Default"));
                 actualFolders.Add("Default");
-                File.WriteAllText(Path.Combine(_profilesRootDir, "Default", "fences.json"), "[]");
+                File.WriteAllText(Path.Combine(_profilesRootDir, "Default", "containers.json"), "[]");
                 File.WriteAllText(Path.Combine(_profilesRootDir, "Default", "options.json"), "{}");
             }
 
@@ -255,7 +255,7 @@ namespace Desktop_Fences
                 Directory.CreateDirectory(newProfilePath);
                 Directory.CreateDirectory(Path.Combine(newProfilePath, "Shortcuts"));
 
-                File.WriteAllText(Path.Combine(newProfilePath, "fences.json"), "[]");
+                File.WriteAllText(Path.Combine(newProfilePath, "containers.json"), "[]");
                 File.WriteAllText(Path.Combine(newProfilePath, "options.json"), "{}");
 
                 LoadAndSanitizeConfig();
@@ -381,7 +381,7 @@ namespace Desktop_Fences
                         "SearchFormManager",
                         "IconPickerDialog",
                         "EditShortcutWindow",
-                        "CustomizeFenceFormManager"
+                        "CustomizeContainerFormManager"
                     };
 
                     // Get all windows as a list to avoid enumeration errors during close
@@ -411,27 +411,27 @@ namespace Desktop_Fences
             SaveConfigInternal();
 
             System.IO.Directory.SetCurrentDirectory(CurrentProfileDir);
-            FenceDataManager.Initialize();
+            ContainerDataManager.Initialize();
             SettingsManager.LoadSettings();
 
             // --- CRITICAL FIX: CLEAR BEFORE RELOAD ---
-            // 1. Clear the old profile's hidden fences FIRST
+            // 1. Clear the old profile's hidden containers FIRST
             if (TrayManager.Instance != null)
             {
-                TrayManager.Instance.ClearHiddenFences();
+                TrayManager.Instance.ClearHiddenContainers();
             }
 
 
 
-            // 2. NOW load the new fences (which will re-populate the list correctly)
-            FenceManager.ReloadFences();
+            // 2. NOW load the new containers (which will re-populate the list correctly)
+            ContainerManager.ReloadContainers();
             // -----------------------------------------
 
             if (TrayManager.Instance != null)
             {
                 // --- THE FIX IS HERE ---
                 // Kill the zombies BEFORE updating the UI
-               // TrayManager.Instance.ClearHiddenFences();
+               // TrayManager.Instance.ClearHiddenContainers();
                 // -----------------------
 
                 TrayManager.Instance.UpdateTrayIcon();

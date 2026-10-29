@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input; // For Key enum
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     /// <summary>
     /// Centralized Global Hotkey Manager
@@ -29,7 +29,7 @@ namespace Desktop_Fences
         // Triggers
         private const int VK_D = 0x44;
         private const int VK_G = 0x47; // Gravity
-        private const int VK_Z = 0x5A; // Focus Fence
+        private const int VK_Z = 0x5A; // Focus Container
         private const int VK_0 = 0x30; // 0 key
         private const int VK_9 = 0x39; // 9 key
         private const int VK_OEM_COMMA = 0xBC; // , < key
@@ -169,17 +169,17 @@ namespace Desktop_Fences
                     bool isKeyDown = (wParam == (IntPtr)WM_KEYDOWN || wParam == (IntPtr)WM_SYSKEYDOWN);
                     bool isKeyUp = (wParam == (IntPtr)WM_KEYUP || wParam == (IntPtr)WM_SYSKEYUP);
 
-                    // Opsis: Left/Right arrows scroll the contents of the fence under the mouse.
+                    // Opsis: Left/Right arrows scroll the contents of the container under the mouse.
                     if ((vkCode == 0x25 || vkCode == 0x27) && isKeyDown)
                     {
                         int dir = vkCode == 0x27 ? 1 : -1;
-                        System.Windows.Application.Current?.Dispatcher.BeginInvoke(new Action(() => FenceManager.ScrollHoveredFence(dir)));
+                        System.Windows.Application.Current?.Dispatcher.BeginInvoke(new Action(() => ContainerManager.ScrollHoveredContainer(dir)));
                     }
 
-                    // Opsis: F2 renames the fence under the mouse.
+                    // Opsis: F2 renames the container under the mouse.
                     if (vkCode == 0x71 && isKeyDown)
                     {
-                        System.Windows.Application.Current?.Dispatcher.BeginInvoke(new Action(() => FenceManager.RenameHoveredFence()));
+                        System.Windows.Application.Current?.Dispatcher.BeginInvoke(new Action(() => ContainerManager.RenameHoveredContainer()));
                     }
 
                     // ============================================================
@@ -289,15 +289,15 @@ namespace Desktop_Fences
                     }
 
                     // ============================================================
-                    // 4. Focus Fence (Dynamic Configurable)
+                    // 4. Focus Container (Dynamic Configurable)
                     // ============================================================
-                    if (SettingsManager.EnableFocusFenceHotkey && vkCode == SettingsManager.FocusFenceKey && isKeyDown)
+                    if (SettingsManager.EnableFocusContainerHotkey && vkCode == SettingsManager.FocusContainerKey && isKeyDown)
                     {
-                        if (CheckModifiersStrict(SettingsManager.FocusFenceModifier))
+                        if (CheckModifiersStrict(SettingsManager.FocusContainerModifier))
                         {
                             System.Windows.Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
                             {
-                                FenceFocusFormManager focusManager = new FenceFocusFormManager();
+                                ContainerFocusFormManager focusManager = new ContainerFocusFormManager();
                                 focusManager.ShowDialog();
                             }));
                             return (IntPtr)1; // Swallow the key so other apps don't process it

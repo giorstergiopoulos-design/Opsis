@@ -8,56 +8,56 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     /// <summary>
-    /// Manages Note Fence specific functionality including content management, context menus, and formatting
-    /// Dedicated class for Note Fence operations to maintain separation from Data/Portal fence logic
-    /// Used by: FenceManager.CreateFence() for Note type fences
-    /// Category: Note Fence Management
+    /// Manages Note Container specific functionality including content management, context menus, and formatting
+    /// Dedicated class for Note Container operations to maintain separation from Data/Portal container logic
+    /// Used by: ContainerManager.CreateContainer() for Note type containers
+    /// Category: Note Container Management
     /// </summary>
-    public static class NoteFenceManager
+    public static class NoteContainerManager
     {
-        #region Note Content Creation - Used by: FenceManager.CreateFence()
+        #region Note Content Creation - Used by: ContainerManager.CreateContainer()
 
         /// <summary>
-        /// Creates the note content area (TextBox) for Note fences
-        /// Used by: FenceManager.CreateFence() when ItemsType == "Note"
+        /// Creates the note content area (TextBox) for Note containers
+        /// Used by: ContainerManager.CreateContainer() when ItemsType == "Note"
         /// Category: UI Creation
         /// </summary>
-        /// <param name="fence">The fence data object</param>
+        /// <param name="container">The container data object</param>
         /// <param name="dockPanel">The parent DockPanel to add content to</param>
         /// <returns>The created TextBox for note content</returns>
-        public static TextBox CreateNoteContent(dynamic fence, DockPanel dockPanel)
+        public static TextBox CreateNoteContent(dynamic container, DockPanel dockPanel)
         {
             try
             {
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation,
-                    $"Creating note content for fence '{fence.Title}'");
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation,
+                    $"Creating note content for container '{container.Title}'");
 
                 // Safely get note content with null checks
                 string noteContent = "";
                 try
                 {
-                    noteContent = fence.NoteContent?.ToString() ?? "";
+                    noteContent = container.NoteContent?.ToString() ?? "";
                 }
                 catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException)
                 {
                     // NoteContent property doesn't exist yet - use empty string
                     noteContent = "";
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation,
-                        "NoteContent property not found - using empty content for new Note fence");
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation,
+                        "NoteContent property not found - using empty content for new Note container");
                 }
 
                 // Safely get other Note properties with fallbacks
-                string wordWrap = GetSafeNoteProperty(fence, "WordWrap", "true");
-                string spellCheck = GetSafeNoteProperty(fence, "SpellCheck", "true");
-                string noteFontSize = GetSafeNoteProperty(fence, "NoteFontSize", "Medium");
-                string noteFontFamily = GetSafeNoteProperty(fence, "NoteFontFamily", "Segoe UI");
+                string wordWrap = GetSafeNoteProperty(container, "WordWrap", "true");
+                string spellCheck = GetSafeNoteProperty(container, "SpellCheck", "true");
+                string noteFontSize = GetSafeNoteProperty(container, "NoteFontSize", "Medium");
+                string noteFontFamily = GetSafeNoteProperty(container, "NoteFontFamily", "Segoe UI");
 
                 // Debug logging to see what values we're getting
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceCreation,
-                    $"Loading Note fence settings - FontSize: '{noteFontSize}', FontFamily: '{noteFontFamily}'");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerCreation,
+                    $"Loading Note container settings - FontSize: '{noteFontSize}', FontFamily: '{noteFontFamily}'");
                
 
                                 // Create the main TextBox for note content
@@ -72,8 +72,8 @@ namespace Desktop_Fences
 
                                     // Appearance - Start transparent, will be updated by ApplyNoteColorScheme
                                     //  Background = Brushes.Transparent,
-                                    Background = GetTextBackgroundBrush(fence),
-                                    Foreground = GetNoteForeground(fence),
+                                    Background = GetTextBackgroundBrush(container),
+                                    Foreground = GetNoteForeground(container),
                                  
                                     FontSize = GetNoteFontSize(noteFontSize),
                     FontFamily = GetNoteFontFamily(noteFontFamily),
@@ -88,11 +88,11 @@ namespace Desktop_Fences
                                     // Layout - TWEAKABLE VALUES
                     HorizontalAlignment = HorizontalAlignment.Stretch,
                     VerticalAlignment = VerticalAlignment.Stretch,
-                    Margin = GetTextBoxMargin(), // Custom spacing from fence edges
+                    Margin = GetTextBoxMargin(), // Custom spacing from container edges
                     Padding = GetTextBoxPadding(), // Text spacing inside TextBox
 
                                     // Scrolling
-                    VerticalScrollBarVisibility = SettingsManager.DisableFenceScrollbars ?
+                    VerticalScrollBarVisibility = SettingsManager.DisableContainerScrollbars ?
                         ScrollBarVisibility.Hidden : ScrollBarVisibility.Auto,
                     HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden,
 
@@ -111,23 +111,23 @@ namespace Desktop_Fences
 
                                 };
 
-                // Apply exact fence background color
-                ApplyNoteColorScheme(noteTextBox, fence);
+                // Apply exact container background color
+                ApplyNoteColorScheme(noteTextBox, container);
 
                 // Add visual state management and auto-save functionality
-                SetupNoteEditingBehavior(noteTextBox, fence);
+                SetupNoteEditingBehavior(noteTextBox, container);
 
                 // Add to DockPanel (fills remaining space after title)
                 dockPanel.Children.Add(noteTextBox);
 
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceCreation,
-                    $"Successfully created note content for fence '{fence.Title}' with {noteContent.Length} characters");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerCreation,
+                    $"Successfully created note content for container '{container.Title}' with {noteContent.Length} characters");
 
                 return noteTextBox;
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceCreation,
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerCreation,
                     $"Error creating note content: {ex.Message}");
 
                 // Return a basic TextBox as fallback - but make it functional
@@ -147,26 +147,26 @@ namespace Desktop_Fences
                 dockPanel.Children.Add(fallbackTextBox);
 
                 // Even for fallback, add basic functionality
-                SetupNoteEditingBehavior(fallbackTextBox, fence);
+                SetupNoteEditingBehavior(fallbackTextBox, container);
 
                 return fallbackTextBox;
             }
         }
 
         /// <summary>
-        /// Safely gets Note fence properties with fallback values
+        /// Safely gets Note container properties with fallback values
         /// </summary>
         /// <summary>
-        /// Safely gets Note fence properties with fallback values
+        /// Safely gets Note container properties with fallback values
         /// </summary>
-        public static string GetSafeNoteProperty(dynamic fence, string propertyName, string fallbackValue)
+        public static string GetSafeNoteProperty(dynamic container, string propertyName, string fallbackValue)
         {
             try
             {
                 // Method 1: Direct property access
                 try
                 {
-                    var value = fence.GetType().GetProperty(propertyName)?.GetValue(fence);
+                    var value = container.GetType().GetProperty(propertyName)?.GetValue(container);
                     if (value != null) return value.ToString();
                 }
                 catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException) { }
@@ -174,25 +174,25 @@ namespace Desktop_Fences
                 // Method 2: Dictionary access  
                 try
                 {
-                    var fenceDict = fence as IDictionary<string, object>;
-                    if (fenceDict != null && fenceDict.ContainsKey(propertyName))
+                    var containerDict = container as IDictionary<string, object>;
+                    if (containerDict != null && containerDict.ContainsKey(propertyName))
                     {
-                        var value = fenceDict[propertyName]?.ToString();
-                        LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation,
+                        var value = containerDict[propertyName]?.ToString();
+                        LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation,
                             $"GetSafeNoteProperty: Found {propertyName} = '{value}' in dictionary");
                         return value ?? fallbackValue;
                     }
                 }
                 catch { }
 
-                // Method 3: JObject access (for JSON loaded fences)
+                // Method 3: JObject access (for JSON loaded containers)
                 try
                 {
-                    var jObject = fence as Newtonsoft.Json.Linq.JObject;
+                    var jObject = container as Newtonsoft.Json.Linq.JObject;
                     if (jObject != null && jObject.ContainsKey(propertyName))
                     {
                         var value = jObject[propertyName]?.ToString();
-                        LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation,
+                        LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation,
                             $"GetSafeNoteProperty: Found {propertyName} = '{value}' in JObject");
                         return value ?? fallbackValue;
                     }
@@ -217,12 +217,12 @@ namespace Desktop_Fences
         /// Used by: CreateNoteContent() during TextBox setup
         /// Category: Content Management
         /// </summary>
-        private static void SetupNoteEditingBehavior(TextBox noteTextBox, dynamic fence)
+        private static void SetupNoteEditingBehavior(TextBox noteTextBox, dynamic container)
         {
             try
             {
                 // Capture the ID immediately so we can always look up the fresh object later
-                string fenceId = fence.Id?.ToString();
+                string containerId = container.Id?.ToString();
 
                 // Auto-save timer to prevent excessive saves during typing (can be disabled via settings)
                 System.Windows.Threading.DispatcherTimer autoSaveTimer = new System.Windows.Threading.DispatcherTimer
@@ -236,8 +236,8 @@ namespace Desktop_Fences
                     if (!SettingsManager.DisableNoteAutoSave)
                     {
                         // FIX: Fetch fresh data for saving to ensure we don't overwrite other properties with stale data
-                        var freshFence = FenceManager.GetFenceData().FirstOrDefault(f => f.Id?.ToString() == fenceId) ?? fence;
-                        SaveNoteContent(freshFence, noteTextBox.Text);
+                        var freshContainer = ContainerManager.GetContainerData().FirstOrDefault(f => f.Id?.ToString() == containerId) ?? container;
+                        SaveNoteContent(freshContainer, noteTextBox.Text);
                     }
                 };
 
@@ -272,12 +272,12 @@ namespace Desktop_Fences
                 // Handle focus - show editing state and optional Done button
                 noteTextBox.GotFocus += (s, e) =>
                 {
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation,
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation,
                         "TextBox got focus - entering edit mode");
 
                     // --- FIX START: Get Fresh Data ---
-                    // Retrieve the latest fence data from the global list to ensure we use the NEW color
-                    var freshFence = FenceManager.GetFenceData().FirstOrDefault(f => f.Id?.ToString() == fenceId) ?? fence;
+                    // Retrieve the latest container data from the global list to ensure we use the NEW color
+                    var freshContainer = ContainerManager.GetContainerData().FirstOrDefault(f => f.Id?.ToString() == containerId) ?? container;
                     // --- FIX END ---
 
                     // CRITICAL: Maintain anchoring properties during editing
@@ -285,11 +285,11 @@ namespace Desktop_Fences
                     noteTextBox.HorizontalAlignment = originalHAlign;
                     noteTextBox.VerticalAlignment = originalVAlign;
 
-                    // Use FRESH fence color settings
-                    string fenceColor = freshFence.CustomColor?.ToString() ?? SettingsManager.SelectedColor;
-                    Color baseColor = Utility.GetColorFromName(fenceColor ?? "Gray");
+                    // Use FRESH container color settings
+                    string containerColor = freshContainer.CustomColor?.ToString() ?? SettingsManager.SelectedColor;
+                    Color baseColor = Utility.GetColorFromName(containerColor ?? "Gray");
 
-                    // Apply same blending to ALL fences
+                    // Apply same blending to ALL containers
                     Color highlightedColor = Color.FromRgb(
                         (byte)(baseColor.R * 0.75 + 255 * 0.25),
                         (byte)(baseColor.G * 0.75 + 255 * 0.25),
@@ -328,9 +328,9 @@ namespace Desktop_Fences
 
                         // Add click handler for Done button
                         doneButton.Click += (ds, de) => {
-                            // Use fresh fence for saving here too
-                            var currentFence = FenceManager.GetFenceData().FirstOrDefault(f => f.Id?.ToString() == fenceId) ?? fence;
-                            SaveNoteContent(currentFence, noteTextBox.Text);
+                            // Use fresh container for saving here too
+                            var currentContainer = ContainerManager.GetContainerData().FirstOrDefault(f => f.Id?.ToString() == containerId) ?? container;
+                            SaveNoteContent(currentContainer, noteTextBox.Text);
 
                             var parentWindow = FindParentWindow(noteTextBox);
                             if (parentWindow != null) parentWindow.Focus();
@@ -367,20 +367,20 @@ namespace Desktop_Fences
                     }
                 };
 
-                // Handle focus loss - restore fence background
+                // Handle focus loss - restore container background
                 noteTextBox.LostFocus += (s, e) =>
                 {
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation,
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation,
                         "TextBox focus lost - restoring background");
 
                     // --- FIX START: Get Fresh Data ---
-                    var freshFence = FenceManager.GetFenceData().FirstOrDefault(f => f.Id?.ToString() == fenceId) ?? fence;
+                    var freshContainer = ContainerManager.GetContainerData().FirstOrDefault(f => f.Id?.ToString() == containerId) ?? container;
                     // --- FIX END ---
 
                
-                    // Use FRESH fence color for the Highlight calculation
-                    string fenceColor = freshFence.CustomColor?.ToString() ?? SettingsManager.SelectedColor;
-                    Color baseColor = Utility.GetColorFromName(fenceColor ?? "Gray");
+                    // Use FRESH container color for the Highlight calculation
+                    string containerColor = freshContainer.CustomColor?.ToString() ?? SettingsManager.SelectedColor;
+                    Color baseColor = Utility.GetColorFromName(containerColor ?? "Gray");
 
                     // Calculate Highlight based on the NEW color
                     Color highlightedColor = Color.FromRgb(
@@ -394,7 +394,7 @@ namespace Desktop_Fences
                     autoSaveTimer.Stop();
                     if (!SettingsManager.DisableNoteAutoSave)
                     {
-                        SaveNoteContent(freshFence, noteTextBox.Text);
+                        SaveNoteContent(freshContainer, noteTextBox.Text);
                     }
 
                     var pWin = FindParentWindow(noteTextBox);
@@ -415,13 +415,13 @@ namespace Desktop_Fences
                                 noteTextBox.BorderThickness = new Thickness(0);
                                 noteTextBox.BorderBrush = null;
 
-                                // Apply color scheme using the FRESH fence object
-                                ApplyNoteColorScheme(noteTextBox, freshFence);
+                                // Apply color scheme using the FRESH container object
+                                ApplyNoteColorScheme(noteTextBox, freshContainer);
                             }
                             catch (Exception ex)
                             {
-                                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceCreation,
-                                    $"Error restoring fence background: {ex.Message}");
+                                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerCreation,
+                                    $"Error restoring container background: {ex.Message}");
                             }
                         })
                     );
@@ -440,7 +440,7 @@ namespace Desktop_Fences
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceCreation,
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerCreation,
                     $"Error setting up note editing behavior: {ex.Message}");
             }
         }
@@ -475,45 +475,45 @@ namespace Desktop_Fences
         /// Used by: Auto-save timer and focus lost events
         /// Category: Data Persistence
         /// </summary>
-        private static void SaveNoteContent(dynamic fence, string content)
+        private static void SaveNoteContent(dynamic container, string content)
         {
             try
             {
-                string fenceId = fence.Id?.ToString();
-                if (string.IsNullOrEmpty(fenceId)) return;
+                string containerId = container.Id?.ToString();
+                if (string.IsNullOrEmpty(containerId)) return;
 
-                // Find fence in data and update content
-                int fenceIndex = FenceDataManager.FenceData.FindIndex(f => f.Id?.ToString() == fenceId);
-                if (fenceIndex >= 0)
+                // Find container in data and update content
+                int containerIndex = ContainerDataManager.ContainerData.FindIndex(f => f.Id?.ToString() == containerId);
+                if (containerIndex >= 0)
                 {
-                    dynamic actualFence = FenceDataManager.FenceData[fenceIndex];
-                    IDictionary<string, object> fenceDict = actualFence as IDictionary<string, object> ??
-                        ((JObject)actualFence).ToObject<IDictionary<string, object>>();
+                    dynamic actualContainer = ContainerDataManager.ContainerData[containerIndex];
+                    IDictionary<string, object> containerDict = actualContainer as IDictionary<string, object> ??
+                        ((JObject)actualContainer).ToObject<IDictionary<string, object>>();
 
-                    fenceDict["NoteContent"] = content;
-                    FenceDataManager.FenceData[fenceIndex] = JObject.FromObject(fenceDict);
-                    FenceDataManager.SaveFenceData();
+                    containerDict["NoteContent"] = content;
+                    ContainerDataManager.ContainerData[containerIndex] = JObject.FromObject(containerDict);
+                    ContainerDataManager.SaveContainerData();
 
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate,
-                        $"Auto-saved note content for fence '{fence.Title}' ({content.Length} characters)");
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate,
+                        $"Auto-saved note content for container '{container.Title}' ({content.Length} characters)");
                 }
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceUpdate,
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerUpdate,
                     $"Error saving note content: {ex.Message}");
             }
         }
         #endregion
 
-        #region Context Menu Creation - Used by: FenceManager context menu logic
+        #region Context Menu Creation - Used by: ContainerManager context menu logic
 
         /// <summary>
-        /// Creates Note fence specific context menu items
-        /// Used by: FenceManager context menu creation for Note fences
+        /// Creates Note container specific context menu items
+        /// Used by: ContainerManager context menu creation for Note containers
         /// Category: UI Context Menu
         /// </summary>
-        public static void AddNoteContextMenuItems(ContextMenu menu, dynamic fence, TextBox noteTextBox)
+        public static void AddNoteContextMenuItems(ContextMenu menu, dynamic container, TextBox noteTextBox)
         {
             try
             {
@@ -528,7 +528,7 @@ namespace Desktop_Fences
                 //        foreach (string size in new[] { "Small", "Medium", "Large", "Extra Large" })
                 //        {
                 //            MenuItem sizeItem = new MenuItem { Header = size };
-                //            sizeItem.Click += (s, e) => ChangeNoteFontSize(fence, noteTextBox, size);
+                //            sizeItem.Click += (s, e) => ChangeNoteFontSize(container, noteTextBox, size);
                 //            fontSizeMenu.Items.Add(sizeItem);
                 //        }
                 // //       formatMenu.Items.Add(fontSizeMenu);
@@ -538,17 +538,17 @@ namespace Desktop_Fences
                 //        foreach (string family in new[] { "Segoe UI", "Consolas", "Times New Roman", "Arial", "Courier New" })
                 //        {
                 //            MenuItem familyItem = new MenuItem { Header = family };
-                //            familyItem.Click += (s, e) => ChangeNoteFontFamily(fence, noteTextBox, family);
+                //            familyItem.Click += (s, e) => ChangeNoteFontFamily(container, noteTextBox, family);
                 //            fontFamilyMenu.Items.Add(familyItem);
                 //        }
                 // //       formatMenu.Items.Add(fontFamilyMenu);
 
-                //        // Text Color submenu (uses same colors as fence icons)
+                //        // Text Color submenu (uses same colors as container icons)
                 //        MenuItem textColorMenu = new MenuItem { Header = Loc.T("Text Color") };
                 //        foreach (string color in new[] { "Default", "Red", "Green", "Blue", "White", "Black", "Gray" })
                 //        {
                 //            MenuItem colorItem = new MenuItem { Header = color };
-                //            colorItem.Click += (s, e) => ChangeNoteTextColor(fence, noteTextBox, color == "Default" ? null : color);
+                //            colorItem.Click += (s, e) => ChangeNoteTextColor(container, noteTextBox, color == "Default" ? null : color);
                 //            textColorMenu.Items.Add(colorItem);
                 //        }
                 ////        formatMenu.Items.Add(textColorMenu);
@@ -566,8 +566,8 @@ namespace Desktop_Fences
                     try
                     {
                         LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
-                            $"Opening Text Format form for fence '{fence.Title}'");
-                        TextFormatFormManager.ShowTextFormatForm(fence, noteTextBox);
+                            $"Opening Text Format form for container '{container.Title}'");
+                        TextFormatFormManager.ShowTextFormatForm(container, noteTextBox);
                     }
                     catch (Exception ex)
                     {
@@ -586,29 +586,29 @@ namespace Desktop_Fences
                 menu.Items.Add(copyAllItem);
 
                 MenuItem clearAllItem = new MenuItem { Header = Loc.T("Clear All Text") };
-                clearAllItem.Click += (s, e) => ClearAllNoteText(fence, noteTextBox);
+                clearAllItem.Click += (s, e) => ClearAllNoteText(container, noteTextBox);
                 menu.Items.Add(clearAllItem);
 
            //     textOpsMenu.Items.Add(new Separator());
 
                 MenuItem wordWrapItem = new MenuItem
                 {
-                    Header = GetWordWrapMenuText(fence.WordWrap?.ToString())
+                    Header = GetWordWrapMenuText(container.WordWrap?.ToString())
                 };
-                wordWrapItem.Click += (s, e) => ToggleWordWrap(fence, noteTextBox);
+                wordWrapItem.Click += (s, e) => ToggleWordWrap(container, noteTextBox);
          //       textOpsMenu.Items.Add(wordWrapItem);
 
                 MenuItem spellCheckItem = new MenuItem
                 {
-                    Header = GetSpellCheckMenuText(fence.SpellCheck?.ToString())
+                    Header = GetSpellCheckMenuText(container.SpellCheck?.ToString())
                 };
-                spellCheckItem.Click += (s, e) => ToggleSpellCheck(fence, noteTextBox);
+                spellCheckItem.Click += (s, e) => ToggleSpellCheck(container, noteTextBox);
              //   textOpsMenu.Items.Add(spellCheckItem);
 
              //   menu.Items.Add(textOpsMenu);
 
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI,
-                    "Added Note fence context menu items");
+                    "Added Note container context menu items");
 
                 // Keep existing individual submenu for backwards compatibility
 
@@ -626,29 +626,29 @@ namespace Desktop_Fences
         /// <summary>
         /// Creates a subtle background specifically for text area to improve visibility
         /// </summary>
-        private static Brush GetTextBackgroundBrush(dynamic fence)
+        private static Brush GetTextBackgroundBrush(dynamic container)
         {
             try
             {
-                // Get the fence color name safely
-                string fenceColorName = null;
-                try { fenceColorName = fence.CustomColor?.ToString(); } catch { }
+                // Get the container color name safely
+                string containerColorName = null;
+                try { containerColorName = container.CustomColor?.ToString(); } catch { }
 
-                if (string.IsNullOrEmpty(fenceColorName))
-                    fenceColorName = SettingsManager.SelectedColor ?? "Gray";
+                if (string.IsNullOrEmpty(containerColorName))
+                    containerColorName = SettingsManager.SelectedColor ?? "Gray";
 
                 // Use the shared helper to determine the actual visual background color
-                Color actualBg = GetActualFenceBackgroundColor(fenceColorName);
+                Color actualBg = GetActualContainerBackgroundColor(containerColorName);
                 double luminance = GetRelativeLuminance(actualBg);
 
                 if (luminance > 0.5) // Light background
                 {
-                    // Dark semi-transparent background for light fences
+                    // Dark semi-transparent background for light containers
                     return new SolidColorBrush(Color.FromArgb(30, 0, 0, 0));
                 }
                 else // Dark background
                 {
-                    // Light semi-transparent background for dark fences
+                    // Light semi-transparent background for dark containers
                     return new SolidColorBrush(Color.FromArgb(30, 255, 255, 255));
                 }
             }
@@ -667,23 +667,23 @@ namespace Desktop_Fences
         /// <summary>
         /// Changes the font size of the note content
         /// </summary>
-        private static void ChangeNoteFontSize(dynamic fence, TextBox noteTextBox, string size)
+        private static void ChangeNoteFontSize(dynamic container, TextBox noteTextBox, string size)
         {
             try
             {
                 double fontSize = GetNoteFontSizeValue(size);
                 noteTextBox.FontSize = fontSize;
 
-                // Save to fence data
-                string fenceId = fence.Id?.ToString();
-                if (!string.IsNullOrEmpty(fenceId))
+                // Save to container data
+                string containerId = container.Id?.ToString();
+                if (!string.IsNullOrEmpty(containerId))
                 {
-                    FenceManager.UpdateFenceProperty(fence, "NoteFontSize", size,
+                    ContainerManager.UpdateContainerProperty(container, "NoteFontSize", size,
                         $"Changed font size to {size}");
                 }
 
                 LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
-                    $"Changed note font size to {size} for fence '{fence.Title}'");
+                    $"Changed note font size to {size} for container '{container.Title}'");
             }
             catch (Exception ex)
             {
@@ -695,22 +695,22 @@ namespace Desktop_Fences
         /// <summary>
         /// Changes the font family of the note content
         /// </summary>
-        private static void ChangeNoteFontFamily(dynamic fence, TextBox noteTextBox, string family)
+        private static void ChangeNoteFontFamily(dynamic container, TextBox noteTextBox, string family)
         {
             try
             {
                 noteTextBox.FontFamily = new FontFamily(family);
 
-                // Save to fence data
-                string fenceId = fence.Id?.ToString();
-                if (!string.IsNullOrEmpty(fenceId))
+                // Save to container data
+                string containerId = container.Id?.ToString();
+                if (!string.IsNullOrEmpty(containerId))
                 {
-                    FenceManager.UpdateFenceProperty(fence, "NoteFontFamily", family,
+                    ContainerManager.UpdateContainerProperty(container, "NoteFontFamily", family,
                         $"Changed font family to {family}");
                 }
 
                 LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
-                    $"Changed note font family to {family} for fence '{fence.Title}'");
+                    $"Changed note font family to {family} for container '{container.Title}'");
             }
             catch (Exception ex)
             {
@@ -720,17 +720,17 @@ namespace Desktop_Fences
         }
 
         /// <summary>
-        /// Changes the text color of the note content (uses fence TextColor property)
+        /// Changes the text color of the note content (uses container TextColor property)
         /// </summary>
-        private static void ChangeNoteTextColor(dynamic fence, TextBox noteTextBox, string colorName)
+        private static void ChangeNoteTextColor(dynamic container, TextBox noteTextBox, string colorName)
         {
             try
             {
-                // Update the fence TextColor property (same as icons use)
-                string fenceId = fence.Id?.ToString();
-                if (!string.IsNullOrEmpty(fenceId))
+                // Update the container TextColor property (same as icons use)
+                string containerId = container.Id?.ToString();
+                if (!string.IsNullOrEmpty(containerId))
                 {
-                    FenceManager.UpdateFenceProperty(fence, "TextColor", colorName,
+                    ContainerManager.UpdateContainerProperty(container, "TextColor", colorName,
                         $"Changed text color to {colorName}");
                 }
 
@@ -750,7 +750,7 @@ namespace Desktop_Fences
                 }
 
                 LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
-                    $"Changed note text color to {colorName} for fence '{fence.Title}'");
+                    $"Changed note text color to {colorName} for container '{container.Title}'");
             }
             catch (Exception ex)
             {
@@ -783,7 +783,7 @@ namespace Desktop_Fences
         /// <summary>
         /// Clears all text from the note
         /// </summary>
-        private static void ClearAllNoteText(dynamic fence, TextBox noteTextBox)
+        private static void ClearAllNoteText(dynamic container, TextBox noteTextBox)
         {
             try
             {
@@ -791,10 +791,10 @@ namespace Desktop_Fences
                     "Clear Note", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
                 {
                     noteTextBox.Text = "";
-                    SaveNoteContent(fence, "");
+                    SaveNoteContent(container, "");
 
                     LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
-                        $"Cleared all text from note fence '{fence.Title}'");
+                        $"Cleared all text from note container '{container.Title}'");
                 }
             }
             catch (Exception ex)
@@ -807,7 +807,7 @@ namespace Desktop_Fences
         /// <summary>
         /// Toggles word wrap setting for the note
         /// </summary>
-        private static void ToggleWordWrap(dynamic fence, TextBox noteTextBox)
+        private static void ToggleWordWrap(dynamic container, TextBox noteTextBox)
         {
             try
             {
@@ -816,16 +816,16 @@ namespace Desktop_Fences
 
                 noteTextBox.TextWrapping = newWrap ? TextWrapping.Wrap : TextWrapping.NoWrap;
 
-                // Save to fence data
-                string fenceId = fence.Id?.ToString();
-                if (!string.IsNullOrEmpty(fenceId))
+                // Save to container data
+                string containerId = container.Id?.ToString();
+                if (!string.IsNullOrEmpty(containerId))
                 {
-                    FenceManager.UpdateFenceProperty(fence, "WordWrap", newWrap.ToString().ToLower(),
+                    ContainerManager.UpdateContainerProperty(container, "WordWrap", newWrap.ToString().ToLower(),
                         $"Toggled word wrap to {newWrap}");
                 }
 
                 LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
-                    $"Toggled word wrap to {newWrap} for fence '{fence.Title}'");
+                    $"Toggled word wrap to {newWrap} for container '{container.Title}'");
             }
             catch (Exception ex)
             {
@@ -837,7 +837,7 @@ namespace Desktop_Fences
         /// <summary>
         /// Toggles spell check setting for the note
         /// </summary>
-        private static void ToggleSpellCheck(dynamic fence, TextBox noteTextBox)
+        private static void ToggleSpellCheck(dynamic container, TextBox noteTextBox)
         {
             try
             {
@@ -846,16 +846,16 @@ namespace Desktop_Fences
 
                 noteTextBox.SpellCheck.IsEnabled = newSpellCheck;
 
-                // Save to fence data
-                string fenceId = fence.Id?.ToString();
-                if (!string.IsNullOrEmpty(fenceId))
+                // Save to container data
+                string containerId = container.Id?.ToString();
+                if (!string.IsNullOrEmpty(containerId))
                 {
-                    FenceManager.UpdateFenceProperty(fence, "SpellCheck", newSpellCheck.ToString().ToLower(),
+                    ContainerManager.UpdateContainerProperty(container, "SpellCheck", newSpellCheck.ToString().ToLower(),
                         $"Toggled spell check to {newSpellCheck}");
                 }
 
                 LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
-                    $"Toggled spell check to {newSpellCheck} for fence '{fence.Title}'");
+                    $"Toggled spell check to {newSpellCheck} for container '{container.Title}'");
             }
             catch (Exception ex)
             {
@@ -886,7 +886,7 @@ namespace Desktop_Fences
         
 
 
-        public static Brush GetNoteForeground(dynamic fence)
+        public static Brush GetNoteForeground(dynamic container)
         {
             try
             {
@@ -895,68 +895,68 @@ namespace Desktop_Fences
                 // Method 1: Direct property access
                 try
                 {
-                    textColorName = fence.TextColor?.ToString();
+                    textColorName = container.TextColor?.ToString();
                 }
                 catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException)
                 {
                     // TextColor property doesn't exist - will use default
                 }
-                // Method 2: Dictionary access if fence is a dictionary
+                // Method 2: Dictionary access if container is a dictionary
                 if (string.IsNullOrEmpty(textColorName))
                 {
                     try
                     {
-                        var fenceDict = fence as IDictionary<string, object>;
-                        if (fenceDict != null && fenceDict.ContainsKey("TextColor"))
+                        var containerDict = container as IDictionary<string, object>;
+                        if (containerDict != null && containerDict.ContainsKey("TextColor"))
                         {
-                            textColorName = fenceDict["TextColor"]?.ToString();
+                            textColorName = containerDict["TextColor"]?.ToString();
                         }
                     }
                     catch { }
                 }
 
-                // Get fence background color for contrast checking
-                string fenceColorName = null;
+                // Get container background color for contrast checking
+                string containerColorName = null;
                 try
                 {
-                    fenceColorName = fence.CustomColor?.ToString();
+                    containerColorName = container.CustomColor?.ToString();
                 }
                 catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException)
                 {
                     // CustomColor property doesn't exist
                 }
-                // Try dictionary access for fence color too
-                if (string.IsNullOrEmpty(fenceColorName))
+                // Try dictionary access for container color too
+                if (string.IsNullOrEmpty(containerColorName))
                 {
                     try
                     {
-                        var fenceDict = fence as IDictionary<string, object>;
-                        if (fenceDict != null && fenceDict.ContainsKey("CustomColor"))
+                        var containerDict = container as IDictionary<string, object>;
+                        if (containerDict != null && containerDict.ContainsKey("CustomColor"))
                         {
-                            fenceColorName = fenceDict["CustomColor"]?.ToString();
+                            containerColorName = containerDict["CustomColor"]?.ToString();
                         }
                     }
                     catch { }
                 }
-                // Fallback to SettingsManager if no fence-specific color
-                if (string.IsNullOrEmpty(fenceColorName))
+                // Fallback to SettingsManager if no container-specific color
+                if (string.IsNullOrEmpty(containerColorName))
                 {
-                    fenceColorName = SettingsManager.SelectedColor;
+                    containerColorName = SettingsManager.SelectedColor;
                 }
 
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI,
-                    $"Note fence TextColor: '{textColorName ?? "null"}', FenceColor: '{fenceColorName ?? "null"}'");
+                    $"Note container TextColor: '{textColorName ?? "null"}', ContainerColor: '{containerColorName ?? "null"}'");
 
-                // Get the actual tinted fence background color for contrast calculation
-                Color actualFenceBackground = GetActualFenceBackgroundColor(fenceColorName);
+                // Get the actual tinted container background color for contrast calculation
+                Color actualContainerBackground = GetActualContainerBackgroundColor(containerColorName);
 
-                // If text color is specified, check if it has good contrast with the tinted fence background
+                // If text color is specified, check if it has good contrast with the tinted container background
                 if (!string.IsNullOrEmpty(textColorName) && textColorName != "null")
                 {
                     Color originalTextColor = Utility.GetColorFromName(textColorName);
 
-                    // Calculate contrast ratio between text and actual fence background
-                    double contrastRatio = CalculateContrastRatio(originalTextColor, actualFenceBackground);
+                    // Calculate contrast ratio between text and actual container background
+                    double contrastRatio = CalculateContrastRatio(originalTextColor, actualContainerBackground);
 
                     // ALWAYS use the user's chosen color - never change it
                     LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI,
@@ -970,12 +970,12 @@ namespace Desktop_Fences
 
                 }
 
-                // No text color specified - use smart default based on fence background
-                string smartDefault = GetSmartDefaultTextColor(actualFenceBackground);
+                // No text color specified - use smart default based on container background
+                string smartDefault = GetSmartDefaultTextColor(actualContainerBackground);
                 var defaultColor = Utility.GetColorFromName(smartDefault);
 
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI,
-                    $"Using smart default text color: {smartDefault} for fence background");
+                    $"Using smart default text color: {smartDefault} for container background");
 
                 return new SolidColorBrush(defaultColor);
             }
@@ -989,7 +989,7 @@ namespace Desktop_Fences
 
 
         /// <summary>
-        /// Converts fence background colors to bright/vibrant text versions
+        /// Converts container background colors to bright/vibrant text versions
         /// </summary>
 
 
@@ -1016,16 +1016,16 @@ namespace Desktop_Fences
         }
 
         /// <summary>
-        /// Gets the actual tinted fence background color as it appears visually
+        /// Gets the actual tinted container background color as it appears visually
         /// </summary>
-        private static Color GetActualFenceBackgroundColor(string fenceColorName)
+        private static Color GetActualContainerBackgroundColor(string containerColorName)
         {
-            if (string.IsNullOrEmpty(fenceColorName))
+            if (string.IsNullOrEmpty(containerColorName))
                 return Colors.Transparent;
 
-            Color baseColor = Utility.GetColorFromName(fenceColorName);
+            Color baseColor = Utility.GetColorFromName(containerColorName);
 
-            // Apply the same tint logic as the fence uses
+            // Apply the same tint logic as the container uses
             if (SettingsManager.TintValue > 0)
             {
                 // Simulate the visual effect of tinted color over transparent background
@@ -1075,11 +1075,11 @@ namespace Desktop_Fences
  
      
         /// <summary>
-        /// Gets smart default text color based on fence background
+        /// Gets smart default text color based on container background
         /// </summary>
-        private static string GetSmartDefaultTextColor(Color fenceBackground)
+        private static string GetSmartDefaultTextColor(Color containerBackground)
         {
-            double luminance = GetRelativeLuminance(fenceBackground);
+            double luminance = GetRelativeLuminance(containerBackground);
             return luminance > 0.5 ? "Black" : "White";
         }
 
@@ -1098,7 +1098,7 @@ namespace Desktop_Fences
                 case "extra large": return 20;
                 default: return 14; // Medium
 
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation,
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation,
         $"GetNoteFontSize: '{fontSize}' -> {result}");
                     return result;
 
@@ -1129,21 +1129,21 @@ namespace Desktop_Fences
         }
 
         /// <summary>
-        /// Applies color scheme to note background based on fence colors
+        /// Applies color scheme to note background based on container colors
         /// </summary>
         /// <summary>
-        /// Applies color scheme to note background AND FOREGROUND based on fence colors
+        /// Applies color scheme to note background AND FOREGROUND based on container colors
         /// </summary>
-        private static void ApplyNoteColorScheme(TextBox noteTextBox, dynamic fence)
+        private static void ApplyNoteColorScheme(TextBox noteTextBox, dynamic container)
         {
             try
             {
                 // 1. BACKGROUND LOGIC
-                string fenceColor = fence.CustomColor?.ToString() ?? SettingsManager.SelectedColor;
+                string containerColor = container.CustomColor?.ToString() ?? SettingsManager.SelectedColor;
 
-                if (fenceColor != null && fenceColor != "Default")
+                if (containerColor != null && containerColor != "Default")
                 {
-                    Color baseColor = Utility.GetColorFromName(fenceColor);
+                    Color baseColor = Utility.GetColorFromName(containerColor);
                     if (SettingsManager.TintValue > 0)
                     {
                         var tintedBrush = new SolidColorBrush(baseColor) { Opacity = SettingsManager.TintValue / 100.0 };
@@ -1165,10 +1165,10 @@ namespace Desktop_Fences
 
                 // 3. FOREGROUND LOGIC (THE CRITICAL FIX)
                 // Force text color recalculation based on the new background
-                noteTextBox.Foreground = GetNoteForeground(fence);
+                noteTextBox.Foreground = GetNoteForeground(container);
 
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI,
-                    $"Applied note scheme: BG={fenceColor}, FG={noteTextBox.Foreground}");
+                    $"Applied note scheme: BG={containerColor}, FG={noteTextBox.Foreground}");
             }
             catch (Exception ex)
             {
@@ -1181,14 +1181,14 @@ namespace Desktop_Fences
 
         /// <summary>
         /// Publicly accessible method to force a visual refresh of the note
-        /// Call this from FenceManager.UpdateFenceProperty when CustomColor changes
+        /// Call this from ContainerManager.UpdateContainerProperty when CustomColor changes
         /// </summary>
-        public static void RefreshNoteVisuals(dynamic fence, TextBox noteTextBox)
+        public static void RefreshNoteVisuals(dynamic container, TextBox noteTextBox)
         {
             if (noteTextBox == null) return;
 
             // Re-apply the full color scheme (Background + Foreground)
-            ApplyNoteColorScheme(noteTextBox, fence);
+            ApplyNoteColorScheme(noteTextBox, container);
         }
 
         /// <summary>
@@ -1210,39 +1210,39 @@ namespace Desktop_Fences
         }
         #endregion
 
-        #region Note Fence Validation - Used by: Data validation
+        #region Note Container Validation - Used by: Data validation
 
         /// <summary>
-        /// Validates if a fence is a Note type fence
-        /// Used by: Various fence operations to check fence type
+        /// Validates if a container is a Note type container
+        /// Used by: Various container operations to check container type
         /// Category: Validation
         /// </summary>
-        public static bool IsNoteFence(dynamic fence)
+        public static bool IsNoteContainer(dynamic container)
         {
-            return fence?.ItemsType?.ToString() == "Note";
+            return container?.ItemsType?.ToString() == "Note";
         }
 
         /// <summary>
-        /// Gets default Note fence properties for new fence creation
-        /// Used by: FenceDataManager.ApplyFenceDefaults() for Note fences
+        /// Gets default Note container properties for new container creation
+        /// Used by: ContainerDataManager.ApplyContainerDefaults() for Note containers
         /// Category: Default Values
         /// </summary>
-        public static void ApplyNoteDefaults(IDictionary<string, object> fenceDict)
+        public static void ApplyNoteDefaults(IDictionary<string, object> containerDict)
         {
             try
             {
-                fenceDict["NoteContent"] = "";
-                fenceDict["NoteFontSize"] = "Medium";
-                fenceDict["NoteFontFamily"] = "Segoe UI";
-                fenceDict["WordWrap"] = "true";
-                fenceDict["SpellCheck"] = "true";
+                containerDict["NoteContent"] = "";
+                containerDict["NoteFontSize"] = "Medium";
+                containerDict["NoteFontFamily"] = "Segoe UI";
+                containerDict["WordWrap"] = "true";
+                containerDict["SpellCheck"] = "true";
 
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation,
-                    "Applied default properties for Note fence");
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation,
+                    "Applied default properties for Note container");
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceCreation,
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerCreation,
                     $"Error applying note defaults: {ex.Message}");
             }
         }
@@ -1265,7 +1265,7 @@ namespace Desktop_Fences
         }
         private static Thickness GetTextBoxMargin()
         {
-            double leftMargin = 8;   // TWEAK: Equal distance from all fence edges
+            double leftMargin = 8;   // TWEAK: Equal distance from all container edges
             double rightMargin = 24;
             double topMargin = 4;     // TWEAK: Distance from top (below title)
             double bottomMargin = 28; // TWEAK: Space for Done button below textbox
@@ -1298,8 +1298,8 @@ namespace Desktop_Fences
             double buttonWidth = 20;   // TWEAK: Done button width
             double buttonHeight = 20;  // TWEAK: Done button height
 
-            double rightMargin = 24;    // TWEAK: Distance from right fence edge (matches textbox margin)
-            double bottomMargin = 4;   // TWEAK: Distance from bottom fence edge
+            double rightMargin = 24;    // TWEAK: Distance from right container edge (matches textbox margin)
+            double bottomMargin = 4;   // TWEAK: Distance from bottom container edge
 
             return (buttonWidth, buttonHeight, new Thickness(0, 0, rightMargin, bottomMargin));
         }

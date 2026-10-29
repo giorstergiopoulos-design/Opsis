@@ -78,7 +78,7 @@ namespace MotionDesk.Services
                 string? langFile = LocalizationManager.Supported.FirstOrDefault(s => s.Code == LocalizationManager.CurrentLanguage).File;
                 if (langFile != null) psi.Environment["OPSIS_LOCALE_FILE"] = Path.Combine(loc, langFile);
                 psi.Environment["OPSIS_LOCALE_FALLBACK"] = Path.Combine(loc, "en-US.json");
-                // Opsis palette for the Fences settings windows (see containers\OpsisTheme.cs).
+                // Opsis palette for the DeskContainers dialogs (see containers\OpsisTheme.cs).
                 psi.Environment["OPSIS_THEME"] = ThemeSpec();
                 // An elevated Opsis must not hand its elevation to the engine: UIPI would block drag & drop from Explorer into its windows.
                 if (DeElevatedLauncher.IsElevated())
@@ -89,7 +89,7 @@ namespace MotionDesk.Services
                 }
                 _own ??= Process.Start(psi);
             }
-            catch (Exception ex) { RotatingLogger.Write($"Fences engine failed to start: {ex.Message}"); }
+            catch (Exception ex) { RotatingLogger.Write($"DeskContainers engine failed to start: {ex.Message}"); }
         }
 
         public static void Stop()

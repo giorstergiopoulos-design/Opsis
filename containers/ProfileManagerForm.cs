@@ -7,7 +7,7 @@ using System.Windows.Media;
 using System.Windows.Media.Effects;
 using System.Windows.Shapes;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     public class ProfileManagerForm : Window
     {
@@ -25,7 +25,7 @@ namespace Desktop_Fences
             AllowsTransparency = true;
             Background = Brushes.Transparent;
 
-            // Main Container (Card) - Updated to match CustomizeFenceForm style
+            // Main Container (Card) - Updated to match CustomizeContainerForm style
             Border mainBorder = new Border
             {
                 Background = Brushes.White,

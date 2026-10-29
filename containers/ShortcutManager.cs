@@ -1,6 +1,6 @@
 ﻿using IWshRuntimeLibrary;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     public class ShortcutManager
     {

@@ -10,17 +10,17 @@ using System.Windows.Media.Imaging;
 using System.Diagnostics;
 using Newtonsoft.Json.Linq;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     /// <summary>
-    /// Modern WPF form for customizing Note fence text formatting properties
-    /// Follows exact same design pattern as CustomizeFenceFormManager
+    /// Modern WPF form for customizing Note container text formatting properties
+    /// Follows exact same design pattern as CustomizeContainerFormManager
     /// DPI-aware with monitor positioning support
     /// </summary>
     public class TextFormatFormManager : Window
     {
         #region Private Fields
-        private dynamic _fence;
+        private dynamic _container;
         private TextBox _noteTextBox;
         private bool _result = false;
 
@@ -31,7 +31,7 @@ namespace Desktop_Fences
         private CheckBox _chkWordWrap;
         private CheckBox _chkSpellCheck;
 
-        // Available values from existing NoteFenceManager code
+        // Available values from existing NoteContainerManager code
         private readonly string[] _validFontSizes = { "Small", "Medium", "Large", "Extra Large" };
         private readonly string[] _validFontFamilies = { "Segoe UI", "Arial", "Consolas", "Times New Roman", "Courier New" };
         private readonly string[] _validTextColors = { "Red", "Green", "Teal", "Blue", "Bismark", "White", "Beige", "Gray", "Black", "Purple", "Fuchsia", "Yellow", "Orange" };
@@ -48,16 +48,16 @@ namespace Desktop_Fences
 
         #region Constructor
         /// <summary>
-        /// Initialize the Text Format form with current note fence data
+        /// Initialize the Text Format form with current note container data
         /// </summary>
-        /// <param name="fence">The note fence object to format</param>
+        /// <param name="container">The note container object to format</param>
         /// <param name="noteTextBox">The TextBox control to apply changes to</param>
-        public TextFormatFormManager(dynamic fence, TextBox noteTextBox)
+        public TextFormatFormManager(dynamic container, TextBox noteTextBox)
         {
             try
             {
-                // Get the most current fence data from FenceManager to avoid stale references
-                _fence = GetCurrentFenceData(fence);
+                // Get the most current container data from ContainerManager to avoid stale references
+                _container = GetCurrentContainerData(container);
                 _noteTextBox = noteTextBox;
 
                 // Store original values for cancel functionality
@@ -67,7 +67,7 @@ namespace Desktop_Fences
                 LoadCurrentValues();
 
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI,
-                    $"Text Format form initialized for fence '{_fence.Title}'");
+                    $"Text Format form initialized for container '{_container.Title}'");
             }
             catch (Exception ex)
             {
@@ -153,7 +153,7 @@ namespace Desktop_Fences
                 this.Focusable = true;
                 this.Focus();
 
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Initialized TextFormatForm for fence '{_fence.Title}'");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Initialized TextFormatForm for container '{_container.Title}'");
             }
             catch (Exception ex)
             {
@@ -386,7 +386,7 @@ namespace Desktop_Fences
             parent.Children.Add(textBehaviorGroupBox);
         }
 
-        #region Helper Methods for Control Creation (copied exactly from CustomizeFenceFormManager)
+        #region Helper Methods for Control Creation (copied exactly from CustomizeContainerFormManager)
         private void CreateDropdownField(StackPanel parent, string labelText, string[] items, out ComboBox comboBox)
         {
             Grid fieldGrid = new Grid
@@ -480,36 +480,36 @@ namespace Desktop_Fences
         }
         #endregion
 
-        #region Current Fence Data Retrieval (same as customize form)
-        private dynamic GetCurrentFenceData(dynamic originalFence)
+        #region Current Container Data Retrieval (same as customize form)
+        private dynamic GetCurrentContainerData(dynamic originalContainer)
         {
             try
             {
-                string fenceId = originalFence.Id?.ToString();
-                if (string.IsNullOrEmpty(fenceId))
+                string containerId = originalContainer.Id?.ToString();
+                if (string.IsNullOrEmpty(containerId))
                 {
-                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.UI, $"Original fence '{originalFence.Title}' has no Id, using original reference");
-                    return originalFence;
+                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.UI, $"Original container '{originalContainer.Title}' has no Id, using original reference");
+                    return originalContainer;
                 }
 
-                var fenceData = FenceManager.GetFenceData();
-                dynamic currentFence = fenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
+                var containerData = ContainerManager.GetContainerData();
+                dynamic currentContainer = containerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
 
-                if (currentFence != null)
+                if (currentContainer != null)
                 {
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Retrieved current fence data for '{currentFence.Title}' (Id: {fenceId})");
-                    return currentFence;
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Retrieved current container data for '{currentContainer.Title}' (Id: {containerId})");
+                    return currentContainer;
                 }
                 else
                 {
-                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.UI, $"Could not find current fence data for Id '{fenceId}', using original reference");
-                    return originalFence;
+                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.UI, $"Could not find current container data for Id '{containerId}', using original reference");
+                    return originalContainer;
                 }
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, $"Error retrieving current fence data: {ex.Message}, using original reference");
-                return originalFence;
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, $"Error retrieving current container data: {ex.Message}, using original reference");
+                return originalContainer;
             }
         }
         #endregion
@@ -519,14 +519,14 @@ namespace Desktop_Fences
         {
             try
             {
-                _originalFontSize = GetSafeNoteProperty(_fence, "NoteFontSize", "Medium");
-                _originalFontFamily = GetSafeNoteProperty(_fence, "NoteFontFamily", "Segoe UI");
-                _originalTextColor = GetSafeNoteProperty(_fence, "TextColor", "Default");
-                _originalWordWrap = GetSafeNoteProperty(_fence, "WordWrap", "true").ToLower() == "true";
-                _originalSpellCheck = GetSafeNoteProperty(_fence, "SpellCheck", "true").ToLower() == "true";
+                _originalFontSize = GetSafeNoteProperty(_container, "NoteFontSize", "Medium");
+                _originalFontFamily = GetSafeNoteProperty(_container, "NoteFontFamily", "Segoe UI");
+                _originalTextColor = GetSafeNoteProperty(_container, "TextColor", "Default");
+                _originalWordWrap = GetSafeNoteProperty(_container, "WordWrap", "true").ToLower() == "true";
+                _originalSpellCheck = GetSafeNoteProperty(_container, "SpellCheck", "true").ToLower() == "true";
 
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI,
-                    $"Stored original values for fence '{_fence.Title}'");
+                    $"Stored original values for container '{_container.Title}'");
             }
             catch (Exception ex)
             {
@@ -539,34 +539,34 @@ namespace Desktop_Fences
         {
             try
             {
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Loading current values for fence '{_fence.Title}'");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Loading current values for container '{_container.Title}'");
 
                 // Load Font Size (same pattern as customize form)
-                LoadDropdownValue(_cmbFontSize, _fence.NoteFontSize?.ToString(), "NoteFontSize");
+                LoadDropdownValue(_cmbFontSize, _container.NoteFontSize?.ToString(), "NoteFontSize");
 
                 // Load Font Family
-                LoadDropdownValue(_cmbFontFamily, _fence.NoteFontFamily?.ToString(), "NoteFontFamily");
+                LoadDropdownValue(_cmbFontFamily, _container.NoteFontFamily?.ToString(), "NoteFontFamily");
 
                 // Load Text Color
-                LoadDropdownValue(_cmbTextColor, _fence.TextColor?.ToString(), "TextColor");
+                LoadDropdownValue(_cmbTextColor, _container.TextColor?.ToString(), "TextColor");
 
                 // Load Word Wrap
-                LoadCheckboxValue(_chkWordWrap, _fence.WordWrap?.ToString(), "WordWrap");
+                LoadCheckboxValue(_chkWordWrap, _container.WordWrap?.ToString(), "WordWrap");
 
                 // Load Spell Check
-                LoadCheckboxValue(_chkSpellCheck, _fence.SpellCheck?.ToString(), "SpellCheck");
+                LoadCheckboxValue(_chkSpellCheck, _container.SpellCheck?.ToString(), "SpellCheck");
 
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI,
-                    $"Successfully loaded all current values for fence '{_fence.Title}'");
+                    $"Successfully loaded all current values for container '{_container.Title}'");
             }
             catch (Exception ex)
             {
                 LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI,
-                    $"Error loading current values for fence '{_fence.Title}': {ex.Message}");
+                    $"Error loading current values for container '{_container.Title}': {ex.Message}");
             }
         }
 
-        // Helper methods copied exactly from CustomizeFenceFormManager
+        // Helper methods copied exactly from CustomizeContainerFormManager
         private void LoadDropdownValue(ComboBox comboBox, string currentValue, string propertyName)
         {
             try
@@ -630,25 +630,25 @@ namespace Desktop_Fences
         }
 
         // Safe property getter (local implementation)
-        private string GetSafeNoteProperty(dynamic fence, string propertyName, string fallbackValue)
+        private string GetSafeNoteProperty(dynamic container, string propertyName, string fallbackValue)
         {
             try
             {
                 // Method 1: Dictionary access  
                 try
                 {
-                    var fenceDict = fence as IDictionary<string, object>;
-                    if (fenceDict != null && fenceDict.ContainsKey(propertyName))
+                    var containerDict = container as IDictionary<string, object>;
+                    if (containerDict != null && containerDict.ContainsKey(propertyName))
                     {
-                        return fenceDict[propertyName]?.ToString() ?? fallbackValue;
+                        return containerDict[propertyName]?.ToString() ?? fallbackValue;
                     }
                 }
                 catch { }
 
-                // Method 2: JObject access (for JSON loaded fences)
+                // Method 2: JObject access (for JSON loaded containers)
                 try
                 {
-                    var jObject = fence as Newtonsoft.Json.Linq.JObject;
+                    var jObject = container as Newtonsoft.Json.Linq.JObject;
                     if (jObject != null && jObject.ContainsKey(propertyName))
                     {
                         return jObject[propertyName]?.ToString() ?? fallbackValue;
@@ -692,7 +692,7 @@ namespace Desktop_Fences
                 SaveChangesToJson();
 
                 LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
-                    $"Applied text format changes for fence '{_fence.Title}' (form remains open)");
+                    $"Applied text format changes for container '{_container.Title}' (form remains open)");
             }
             catch (Exception ex)
             {
@@ -712,7 +712,7 @@ namespace Desktop_Fences
                 Close();
 
                 LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
-                    $"Saved text format changes for fence '{_fence.Title}' and closed form");
+                    $"Saved text format changes for container '{_container.Title}' and closed form");
             }
             catch (Exception ex)
             {
@@ -731,7 +731,7 @@ namespace Desktop_Fences
                 Close();
 
                 LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
-                    $"Cancelled text format changes for fence '{_fence.Title}'");
+                    $"Cancelled text format changes for container '{_container.Title}'");
             }
             catch (Exception ex)
             {
@@ -795,7 +795,7 @@ namespace Desktop_Fences
                 _noteTextBox.SpellCheck.IsEnabled = spellCheckEnabled;
 
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI,
-                    $"Applied all text format changes to TextBox for fence '{_fence.Title}'");
+                    $"Applied all text format changes to TextBox for container '{_container.Title}'");
             }
             catch (Exception ex)
             {
@@ -809,7 +809,7 @@ namespace Desktop_Fences
         {
             try
             {
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Saving text format properties to JSON for fence '{_fence.Title}'");
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Saving text format properties to JSON for container '{_container.Title}'");
 
                 // Get values from all controls (same pattern as customize form)
                 string fontSizeValue = GetDropdownValue(_cmbFontSize);
@@ -818,20 +818,20 @@ namespace Desktop_Fences
                 string wordWrapValue = (_chkWordWrap.IsChecked ?? true).ToString().ToLower();
                 string spellCheckValue = (_chkSpellCheck.IsChecked ?? true).ToString().ToLower();
 
-                // Save all properties using existing UpdateFenceProperty method (same as customize form)
-                FenceManager.UpdateFenceProperty(_fence, "NoteFontSize", fontSizeValue ?? "Medium", $"NoteFontSize updated to '{fontSizeValue ?? "Medium"}'");
-                FenceManager.UpdateFenceProperty(_fence, "NoteFontFamily", fontFamilyValue ?? "Segoe UI", $"NoteFontFamily updated to '{fontFamilyValue ?? "Segoe UI"}'");
-                FenceManager.UpdateFenceProperty(_fence, "TextColor", textColorValue, $"TextColor updated to '{textColorValue}'");
-                FenceManager.UpdateFenceProperty(_fence, "WordWrap", wordWrapValue, $"WordWrap updated to '{wordWrapValue}'");
-                FenceManager.UpdateFenceProperty(_fence, "SpellCheck", spellCheckValue, $"SpellCheck updated to '{spellCheckValue}'");
+                // Save all properties using existing UpdateContainerProperty method (same as customize form)
+                ContainerManager.UpdateContainerProperty(_container, "NoteFontSize", fontSizeValue ?? "Medium", $"NoteFontSize updated to '{fontSizeValue ?? "Medium"}'");
+                ContainerManager.UpdateContainerProperty(_container, "NoteFontFamily", fontFamilyValue ?? "Segoe UI", $"NoteFontFamily updated to '{fontFamilyValue ?? "Segoe UI"}'");
+                ContainerManager.UpdateContainerProperty(_container, "TextColor", textColorValue, $"TextColor updated to '{textColorValue}'");
+                ContainerManager.UpdateContainerProperty(_container, "WordWrap", wordWrapValue, $"WordWrap updated to '{wordWrapValue}'");
+                ContainerManager.UpdateContainerProperty(_container, "SpellCheck", spellCheckValue, $"SpellCheck updated to '{spellCheckValue}'");
 
                 LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
-                    $"Saved all text format settings for fence '{_fence.Title}'");
+                    $"Saved all text format settings for container '{_container.Title}'");
             }
             catch (Exception ex)
             {
                 LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI,
-                    $"Error saving changes to fence data: {ex.Message}");
+                    $"Error saving changes to container data: {ex.Message}");
                 throw;
             }
         }
@@ -871,7 +871,7 @@ namespace Desktop_Fences
                 _noteTextBox.SpellCheck.IsEnabled = _originalSpellCheck;
 
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI,
-                    $"Restored original values for fence '{_fence.Title}'");
+                    $"Restored original values for container '{_container.Title}'");
             }
             catch (Exception ex)
             {
@@ -902,23 +902,23 @@ namespace Desktop_Fences
         }
 
         /// <summary>
-        /// Static method to show Text Format form for a Note fence
+        /// Static method to show Text Format form for a Note container
         /// </summary>
-        /// <param name="fence">The note fence to format</param>
+        /// <param name="container">The note container to format</param>
         /// <param name="noteTextBox">The TextBox control to apply changes to</param>
         /// <returns>True if changes were saved, false if cancelled</returns>
-        public static bool ShowTextFormatForm(dynamic fence, TextBox noteTextBox)
+        public static bool ShowTextFormatForm(dynamic container, TextBox noteTextBox)
         {
             try
             {
-                if (fence?.ItemsType?.ToString() != "Note")
+                if (container?.ItemsType?.ToString() != "Note")
                 {
                     LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.UI,
-                        "Text Format form can only be used with Note fences");
+                        "Text Format form can only be used with Note containers");
                     return false;
                 }
 
-                var form = new TextFormatFormManager(fence, noteTextBox);
+                var form = new TextFormatFormManager(container, noteTextBox);
                 return form.ShowDialog();
             }
             catch (Exception ex)

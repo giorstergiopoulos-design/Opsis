@@ -3,17 +3,17 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     // Opsis integration: every user-visible string of the engine goes through Loc.T.
-    //  * the product word "fence" is shown as "DeskContainer" (Opsis naming);
+    //  * the product word "container" is shown as "DeskContainer" (Opsis naming);
     //  * Greek translations for the strings that exist in the UI (language comes from Opsis via OPSIS_LANG, else the system UI culture).
     internal static class Loc
     {
         public static readonly bool Greek =
             string.Equals((Environment.GetEnvironmentVariable("OPSIS_LANG") ?? CultureInfo.CurrentUICulture.TwoLetterISOLanguageName), "el", StringComparison.OrdinalIgnoreCase);
 
-        // Exact-match translation only (no "fence" renaming): used for texts that were not wrapped at their source.
+        // Exact-match translation only (no "container" renaming): used for texts that were not wrapped at their source.
         public static string Translate(string s) => Greek && !string.IsNullOrEmpty(s) && Map.TryGetValue(s, out var g) ? g : s;
 
         // Texts of the new Opsis-side menus come from the Opsis locale files (all 14 languages): Opsis passes the path of the current language
@@ -50,12 +50,12 @@ namespace Desktop_Fences
             return Rename(s);
         }
 
-        private static readonly Regex FenceWord = new Regex(@"\b(Fences|Fence|fences|fence)\b", RegexOptions.Compiled);
+        private static readonly Regex ContainerWord = new Regex(@"\b(Containers|Container|containers|container)\b", RegexOptions.Compiled);
 
         private static string Rename(string s)
         {
-            s = s.Replace("Desktop Fences Plus", "Opsis DeskContainers").Replace("Desktop Fences +", "Opsis DeskContainers").Replace("Opsis DeskContainers", "Opsis DeskContainers");
-            return FenceWord.Replace(s, m => m.Value switch { "Fences" => "DeskContainers", "Fence" => "DeskContainer", "fences" => "desk containers", _ => "desk container" });
+
+            return ContainerWord.Replace(s, m => m.Value switch { "Containers" => "DeskContainers", "Container" => "DeskContainer", "containers" => "desk containers", _ => "desk container" });
         }
 
         private static readonly Dictionary<string, string> Map = new Dictionary<string, string>
@@ -73,10 +73,10 @@ namespace Desktop_Fences
             ["Settings"] = "Ρυθμίσεις", ["All settings in Opsis..."] = "Όλες οι ρυθμίσεις στο Opsis…", ["Single click to launch"] = "Άνοιγμα με ένα κλικ", ["Snap near other containers"] = "Μαγνητική στοίχιση κοντά σε άλλα containers",
             ["Sounds"] = "Ήχοι", ["Auto roll-up (expand on hover)"] = "Αυτόματο μάζεμα (άνοιγμα με hover)", ["Auto-hide when idle"] = "Αυτόματη απόκρυψη μετά από αδράνεια",
             ["Chameleon (colour from the wallpaper)"] = "Chameleon (χρώμα από το wallpaper)", ["Dropped desktop icons leave the desktop"] = "Τα εικονίδια που σύρονται μέσα φεύγουν από την επιφάνεια", ["Hide scrollbars"] = "Απόκρυψη scrollbars",
-            ["About..."] = "Σχετικά…", ["Options..."] = "Ρυθμίσεις…", ["New Fence"] = "Νέο DeskContainer", ["New Portal Fence"] = "Νέο Portal DeskContainer",
-            ["New Note Fence"] = "Νέο DeskContainer σημείωσης", ["Enable Tabs On This Fence"] = "Ενεργοποίηση καρτελών σε αυτό το DeskContainer",
-            ["Delete this Fence"] = "Διαγραφή αυτού του DeskContainer", ["Export this Fence"] = "Εξαγωγή αυτού του DeskContainer", ["Import a Fence..."] = "Εισαγωγή DeskContainer…",
-            ["Restore Last Deleted Fence"] = "Επαναφορά τελευταίου διαγραμμένου DeskContainer", ["Exit"] = "Έξοδος", ["Hide Fence"] = "Απόκρυψη DeskContainer",
+            ["About..."] = "Σχετικά…", ["Options..."] = "Ρυθμίσεις…", ["New Container"] = "Νέο DeskContainer", ["New Portal Container"] = "Νέο Portal DeskContainer",
+            ["New Note Container"] = "Νέο DeskContainer σημείωσης", ["Enable Tabs On This Container"] = "Ενεργοποίηση καρτελών σε αυτό το DeskContainer",
+            ["Delete this Container"] = "Διαγραφή αυτού του DeskContainer", ["Export this Container"] = "Εξαγωγή αυτού του DeskContainer", ["Import a Container..."] = "Εισαγωγή DeskContainer…",
+            ["Restore Last Deleted Container"] = "Επαναφορά τελευταίου διαγραμμένου DeskContainer", ["Exit"] = "Έξοδος", ["Hide Container"] = "Απόκρυψη DeskContainer",
             ["Sort by"] = "Ταξινόμηση κατά", ["Name"] = "Όνομα", ["Type"] = "Τύπος", ["Date modified"] = "Ημερομηνία τροποποίησης", ["Size"] = "Μέγεθος",
             ["Exclude from auto-hide"] = "Εξαίρεση από την αυτόματη απόκρυψη", ["Peek Behind"] = "Κρυφή ματιά (πίσω από το DeskContainer)", ["Customize..."] = "Προσαρμογή…",
             ["Add New Tab"] = "Προσθήκη νέας καρτέλας", ["Rename Tab"] = "Μετονομασία καρτέλας", ["Delete Tab"] = "Διαγραφή καρτέλας", ["Move Left"] = "Μετακίνηση αριστερά", ["Move Right"] = "Μετακίνηση δεξιά",
@@ -85,26 +85,26 @@ namespace Desktop_Fences
             ["Always run as administrator"] = "Πάντα εκτέλεση ως διαχειριστής", ["Always run as different user"] = "Πάντα εκτέλεση ως άλλος χρήστης", ["Remove"] = "Αφαίρεση", ["Edit..."] = "Επεξεργασία…",
             ["Move..."] = "Μετακίνηση…", ["Copy Item"] = "Αντιγραφή στοιχείου", ["Cut Item"] = "Αποκοπή στοιχείου", ["Paste Item"] = "Επικόλληση στοιχείου", ["Delete item"] = "Διαγραφή στοιχείου",
             ["Rename item"] = "Μετονομασία στοιχείου", ["Send to Desktop"] = "Αποστολή στην επιφάνεια εργασίας", ["Export all icons to desktop"] = "Εξαγωγή όλων των εικονιδίων στην επιφάνεια εργασίας",
-            ["Clear Dead Shortcuts"] = "Καθαρισμός νεκρών συντομεύσεων", ["Name Fence After Target Path"] = "Όνομα DeskContainer από τη διαδρομή προορισμού", ["Open fence folder"] = "Άνοιγμα φακέλου του DeskContainer",
-            ["Generate new Portal Fence for this folder"] = "Δημιουργία Portal DeskContainer για αυτόν τον φάκελο", ["Go Up"] = "Πάνω", ["Text Format..."] = "Μορφοποίηση κειμένου…",
+            ["Clear Dead Shortcuts"] = "Καθαρισμός νεκρών συντομεύσεων", ["Name Container After Target Path"] = "Όνομα DeskContainer από τη διαδρομή προορισμού", ["Open container folder"] = "Άνοιγμα φακέλου του DeskContainer",
+            ["Generate new Portal Container for this folder"] = "Δημιουργία Portal DeskContainer για αυτόν τον φάκελο", ["Go Up"] = "Πάνω", ["Text Format..."] = "Μορφοποίηση κειμένου…",
             ["Copy All Text"] = "Αντιγραφή όλου του κειμένου", ["Clear All Text"] = "Εκκαθάριση κειμένου", ["Edit Shortcut"] = "Επεξεργασία συντόμευσης", ["Browse for Folder..."] = "Επιλογή φακέλου…",
             // dialogs
-            ["Are you sure you want to delete this fence?"] = "Είσαι σίγουρος ότι θέλεις να διαγράψεις αυτό το DeskContainer;", ["Delete Fence"] = "Διαγραφή DeskContainer", ["Confirm delete"] = "Επιβεβαίωση διαγραφής",
+            ["Are you sure you want to delete this container?"] = "Είσαι σίγουρος ότι θέλεις να διαγράψεις αυτό το DeskContainer;", ["Delete Container"] = "Διαγραφή DeskContainer", ["Confirm delete"] = "Επιβεβαίωση διαγραφής",
             ["Yes"] = "Ναι", ["No"] = "Όχι", ["OK"] = "OK", ["Cancel"] = "Άκυρο", ["Close"] = "Κλείσιμο", ["Save"] = "Αποθήκευση", ["Apply"] = "Εφαρμογή", ["Default"] = "Προεπιλογή", ["Create"] = "Δημιουργία",
             ["Export Successful"] = "Η εξαγωγή ολοκληρώθηκε", ["Import Complete"] = "Η εισαγωγή ολοκληρώθηκε", ["Success"] = "Επιτυχία", ["Error"] = "Σφάλμα", ["Information"] = "Πληροφορία",
-            ["Reloading all fences, please wait..."] = "Επαναφόρτωση όλων των DeskContainers, περίμενε…", ["Please wait..."] = "Περίμενε…", ["Update Available"] = "Διαθέσιμη ενημέρωση",
-            ["Select Fence Export File"] = "Επιλογή αρχείου εξαγωγής DeskContainer", ["No other Data Fences found to import."] = "Δεν βρέθηκαν άλλα DeskContainers δεδομένων για εισαγωγή.",
-            ["Select a destination fence or tab:"] = "Επίλεξε DeskContainer ή καρτέλα προορισμού:", ["Select a source fence or tab to import:"] = "Επίλεξε DeskContainer ή καρτέλα πηγής για εισαγωγή:",
+            ["Reloading all containers, please wait..."] = "Επαναφόρτωση όλων των DeskContainers, περίμενε…", ["Please wait..."] = "Περίμενε…", ["Update Available"] = "Διαθέσιμη ενημέρωση",
+            ["Select Container Export File"] = "Επιλογή αρχείου εξαγωγής DeskContainer", ["No other Data Containers found to import."] = "Δεν βρέθηκαν άλλα DeskContainers δεδομένων για εισαγωγή.",
+            ["Select a destination container or tab:"] = "Επίλεξε DeskContainer ή καρτέλα προορισμού:", ["Select a source container or tab to import:"] = "Επίλεξε DeskContainer ή καρτέλα πηγής για εισαγωγή:",
             ["Import Tab"] = "Εισαγωγή καρτέλας", ["Move Item To..."] = "Μετακίνηση στοιχείου σε…", ["Move To:"] = "Μετακίνηση σε:", ["Select Icon"] = "Επιλογή εικονιδίου", ["Select an Icon"] = "Επίλεξε εικονίδιο",
-            ["Select an Icon from the available and click OK"] = "Επίλεξε ένα εικονίδιο και πάτα OK", ["Select Target File"] = "Επιλογή αρχείου προορισμού", ["Search active fences:"] = "Αναζήτηση στα ενεργά DeskContainers:",
-            ["Type to search..."] = "Πληκτρολόγησε για αναζήτηση…", ["Desktop Fences Search"] = "Αναζήτηση DeskContainers", ["Clear filter and close"] = "Εκκαθάριση φίλτρου και κλείσιμο",
-            ["Filter files (e.g. '*.jpg' or '>*.tmp' to exclude)"] = "Φίλτρο αρχείων (π.χ. '*.jpg' ή '>*.tmp' για εξαίρεση)", ["Draw a box to create a Fence (Esc to cancel)"] = "Σχεδίασε ένα ορθογώνιο για νέο DeskContainer (Esc για ακύρωση)",
-            ["Set current view as the new Home for this fence"] = "Ορισμός της τρέχουσας προβολής ως αρχικής για αυτό το DeskContainer", ["Click to edit note content"] = "Κλικ για επεξεργασία της σημείωσης",
+            ["Select an Icon from the available and click OK"] = "Επίλεξε ένα εικονίδιο και πάτα OK", ["Select Target File"] = "Επιλογή αρχείου προορισμού", ["Search active containers:"] = "Αναζήτηση στα ενεργά DeskContainers:",
+            ["Type to search..."] = "Πληκτρολόγησε για αναζήτηση…", ["Opsis DeskContainers Search"] = "Αναζήτηση DeskContainers", ["Clear filter and close"] = "Εκκαθάριση φίλτρου και κλείσιμο",
+            ["Filter files (e.g. '*.jpg' or '>*.tmp' to exclude)"] = "Φίλτρο αρχείων (π.χ. '*.jpg' ή '>*.tmp' για εξαίρεση)", ["Draw a box to create a Container (Esc to cancel)"] = "Σχεδίασε ένα ορθογώνιο για νέο DeskContainer (Esc για ακύρωση)",
+            ["Set current view as the new Home for this container"] = "Ορισμός της τρέχουσας προβολής ως αρχικής για αυτό το DeskContainer", ["Click to edit note content"] = "Κλικ για επεξεργασία της σημείωσης",
             ["Click to finish editing"] = "Κλικ για τέλος επεξεργασίας", ["Add new tab (Ctrl+Click to Import)"] = "Νέα καρτέλα (Ctrl+κλικ για εισαγωγή)", ["Blank Spacer (Hold CTRL to move)"] = "Κενό (κράτα Ctrl για μετακίνηση)",
-            ["New Fence - Drop your shortcuts here"] = "Νέο DeskContainer — σύρε εδώ τις συντομεύσεις σου",
+            ["New Container - Drop your shortcuts here"] = "Νέο DeskContainer — σύρε εδώ τις συντομεύσεις σου",
             // customize
-            ["Customize Fence"] = "Προσαρμογή DeskContainer", ["Fence"] = "DeskContainer", ["Custom Color:"] = "Προσαρμοσμένο χρώμα:", ["Custom Launch Effect:"] = "Εφέ εκκίνησης:", ["Fence Border Color:"] = "Χρώμα περιγράμματος:",
-            ["Fence Border Thickness:"] = "Πάχος περιγράμματος:", ["Title"] = "Τίτλος", ["Title Text Color:"] = "Χρώμα κειμένου τίτλου:", ["Title Text Size:"] = "Μέγεθος κειμένου τίτλου:", ["Title Font:"] = "Γραμματοσειρά τίτλου:",
+            ["Customize Container"] = "Προσαρμογή DeskContainer", ["Container"] = "DeskContainer", ["Custom Color:"] = "Προσαρμοσμένο χρώμα:", ["Custom Launch Effect:"] = "Εφέ εκκίνησης:", ["Container Border Color:"] = "Χρώμα περιγράμματος:",
+            ["Container Border Thickness:"] = "Πάχος περιγράμματος:", ["Title"] = "Τίτλος", ["Title Text Color:"] = "Χρώμα κειμένου τίτλου:", ["Title Text Size:"] = "Μέγεθος κειμένου τίτλου:", ["Title Font:"] = "Γραμματοσειρά τίτλου:",
             ["Title Bar Color:"] = "Χρώμα γραμμής τίτλου:", ["Bold Title Text"] = "Έντονο κείμενο τίτλου", ["Icons"] = "Εικονίδια", ["Icon Size:"] = "Μέγεθος εικονιδίων:", ["Icon Spacing:"] = "Απόσταση εικονιδίων:",
             ["Text Color:"] = "Χρώμα κειμένου:", ["Disable Text Shadow"] = "Απενεργοποίηση σκιάς κειμένου", ["Grayscale Icons"] = "Εικονίδια σε αποχρώσεις του γκρι", ["Text Format"] = "Μορφή κειμένου",
             ["Text Appearance"] = "Εμφάνιση κειμένου", ["Text Behavior"] = "Συμπεριφορά κειμένου", ["Text Operations"] = "Ενέργειες κειμένου", ["Text Color"] = "Χρώμα κειμένου", ["Font Family"] = "Γραμματοσειρά", ["Font Size"] = "Μέγεθος γραμματοσειράς",
@@ -116,7 +116,7 @@ namespace Desktop_Fences
             ["+ Add Rule"] = "+ Νέος", ["− Remove"] = "− Αφαίρεση", ["Delete Selected"] = "Διαγραφή", ["Enable this rule"] = "Ενεργοποίηση κανόνα", ["Double-click to edit rule"] = "Διπλό κλικ για επεξεργασία κανόνα",
             ["If File Extension Is:"] = "Αν η επέκταση αρχείου είναι:", ["And Filename Contains (Optional, leave blank for any):"] = "Και το όνομα περιέχει (προαιρετικά, άφησέ το κενό για οποιοδήποτε):",
             ["If File Already Exists:"] = "Αν το αρχείο υπάρχει ήδη:", ["Custom Extensions (e.g., *.zip; *.rar):"] = "Προσαρμοσμένες επεκτάσεις (π.χ. *.zip; *.rar):", ["Icon:"] = "Εικονίδιο:",
-            ["Original project"] = "Αρχικό project", ["Opsis DeskContainers"] = "Opsis DeskContainers", ["About Desktop Fences +"] = "Σχετικά με τα Opsis DeskContainers", ["Desktop Fences Plus"] = "Opsis DeskContainers",
+            ["Original project"] = "Αρχικό project", ["Opsis DeskContainers"] = "Opsis DeskContainers", ["About Opsis DeskContainers"] = "Σχετικά με τα Opsis DeskContainers", ["Opsis DeskContainers"] = "Opsis DeskContainers",
             ["Opsis DeskContainers Notification"] = "Ειδοποίηση Opsis DeskContainers", ["Welcome to Opsis DeskContainers"] = "Καλώς ήρθες στα Opsis DeskContainers"
         };
     }

@@ -1,4 +1,4 @@
-﻿using DesktopFences;
+﻿using OpsisContainers;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Linq;
@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     public partial class App : Application
     {
@@ -14,7 +14,7 @@ namespace Desktop_Fences
         private TargetChecker _targetChecker;
         private static bool _desktopIsShown = false;
         private static Mutex _mutex;
-        private const string UNIQUE_APP_NAME = "Global\\DesktopFences_Mutex_UniqueId_v2";
+        private const string UNIQUE_APP_NAME = "Global\\OpsisContainers_Mutex_UniqueId_v2";
 
 
 
@@ -40,6 +40,9 @@ namespace Desktop_Fences
                 };
                 watch.Start();
             }
+
+            LegacyNames.MigrateFolder(DataRoot.Dir);     // data of earlier builds: fences.json -> containers.json, "Fence" keys -> "Container"
+            LegacyNames.CleanRegistry();
 
             // --- 1. INITIALIZE PROFILES & SETTINGS FIRST ---
             // This ensures we know the user's true DisableSingleInstance preference immediately
@@ -129,11 +132,11 @@ namespace Desktop_Fences
                         // Magically update all visuals live when Windows wallpaper changes
                         System.Windows.Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
                         {
-                            Utility.UpdateFenceVisuals();
+                            Utility.UpdateContainerVisuals();
                         }));
                     };
 
-                    // Initialize TrayManager BEFORE fences
+                    // Initialize TrayManager BEFORE containers
                     _trayManager = new TrayManager();
                     _trayManager.InitializeTray();
 
@@ -146,8 +149,8 @@ namespace Desktop_Fences
                     // Start the Background Icon Loader Engine
                     LazyIconLoader.Start();
 
-                    // Load fences (Now loads from Profile/fences.json)
-                    FenceManager.LoadAndCreateFences(_targetChecker);
+                    // Load containers (Now loads from Profile/containers.json)
+                    ContainerManager.LoadAndCreateContainers(_targetChecker);
                     OpsisBridge.Start();
                     DesktopOriginals.HideAll();
 
@@ -161,7 +164,7 @@ namespace Desktop_Fences
                     // Ensure UI reflects the current state of profiles and automation
                     _trayManager.UpdateProfilesMenu();
                     _trayManager.UpdateTrayIcon();
-                    _trayManager.UpdateHiddenFencesMenu();
+                    _trayManager.UpdateHiddenContainersMenu();
 
                     // Initialize global hotkey monitoring
                     try
@@ -202,7 +205,7 @@ namespace Desktop_Fences
                     if (isDrawStartup)
                     {
                         // Wait 500ms for UI to settle, then draw
-                        Task.Delay(500).ContinueWith(t => Dispatcher.Invoke(() => FenceManager.StartDrawMode()));
+                        Task.Delay(500).ContinueWith(t => Dispatcher.Invoke(() => ContainerManager.StartDrawMode()));
                     }
                 }
             }
@@ -247,7 +250,7 @@ namespace Desktop_Fences
                     restoreTimer.Tick += (timerSender, timerArgs) =>
                     {
                         restoreTimer.Stop();
-                        RestoreAllFenceWindows();
+                        RestoreAllContainerWindows();
                     };
                     restoreTimer.Start();
                 }
@@ -266,26 +269,26 @@ namespace Desktop_Fences
             catch { }
         }
 
-        private static void RestoreAllFenceWindows()
+        private static void RestoreAllContainerWindows()
         {
             try
             {
-                var fenceWindows = System.Windows.Application.Current.Windows
+                var containerWindows = System.Windows.Application.Current.Windows
                     .OfType<NonActivatingWindow>()
                     .ToList();
 
-                foreach (var fenceWindow in fenceWindows)
+                foreach (var containerWindow in containerWindows)
                 {
                     try
                     {
-                        if (fenceWindow.WindowState == WindowState.Minimized)
-                            fenceWindow.WindowState = WindowState.Normal;
+                        if (containerWindow.WindowState == WindowState.Minimized)
+                            containerWindow.WindowState = WindowState.Normal;
 
-                        if (!fenceWindow.IsVisible)
-                            fenceWindow.Show();
+                        if (!containerWindow.IsVisible)
+                            containerWindow.Show();
 
-                        fenceWindow.Topmost = true;
-                        fenceWindow.Topmost = false;
+                        containerWindow.Topmost = true;
+                        containerWindow.Topmost = false;
                     }
                     catch { }
                 }

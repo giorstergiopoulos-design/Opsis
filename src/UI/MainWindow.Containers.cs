@@ -9,7 +9,7 @@ using UiTheme = MotionDesk.UI.UiTheme;
 
 namespace MotionDesk.UI
 {
-    // Settings of the DeskContainers engine (the bundled fences), shown as cards on the DeskZones page instead of a separate
+    // Settings of the DeskContainers engine , shown as cards on the DeskZones page instead of a separate
     // settings window. Values are read from / written to the engine's options.json through ContainersBridge; the engine applies them live.
     public sealed partial class MainWindow
     {

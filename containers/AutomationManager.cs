@@ -6,7 +6,7 @@ using System.Windows.Threading;
 using System.IO;
 using System.Diagnostics;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     public static class AutomationManager
     {

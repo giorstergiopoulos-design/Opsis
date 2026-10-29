@@ -5,23 +5,23 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     /// <summary>
     /// Centralized file path and shortcut utilities with Unicode support
-    /// Extracted from FenceManager for better code organization and reusability
+    /// Extracted from ContainerManager for better code organization and reusability
     /// Handles complex Unicode path scenarios and shortcut resolution
     /// </summary>
     public static class FilePathUtilities
     {
 
-        #region Unicode Shortcut Resolution - Used by: FenceManager (UpdateIcon, ClickEventAdder, LaunchItem)
+        #region Unicode Shortcut Resolution - Used by: ContainerManager (UpdateIcon, ClickEventAdder, LaunchItem)
         /// <summary>
         /// Enhanced shortcut target resolution with Unicode support
         /// Handles both direct shortcuts and explorer.exe-based folder shortcuts
-        /// Used by: FenceManager.UpdateIcon, FenceManager.ClickEventAdder, FenceManager.LaunchItem
+        /// Used by: ContainerManager.UpdateIcon, ContainerManager.ClickEventAdder, ContainerManager.LaunchItem
         /// Category: Unicode Path Resolution
-        /// Moved from: FenceManager.GetShortcutTargetUnicodeSafe
+        /// Moved from: ContainerManager.GetShortcutTargetUnicodeSafe
         /// </summary>
         public static string GetShortcutTargetUnicodeSafe(string shortcutPath)
         {
@@ -195,13 +195,13 @@ namespace Desktop_Fences
             }
         }
 
-        #region Unicode Folder Validation - Used by: FenceManager, Portal Fence operations
+        #region Unicode Folder Validation - Used by: ContainerManager, Portal Container operations
         /// <summary>
         /// Unicode-safe folder validation and processing
         /// Handles folders with Unicode characters in their names
-        /// Used by: FenceManager.CreateFence, Portal fence operations
+        /// Used by: ContainerManager.CreateContainer, Portal container operations
         /// Category: Folder Validation
-        /// Moved from: FenceManager.ValidateUnicodeFolderPath
+        /// Moved from: ContainerManager.ValidateUnicodeFolderPath
         /// </summary>
         public static bool ValidateUnicodeFolderPath(string folderPath, out string sanitizedPath)
         {
@@ -209,7 +209,7 @@ namespace Desktop_Fences
 
             try
             {
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation,
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation,
                     $"Validating Unicode folder path: {folderPath}");
 
                 // Method 1: Direct validation
@@ -217,7 +217,7 @@ namespace Desktop_Fences
                 {
                     // Get the full path to normalize it
                     sanitizedPath = Path.GetFullPath(folderPath);
-                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceCreation,
+                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerCreation,
                         $"Unicode folder validation successful: {folderPath} -> {sanitizedPath}");
                     return true;
                 }
@@ -229,24 +229,24 @@ namespace Desktop_Fences
                     if (dirInfo.Exists)
                     {
                         sanitizedPath = dirInfo.FullName;
-                        LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceCreation,
+                        LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerCreation,
                             $"Unicode folder validation via DirectoryInfo: {folderPath} -> {sanitizedPath}");
                         return true;
                     }
                 }
                 catch (Exception dirEx)
                 {
-                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.FenceCreation,
+                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.ContainerCreation,
                         $"DirectoryInfo validation failed for {folderPath}: {dirEx.Message}");
                 }
 
-                LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.FenceCreation,
+                LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.ContainerCreation,
                     $"Unicode folder validation failed: {folderPath}");
                 return false;
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceCreation,
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerCreation,
                     $"Critical error validating Unicode folder {folderPath}: {ex.Message}");
                 sanitizedPath = folderPath; // Keep original on error
                 return false;
@@ -258,79 +258,79 @@ namespace Desktop_Fences
 
         #endregion
 
-        #region Dead Shortcut Management - Used by: FenceManager context menu
+        #region Dead Shortcut Management - Used by: ContainerManager context menu
         /// <summary>
-        /// Clears all dead shortcuts from a data fence (excludes Portal fences and web links)
-        /// Used by: FenceManager context menu "Clear Dead Shortcuts"
+        /// Clears all dead shortcuts from a data container (excludes Portal containers and web links)
+        /// Used by: ContainerManager context menu "Clear Dead Shortcuts"
         /// Category: Dead Shortcut Management
         /// </summary>
         /// <summary>
-        /// Clears all dead shortcuts from a data fence (excludes Portal fences and web links)
-        /// Used by: FenceManager context menu "Clear Dead Shortcuts"
+        /// Clears all dead shortcuts from a data container (excludes Portal containers and web links)
+        /// Used by: ContainerManager context menu "Clear Dead Shortcuts"
         /// Category: Dead Shortcut Management
         /// </summary>
-        public static int ClearDeadShortcutsFromFence(dynamic fence)
+        public static int ClearDeadShortcutsFromContainer(dynamic container)
         {
             try
             {
-                // Exclude Portal fences - they work differently
-                if (fence.ItemsType?.ToString() != "Data")
+                // Exclude Portal containers - they work differently
+                if (container.ItemsType?.ToString() != "Data")
                 {
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate,
-                        $"Skipping dead shortcut cleanup for non-Data fence '{fence.Title}' (Type: {fence.ItemsType})");
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate,
+                        $"Skipping dead shortcut cleanup for non-Data container '{container.Title}' (Type: {container.ItemsType})");
                     return 0;
                 }
 
                 int removedCount = 0;
-                bool fenceModified = false;
+                bool containerModified = false;
 
-                // Handle tabbed fences
-                bool tabsEnabled = fence.TabsEnabled?.ToString().ToLower() == "true";
+                // Handle tabbed containers
+                bool tabsEnabled = container.TabsEnabled?.ToString().ToLower() == "true";
 
                 if (tabsEnabled)
                 {
-                    var tabs = fence.Tabs as JArray ?? new JArray();
+                    var tabs = container.Tabs as JArray ?? new JArray();
 
                     foreach (var tab in tabs.Cast<JObject>())
                     {
                         var items = tab["Items"] as JArray ?? new JArray();
                         removedCount += RemoveDeadItemsFromArray(items);
-                        if (removedCount > 0) fenceModified = true;
+                        if (removedCount > 0) containerModified = true;
                     }
                 }
                 else
                 {
-                    // Handle regular fence (non-tabbed)
-                    var items = fence.Items as JArray ?? new JArray();
+                    // Handle regular container (non-tabbed)
+                    var items = container.Items as JArray ?? new JArray();
                     removedCount = RemoveDeadItemsFromArray(items);
-                    if (removedCount > 0) fenceModified = true;
+                    if (removedCount > 0) containerModified = true;
                 }
 
                 // Save changes if any items were removed
-                if (fenceModified)
+                if (containerModified)
                 {
-                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceUpdate,
-                        $"Removed {removedCount} dead shortcuts from fence '{fence.Title}'");
+                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerUpdate,
+                        $"Removed {removedCount} dead shortcuts from container '{container.Title}'");
                 }
                 else
                 {
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate,
-                        $"No dead shortcuts found in fence '{fence.Title}'");
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate,
+                        $"No dead shortcuts found in container '{container.Title}'");
                 }
 
                 return removedCount;
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceUpdate,
-                    $"Error clearing dead shortcuts from fence '{fence.Title}': {ex.Message}");
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerUpdate,
+                    $"Error clearing dead shortcuts from container '{container.Title}': {ex.Message}");
                 return 0;
             }
         }
 
         /// <summary>
         /// Helper function to remove dead items from a JArray of items
-        /// Used by: ClearDeadShortcutsFromFence
+        /// Used by: ClearDeadShortcutsFromContainer
         /// Category: Dead Shortcut Management
         /// </summary>
         private static int RemoveDeadItemsFromArray(JArray items)
@@ -351,7 +351,7 @@ namespace Desktop_Fences
                 // Skip web links - they don't have local file targets
                 if (isLink)
                 {
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate,
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate,
                         $"Skipping web link item: {filename}");
                     continue;
                 }
@@ -359,7 +359,7 @@ namespace Desktop_Fences
                 // Skip if filename is invalid
                 if (string.IsNullOrEmpty(filename))
                 {
-                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.FenceUpdate,
+                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.ContainerUpdate,
                         "Found item with empty filename, removing");
                     items.RemoveAt(i);
                     removedCount++;
@@ -398,7 +398,7 @@ namespace Desktop_Fences
                     // Remove if target doesn't exist
                     if (!targetExists)
                     {
-                        LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceUpdate,
+                        LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerUpdate,
                             $"Removing dead {(isFolder ? "folder" : "file")} shortcut: {filename}");
 
                         // Delete the actual shortcut file from Shortcuts folder (same as manual Remove)
@@ -410,7 +410,7 @@ namespace Desktop_Fences
                 }
                 catch (Exception ex)
                 {
-                    LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceUpdate,
+                    LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerUpdate,
                         $"Error checking item '{filename}': {ex.Message}. Removing item.");
                     items.RemoveAt(i);
                     removedCount++;
@@ -422,7 +422,7 @@ namespace Desktop_Fences
 
         /// <summary>
         /// Deletes the actual shortcut file from Shortcuts folder and backup location
-        /// Used by: ClearDeadShortcutsFromFence
+        /// Used by: ClearDeadShortcutsFromContainer
         /// Category: File Management
         /// </summary>
         private static void DeleteShortcutFile(string filename)
@@ -430,7 +430,7 @@ namespace Desktop_Fences
             try
             {
                 // Delete main shortcut file (same logic as manual Remove)
-                string exeDir = Desktop_Fences.DataRoot.Dir;
+                string exeDir = OpsisContainers.DataRoot.Dir;
                 string shortcutPath = System.IO.Path.Combine(exeDir, "Shortcuts", System.IO.Path.GetFileName(filename));
 
                 if (System.IO.File.Exists(shortcutPath))
@@ -438,12 +438,12 @@ namespace Desktop_Fences
                     try
                     {
                         System.IO.File.Delete(shortcutPath);
-                        LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate,
+                        LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate,
                             $"Deleted shortcut file: {shortcutPath}");
                     }
                     catch (Exception ex)
                     {
-                        LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceUpdate,
+                        LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerUpdate,
                             $"Failed to delete shortcut {shortcutPath}: {ex.Message}");
                     }
                 }
@@ -457,19 +457,19 @@ namespace Desktop_Fences
                     try
                     {
                         System.IO.File.Delete(backupPath);
-                        LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate,
+                        LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate,
                             $"Deleted backup shortcut: {backupPath}");
                     }
                     catch (Exception ex)
                     {
-                        LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceUpdate,
+                        LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerUpdate,
                             $"Failed to delete backup shortcut {backupPath}: {ex.Message}");
                     }
                 }
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceUpdate,
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerUpdate,
                     $"Error deleting shortcut files for {filename}: {ex.Message}");
             }
         }
@@ -588,10 +588,10 @@ namespace Desktop_Fences
         }
         #endregion
 
-        #region URL File Processing - Used by: FenceUtilities (can be enhanced)
+        #region URL File Processing - Used by: ContainerUtilities (can be enhanced)
         /// <summary>
         /// Enhanced URL extraction from .url files with error handling
-        /// Used by: FenceUtilities.ExtractUrlFromFile (can replace existing implementation)
+        /// Used by: ContainerUtilities.ExtractUrlFromFile (can replace existing implementation)
         /// Category: URL Processing
         /// </summary>
         public static string ExtractUrlFromFileAdvanced(string urlFilePath)

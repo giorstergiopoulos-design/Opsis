@@ -7,7 +7,7 @@ using System.Windows;
 using Newtonsoft.Json;
 using Microsoft.VisualBasic.FileIO; // Required for sending to Recycle Bin
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     public enum RuleConflictAction { Rename, Overwrite, Skip }
 
@@ -19,7 +19,7 @@ namespace Desktop_Fences
         public string NameContains { get; set; } = "";
         public string TargetFolderPath { get; set; }
         public RuleConflictAction ConflictAction { get; set; } = RuleConflictAction.Rename;
-        public bool AutoCreateFence { get; set; } = false;
+        public bool AutoCreateContainer { get; set; } = false;
         public bool IsEnabled { get; set; } = true;
         public int Priority { get; set; } = 0;
         public DateTime? LastRun { get; set; } // NEW: Tracks last execution
@@ -234,10 +234,10 @@ namespace Desktop_Fences
                 }
 
 
-                // --- AUTO-CREATE FENCE PROTOCOL ---
-                if (rule.AutoCreateFence)
+                // --- AUTO-CREATE CONTAINER PROTOCOL ---
+                if (rule.AutoCreateContainer)
                 {
-                    Application.Current.Dispatcher.Invoke(() => CheckAndCreatePortalFence(rule.TargetFolderPath));
+                    Application.Current.Dispatcher.Invoke(() => CheckAndCreatePortalContainer(rule.TargetFolderPath));
                 }
             }
             catch (Exception ex)
@@ -246,11 +246,11 @@ namespace Desktop_Fences
             }
         }
 
-        public static void CheckAndCreatePortalFence(string targetFolder)
+        public static void CheckAndCreatePortalContainer(string targetFolder)
         {
-            // Prevent duplicate fences: Check if a portal fence already points to this folder
-            var existingFences = FenceManager.GetFenceData();
-            foreach (var f in existingFences)
+            // Prevent duplicate containers: Check if a portal container already points to this folder
+            var existingContainers = ContainerManager.GetContainerData();
+            foreach (var f in existingContainers)
             {
                 try
                 {
@@ -268,60 +268,60 @@ namespace Desktop_Fences
 
                     if (fType == "Portal" && string.Equals(fPath, targetFolder, StringComparison.OrdinalIgnoreCase))
                     {
-                        return; // Fence already exists!
+                        return; // Container already exists!
                     }
                 }
                 catch { }
             }
 
-            // Command FenceManager to generate a new Portal Fence using the exact required schema
-            dynamic newFence = new Newtonsoft.Json.Linq.JObject();
-            newFence.Id = Guid.NewGuid().ToString();
-            newFence.Title = new DirectoryInfo(targetFolder).Name; // FIX: Changed from Name to Title
-            newFence.X = 100.0; // FIX: Changed from Left to X
-            newFence.Y = 100.0; // FIX: Changed from Top to Y
-            newFence.Width = 350.0;
-            newFence.Height = 250.0;
-            newFence.ItemsType = "Portal";
-            newFence.Path = targetFolder; // FIX: Changed from PortalFolderPath to Path
-            newFence.Items = ""; // Portal expects empty string for Items
+            // Command ContainerManager to generate a new Portal Container using the exact required schema
+            dynamic newContainer = new Newtonsoft.Json.Linq.JObject();
+            newContainer.Id = Guid.NewGuid().ToString();
+            newContainer.Title = new DirectoryInfo(targetFolder).Name; // FIX: Changed from Name to Title
+            newContainer.X = 100.0; // FIX: Changed from Left to X
+            newContainer.Y = 100.0; // FIX: Changed from Top to Y
+            newContainer.Width = 350.0;
+            newContainer.Height = 250.0;
+            newContainer.ItemsType = "Portal";
+            newContainer.Path = targetFolder; // FIX: Changed from PortalFolderPath to Path
+            newContainer.Items = ""; // Portal expects empty string for Items
 
-            // FIX: Initialize ALL fence properties with defaults to match JSON structure exactly
-            newFence.IsLocked = "false";
-            newFence.IsHidden = "false";
-            newFence.CustomColor = null;
-            newFence.CustomLaunchEffect = null;
-            newFence.IsRolled = "false";
-            newFence.UnrolledHeight = 250.0;
-            newFence.TextColor = null;
-            newFence.BoldTitleText = "false";
-            newFence.TitleTextColor = null;
-            newFence.DisableTextShadow = "false";
-            newFence.IconSize = "Medium";
-            newFence.GrayscaleIcons = "false";
-            newFence.IconSpacing = 5;
-            newFence.TitleTextSize = "Medium";
-            newFence.FenceBorderColor = null;
-            newFence.FenceBorderThickness = 2;
+            // FIX: Initialize ALL container properties with defaults to match JSON structure exactly
+            newContainer.IsLocked = "false";
+            newContainer.IsHidden = "false";
+            newContainer.CustomColor = null;
+            newContainer.CustomLaunchEffect = null;
+            newContainer.IsRolled = "false";
+            newContainer.UnrolledHeight = 250.0;
+            newContainer.TextColor = null;
+            newContainer.BoldTitleText = "false";
+            newContainer.TitleTextColor = null;
+            newContainer.DisableTextShadow = "false";
+            newContainer.IconSize = "Medium";
+            newContainer.GrayscaleIcons = "false";
+            newContainer.IconSpacing = 5;
+            newContainer.TitleTextSize = "Medium";
+            newContainer.ContainerBorderColor = null;
+            newContainer.ContainerBorderThickness = 2;
 
             // TABS FEATURE requirements
-            newFence.TabsEnabled = "false";
-            newFence.CurrentTab = 0;
-            newFence.Tabs = new Newtonsoft.Json.Linq.JArray();
+            newContainer.TabsEnabled = "false";
+            newContainer.CurrentTab = 0;
+            newContainer.Tabs = new Newtonsoft.Json.Linq.JArray();
 
             // 1. Add to the central data manager
             System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
-                FenceDataManager.FenceData.Add(newFence);
+                ContainerDataManager.ContainerData.Add(newContainer);
 
                 // 2. Pass a TargetChecker instance to the creation engine
-                FenceManager.CreateFence(newFence, new TargetChecker(1000));
+                ContainerManager.CreateContainer(newContainer, new TargetChecker(1000));
 
                 // 3. Save using the correct data manager method
-                FenceDataManager.SaveFenceData();
+                ContainerDataManager.SaveContainerData();
             });
 
-            LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.General, $"Auto-Organize spawned a new Portal Fence for {targetFolder}");
+            LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.General, $"Auto-Organize spawned a new Portal Container for {targetFolder}");
         }
 
         private static async Task<bool> WaitForFileUnlockAsync(string filePath, int timeoutMs)

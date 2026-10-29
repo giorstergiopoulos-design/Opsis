@@ -10,7 +10,7 @@ using System.Windows.Media.Animation; // Needed for Animation
 using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     public class SearchFormManager : Window
     {
@@ -40,8 +40,8 @@ namespace Desktop_Fences
             public string Name { get; set; }
             public string Path { get; set; }
             public bool IsFolder { get; set; }
-            public string FenceId { get; set; }
-            public string FenceTitle { get; set; }
+            public string ContainerId { get; set; }
+            public string ContainerTitle { get; set; }
         }
         #endregion
 
@@ -71,7 +71,7 @@ namespace Desktop_Fences
         private void InitializeComponent()
         {
             // 1. Window Setup
-            this.Title = Loc.T("Desktop Fences Search");
+            this.Title = Loc.T("Opsis DeskContainers Search");
             this.Width = WINDOW_WIDTH;
             this.Height = HEADER_HEIGHT + TITLE_HEIGHT; // Initial Compact Size
             this.WindowStartupLocation = WindowStartupLocation.CenterScreen;
@@ -210,34 +210,34 @@ namespace Desktop_Fences
         private void LoadAllShortcuts()
         {
             _allShortcuts = new List<SearchResult>();
-            var fences = FenceManager.GetFenceData();
+            var containers = ContainerManager.GetContainerData();
 
-            foreach (var fence in fences)
+            foreach (var container in containers)
             {
-                if (fence.ItemsType?.ToString() != "Data") continue;
-                JArray items = fence.Items as JArray;
-                bool tabsEnabled = fence.TabsEnabled?.ToString().ToLower() == "true";
+                if (container.ItemsType?.ToString() != "Data") continue;
+                JArray items = container.Items as JArray;
+                bool tabsEnabled = container.TabsEnabled?.ToString().ToLower() == "true";
 
                 if (tabsEnabled)
                 {
-                    var tabs = fence.Tabs as JArray;
+                    var tabs = container.Tabs as JArray;
                     if (tabs != null)
                     {
                         foreach (var tab in tabs)
                         {
                             var tabItems = tab["Items"] as JArray;
-                            if (tabItems != null) AddItemsToCache(tabItems, fence);
+                            if (tabItems != null) AddItemsToCache(tabItems, container);
                         }
                     }
                 }
                 else if (items != null)
                 {
-                    AddItemsToCache(items, fence);
+                    AddItemsToCache(items, container);
                 }
             }
         }
 
-        private void AddItemsToCache(JArray items, dynamic fence)
+        private void AddItemsToCache(JArray items, dynamic container)
         {
             foreach (var item in items)
             {
@@ -247,8 +247,8 @@ namespace Desktop_Fences
                     Name = name,
                     Path = item["Filename"]?.ToString(),
                     IsFolder = item["IsFolder"]?.ToObject<bool>() ?? false,
-                    FenceId = fence.Id?.ToString(),
-                    FenceTitle = fence.Title?.ToString()
+                    ContainerId = container.Id?.ToString(),
+                    ContainerTitle = container.Title?.ToString()
                 });
             }
         }
@@ -314,7 +314,7 @@ namespace Desktop_Fences
 
                 sp.Children.Add(img);
                 sp.Children.Add(txt);
-                sp.ToolTip = $"Location: {match.FenceTitle}\nPath: {match.Path}";
+                sp.ToolTip = $"Location: {match.ContainerTitle}\nPath: {match.Path}";
 
                 sp.MouseLeftButtonDown += (s, ev) => { if (ev.ClickCount == 1) LaunchResult(match); };
                 _resultsPanel.Children.Add(sp);
@@ -416,7 +416,7 @@ namespace Desktop_Fences
                     }
                 }
 
-                // 2. IDENTIFY TYPE (Mimicking FenceManager Logic)
+                // 2. IDENTIFY TYPE (Mimicking ContainerManager Logic)
                 bool isStoreApp = false;
                 if (finalPath.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
                 {

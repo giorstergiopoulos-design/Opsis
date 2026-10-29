@@ -9,10 +9,10 @@ using System.Windows.Media.Animation;
 using System.Windows.Media.Effects;
 using Newtonsoft.Json.Linq;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     /// <summary>
-    /// Manages drag and drop operations for icon reordering within Data fences.
+    /// Manages drag and drop operations for icon reordering within Data containers.
     /// Updated to be TAB-AWARE (supports reordering inside specific tabs).
     /// </summary>
     public static class IconDragDropManager
@@ -36,7 +36,7 @@ namespace Desktop_Fences
         private static System.Windows.Point _dragStartPoint;
 
         private static dynamic _draggedItem = null;
-        private static dynamic _sourceFence = null;
+        private static dynamic _sourceContainer = null;
         private static JArray _sourceItemsList = null; // FIX: The specific list we are editing (Main or Tab)
 
         private static WrapPanel _sourceWrapPanel = null;
@@ -62,16 +62,16 @@ namespace Desktop_Fences
         {
             try
             {
-                // Only allow dragging in Data fences, not Portal fences
+                // Only allow dragging in Data containers, not Portal containers
                 NonActivatingWindow parentWindow = FindVisualParent<NonActivatingWindow>(iconStackPanel);
                 if (parentWindow == null) return;
 
-                string fenceId = parentWindow.Tag?.ToString();
-                if (string.IsNullOrEmpty(fenceId)) return;
+                string containerId = parentWindow.Tag?.ToString();
+                if (string.IsNullOrEmpty(containerId)) return;
 
-                var fenceData = FenceManager.GetFenceData();
-                dynamic fence = fenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
-                if (fence == null || fence.ItemsType?.ToString() != "Data") return;
+                var containerData = ContainerManager.GetContainerData();
+                dynamic container = containerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
+                if (container == null || container.ItemsType?.ToString() != "Data") return;
 
                 // Find the WrapPanel containing the icons
                 WrapPanel wrapPanel = FindWrapPanel(parentWindow);
@@ -87,12 +87,12 @@ namespace Desktop_Fences
                 // --- FIX: TAB-AWARE LIST SELECTION ---
                 // Determine which JArray we are modifying (Main Items vs Active Tab Items)
                 JArray targetList = null;
-                bool tabsEnabled = fence.TabsEnabled?.ToString().ToLower() == "true";
+                bool tabsEnabled = container.TabsEnabled?.ToString().ToLower() == "true";
 
                 if (tabsEnabled)
                 {
-                    var tabs = fence.Tabs as JArray;
-                    int currentTabIndex = Convert.ToInt32(fence.CurrentTab?.ToString() ?? "0");
+                    var tabs = container.Tabs as JArray;
+                    int currentTabIndex = Convert.ToInt32(container.CurrentTab?.ToString() ?? "0");
 
                     if (tabs != null && currentTabIndex >= 0 && currentTabIndex < tabs.Count)
                     {
@@ -105,7 +105,7 @@ namespace Desktop_Fences
                 // Fallback to Main Items if tabs disabled or invalid
                 if (targetList == null)
                 {
-                    targetList = fence.Items as JArray;
+                    targetList = container.Items as JArray;
                     LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, "Drag started in Main Items");
                 }
 
@@ -133,7 +133,7 @@ namespace Desktop_Fences
                 _draggedIcon = iconStackPanel;
                 _dragStartPoint = startPoint;
                 _draggedItem = draggedItem;
-                _sourceFence = fence;
+                _sourceContainer = container;
                 _sourceItemsList = targetList; // Store the specific list reference!
                 _sourceWrapPanel = wrapPanel;
 
@@ -177,7 +177,7 @@ namespace Desktop_Fences
                     _isDragging = false;
                     _draggedIcon = null;
                     _draggedItem = null;
-                    _sourceFence = null;
+                    _sourceContainer = null;
                     _sourceItemsList = null;
                     _sourceWrapPanel = null;
                     _lastDropIndicatorPosition = new System.Windows.Point(-1, -1);
@@ -224,7 +224,7 @@ namespace Desktop_Fences
                 int dropPosition = CalculateDropPosition(_sourceWrapPanel, finalPosition);
 
                 // Perform the reordering on the specific list
-                ReorderFenceItems(dropPosition);
+                ReorderContainerItems(dropPosition);
 
                 CancelDrag();
             }
@@ -313,11 +313,11 @@ namespace Desktop_Fences
             }
         }
 
-        private static void ReorderFenceItems(int newPosition)
+        private static void ReorderContainerItems(int newPosition)
         {
             try
             {
-                // FIX: Use _sourceItemsList instead of _sourceFence.Items
+                // FIX: Use _sourceItemsList instead of _sourceContainer.Items
                 if (_sourceItemsList == null || _draggedItem == null) return;
 
                 int currentPosition = -1;
@@ -349,10 +349,10 @@ namespace Desktop_Fences
                     _sourceItemsList[i]["DisplayOrder"] = i;
                 }
 
-                FenceDataManager.SaveFenceData();
+                ContainerDataManager.SaveContainerData();
 
                 // Refresh UI
-                RefreshFenceUI();
+                RefreshContainerUI();
             }
             catch (Exception ex)
             {
@@ -360,25 +360,25 @@ namespace Desktop_Fences
             }
         }
 
-        private static void RefreshFenceUI()
+        private static void RefreshContainerUI()
         {
             try
             {
-                if (_sourceFence == null || _sourceWrapPanel == null) return;
+                if (_sourceContainer == null || _sourceWrapPanel == null) return;
 
                 NonActivatingWindow parentWindow = FindVisualParent<NonActivatingWindow>(_sourceWrapPanel);
                 if (parentWindow == null) return;
 
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    // FIX: Delegate to FenceManager's robust refresh logic
+                    // FIX: Delegate to ContainerManager's robust refresh logic
                     // This handles Tabs vs Main logic automatically
-                    FenceManager.RefreshFenceUsingFormApproach(parentWindow, _sourceFence);
+                    ContainerManager.RefreshContainerUsingFormApproach(parentWindow, _sourceContainer);
                 });
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, $"Error refreshing fence UI: {ex.Message}");
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, $"Error refreshing container UI: {ex.Message}");
             }
         }
 

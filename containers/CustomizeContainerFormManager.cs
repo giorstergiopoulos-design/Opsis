@@ -10,24 +10,24 @@ using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Diagnostics;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     /// <summary>
-    /// Modern WPF form for customizing fence-specific properties
-    /// Converted from Windows Forms CustomizeFenceForm with identical functionality
+    /// Modern WPF form for customizing container-specific properties
+    /// Converted from Windows Forms CustomizeContainerForm with identical functionality
     /// DPI-aware with monitor positioning support
     /// </summary>
-    public class CustomizeFenceFormManager : Window
+    public class CustomizeContainerFormManager : Window
     {
         #region Private Fields
-        private dynamic _fence;
+        private dynamic _container;
         private bool _result = false;
 
         // Controls for the 12 customization settings
         private ComboBox _cmbCustomColor;
         private ComboBox _cmbCustomLaunchEffect;
-        private ComboBox _cmbFenceBorderColor;
-        private NumericTextBox _nudFenceBorderThickness;
+        private ComboBox _cmbContainerBorderColor;
+        private NumericTextBox _nudContainerBorderThickness;
         private ComboBox _cmbTitleTextColor;
         private ComboBox _cmbTitleTextSize;
         private CheckBox _chkBoldTitleText;
@@ -51,13 +51,13 @@ namespace Desktop_Fences
 
         #region Constructor
         /// <summary>
-        /// Initialize the Customize Fence WPF form with fence-specific data
+        /// Initialize the Customize Container WPF form with container-specific data
         /// </summary>
-        /// <param name="fence">The fence object to customize</param>
-        public CustomizeFenceFormManager(dynamic fence)
+        /// <param name="container">The container object to customize</param>
+        public CustomizeContainerFormManager(dynamic container)
         {
-            // Get the most current fence data from FenceManager to avoid stale references
-            _fence = GetCurrentFenceData(fence);
+            // Get the most current container data from ContainerManager to avoid stale references
+            _container = GetCurrentContainerData(container);
             InitializeComponent();
             LoadCurrentValues();
         }
@@ -81,7 +81,7 @@ namespace Desktop_Fences
                 _userAccentColor = mediaColor;
 
                 // Modern WPF window setup with DPI awareness
-                this.Title = Loc.T("Customize Fence");
+                this.Title = Loc.T("Customize Container");
                 this.Width = 500;
                 this.Height = 675;
                 this.WindowStartupLocation = WindowStartupLocation.Manual;
@@ -135,24 +135,24 @@ namespace Desktop_Fences
                 PositionFormOnMouseScreen();
 
                 // Add keyboard support for Enter/Escape keys
-                this.KeyDown += CustomizeFenceForm_KeyDown;
+                this.KeyDown += CustomizeContainerForm_KeyDown;
                 this.Focusable = true;
                 this.Focus();
 
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Initialized CustomizeFenceFormWPF for fence '{_fence.Title}'");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Initialized CustomizeContainerFormWPF for container '{_container.Title}'");
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, $"Error initializing CustomizeFenceFormWPF: {ex.Message}");
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, $"Error initializing CustomizeContainerFormWPF: {ex.Message}");
                 MessageBoxesManager.ShowOKOnlyMessageBoxForm($"Error initializing form: {ex.Message}", "Form Error");
             }
         }
 
         /// <summary>
-        /// Handles keyboard input for CustomizeFenceForm
+        /// Handles keyboard input for CustomizeContainerForm
         /// Enter = Save, Escape = Cancel
         /// </summary>
-        private void CustomizeFenceForm_KeyDown(object sender, KeyEventArgs e)
+        private void CustomizeContainerForm_KeyDown(object sender, KeyEventArgs e)
         {
             switch (e.Key)
             {
@@ -187,7 +187,7 @@ namespace Desktop_Fences
             // Title label
             TextBlock titleBlock = new TextBlock
             {
-                Text = Loc.T("Customize Fence"),
+                Text = Loc.T("Customize Container"),
                 FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 18,
                 FontWeight = FontWeights.Bold,
@@ -253,7 +253,7 @@ namespace Desktop_Fences
                 Orientation = Orientation.Vertical
             };
 
-            CreateFenceSection(contentStack);
+            CreateContainerSection(contentStack);
             CreateTitleSection(contentStack);
             CreateIconsSection(contentStack);
 
@@ -360,11 +360,11 @@ namespace Desktop_Fences
             parent.Children.Add(footerBorder);
         }
 
-        private void CreateFenceSection(StackPanel parent)
+        private void CreateContainerSection(StackPanel parent)
         {
-            GroupBox fenceGroupBox = new GroupBox
+            GroupBox containerGroupBox = new GroupBox
             {
-                Header = Loc.T("Fence"),
+                Header = Loc.T("Container"),
                 FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 14,
                 FontWeight = FontWeights.Bold,
@@ -373,15 +373,15 @@ namespace Desktop_Fences
                 Padding = new Thickness(8)
             };
 
-            StackPanel fenceStack = new StackPanel { Orientation = Orientation.Vertical };
+            StackPanel containerStack = new StackPanel { Orientation = Orientation.Vertical };
 
-            CreateDropdownField(fenceStack, "Custom Color:", _validColors, out _cmbCustomColor);
-            CreateDropdownField(fenceStack, "Custom Launch Effect:", _validEffects, out _cmbCustomLaunchEffect);
-            CreateDropdownField(fenceStack, "Fence Border Color:", _validColors, out _cmbFenceBorderColor);
-            CreateNumericField(fenceStack, "Fence Border Thickness:", 0, 5, out _nudFenceBorderThickness);
+            CreateDropdownField(containerStack, "Custom Color:", _validColors, out _cmbCustomColor);
+            CreateDropdownField(containerStack, "Custom Launch Effect:", _validEffects, out _cmbCustomLaunchEffect);
+            CreateDropdownField(containerStack, "Container Border Color:", _validColors, out _cmbContainerBorderColor);
+            CreateNumericField(containerStack, "Container Border Thickness:", 0, 5, out _nudContainerBorderThickness);
 
-            fenceGroupBox.Content = fenceStack;
-            parent.Children.Add(fenceGroupBox);
+            containerGroupBox.Content = containerStack;
+            parent.Children.Add(containerGroupBox);
         }
 
         private void CreateTitleSection(StackPanel parent)
@@ -555,12 +555,12 @@ namespace Desktop_Fences
         {
             try
             {
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Default button clicked for fence '{_fence.Title}' - resetting all controls to defaults");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Default button clicked for container '{_container.Title}' - resetting all controls to defaults");
 
                 // Reset all dropdown controls to "Default" (index 0)
                 _cmbCustomColor.SelectedIndex = 0;
                 _cmbCustomLaunchEffect.SelectedIndex = 0;
-                _cmbFenceBorderColor.SelectedIndex = 0;
+                _cmbContainerBorderColor.SelectedIndex = 0;
                 _cmbTitleTextColor.SelectedIndex = 0;
                 _cmbTitleTextSize.SelectedIndex = 0;
                 _cmbTitleFont.SelectedIndex = 0;
@@ -569,7 +569,7 @@ namespace Desktop_Fences
                 _cmbTextColor.SelectedIndex = 0;
 
                 // Reset numeric controls to specified defaults
-                _nudFenceBorderThickness.Value = 0;
+                _nudContainerBorderThickness.Value = 0;
                 _nudIconSpacing.Value = 5;
 
                 // Reset checkbox controls to unchecked
@@ -577,7 +577,7 @@ namespace Desktop_Fences
                 _chkDisableTextShadow.IsChecked = false;
                 _chkGrayscaleIcons.IsChecked = false;
 
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"All controls reset to default values for fence '{_fence.Title}'");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"All controls reset to default values for container '{_container.Title}'");
             }
             catch (Exception ex)
             {
@@ -590,7 +590,7 @@ namespace Desktop_Fences
         {
             try
             {
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Save button clicked for fence '{_fence.Title}'");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Save button clicked for container '{_container.Title}'");
                 ApplyChanges(); // Call shared logic
                 this.Close();   // Close the form
             }
@@ -605,7 +605,7 @@ namespace Desktop_Fences
         {
             try
             {
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Apply button clicked for fence '{_fence.Title}'");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Apply button clicked for container '{_container.Title}'");
                 ApplyChanges(); // Call shared logic (Does NOT close the form)
                 LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, "Changes applied successfully without closing form");
             }
@@ -675,7 +675,7 @@ namespace Desktop_Fences
                 this.Left = centerX;
                 this.Top = centerY;
 
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Positioned CustomizeFenceFormWPF at X={centerX}, Y={centerY} on screen '{mouseScreen.DeviceName}' (DPI scale: {dpiScale})");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Positioned CustomizeContainerFormWPF at X={centerX}, Y={centerY} on screen '{mouseScreen.DeviceName}' (DPI scale: {dpiScale})");
             }
             catch (Exception ex)
             {
@@ -686,36 +686,36 @@ namespace Desktop_Fences
         }
         #endregion
 
-        #region Current Fence Data Retrieval
-        private dynamic GetCurrentFenceData(dynamic originalFence)
+        #region Current Container Data Retrieval
+        private dynamic GetCurrentContainerData(dynamic originalContainer)
         {
             try
             {
-                string fenceId = originalFence.Id?.ToString();
-                if (string.IsNullOrEmpty(fenceId))
+                string containerId = originalContainer.Id?.ToString();
+                if (string.IsNullOrEmpty(containerId))
                 {
-                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.UI, $"Original fence '{originalFence.Title}' has no Id, using original reference");
-                    return originalFence;
+                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.UI, $"Original container '{originalContainer.Title}' has no Id, using original reference");
+                    return originalContainer;
                 }
 
-                var fenceData = FenceManager.GetFenceData();
-                dynamic currentFence = fenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
+                var containerData = ContainerManager.GetContainerData();
+                dynamic currentContainer = containerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
 
-                if (currentFence != null)
+                if (currentContainer != null)
                 {
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Retrieved current fence data for '{currentFence.Title}' (Id: {fenceId})");
-                    return currentFence;
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Retrieved current container data for '{currentContainer.Title}' (Id: {containerId})");
+                    return currentContainer;
                 }
                 else
                 {
-                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.UI, $"Could not find current fence data for Id '{fenceId}', using original reference");
-                    return originalFence;
+                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.UI, $"Could not find current container data for Id '{containerId}', using original reference");
+                    return originalContainer;
                 }
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, $"Error retrieving current fence data: {ex.Message}, using original reference");
-                return originalFence;
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, $"Error retrieving current container data: {ex.Message}, using original reference");
+                return originalContainer;
             }
         }
         #endregion
@@ -737,54 +737,54 @@ namespace Desktop_Fences
         {
             try
             {
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Loading current values for fence '{_fence.Title}'");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Loading current values for container '{_container.Title}'");
 
-                bool isPortalFence = _fence.ItemsType?.ToString() == "Portal";
-                bool isNoteFence = _fence.ItemsType?.ToString() == "Note";
-                if (isPortalFence)
+                bool isPortalContainer = _container.ItemsType?.ToString() == "Portal";
+                bool isNoteContainer = _container.ItemsType?.ToString() == "Note";
+                if (isPortalContainer)
                 {
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Portal fence detected - disabling icon controls for '{_fence.Title}'");
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Portal container detected - disabling icon controls for '{_container.Title}'");
                 }
-                if (isNoteFence)
+                if (isNoteContainer)
                 {
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Note fence detected - disabling icon controls for '{_fence.Title}'");
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Note container detected - disabling icon controls for '{_container.Title}'");
                 }
 
-                // Load Fence Section properties
-                LoadDropdownValue(_cmbCustomColor, _fence.CustomColor?.ToString(), "CustomColor");
-                LoadDropdownValue(_cmbCustomLaunchEffect, _fence.CustomLaunchEffect?.ToString(), "CustomLaunchEffect");
-                LoadDropdownValue(_cmbFenceBorderColor, _fence.FenceBorderColor?.ToString(), "FenceBorderColor");
-                LoadNumericValue(_nudFenceBorderThickness, _fence.FenceBorderThickness?.ToString(), "FenceBorderThickness", 0);
+                // Load Container Section properties
+                LoadDropdownValue(_cmbCustomColor, _container.CustomColor?.ToString(), "CustomColor");
+                LoadDropdownValue(_cmbCustomLaunchEffect, _container.CustomLaunchEffect?.ToString(), "CustomLaunchEffect");
+                LoadDropdownValue(_cmbContainerBorderColor, _container.ContainerBorderColor?.ToString(), "ContainerBorderColor");
+                LoadNumericValue(_nudContainerBorderThickness, _container.ContainerBorderThickness?.ToString(), "ContainerBorderThickness", 0);
 
                 // Load Title Section properties
-                LoadDropdownValue(_cmbTitleTextColor, _fence.TitleTextColor?.ToString(), "TitleTextColor");
-                LoadDropdownValue(_cmbTitleTextSize, _fence.TitleTextSize?.ToString(), "TitleTextSize");
-                LoadDropdownValue(_cmbTitleFont, Utility.FenceProp((object)_fence, "TitleFontFamily"), "TitleFontFamily");
-                LoadDropdownValue(_cmbTitleBarColor, Utility.FenceProp((object)_fence, "TitleBarColor"), "TitleBarColor");
-                LoadCheckboxValue(_chkBoldTitleText, _fence.BoldTitleText?.ToString(), "BoldTitleText");
+                LoadDropdownValue(_cmbTitleTextColor, _container.TitleTextColor?.ToString(), "TitleTextColor");
+                LoadDropdownValue(_cmbTitleTextSize, _container.TitleTextSize?.ToString(), "TitleTextSize");
+                LoadDropdownValue(_cmbTitleFont, Utility.ContainerProp((object)_container, "TitleFontFamily"), "TitleFontFamily");
+                LoadDropdownValue(_cmbTitleBarColor, Utility.ContainerProp((object)_container, "TitleBarColor"), "TitleBarColor");
+                LoadCheckboxValue(_chkBoldTitleText, _container.BoldTitleText?.ToString(), "BoldTitleText");
 
                 // Load Icons Section properties
-                //  if (isPortalFence|| isNoteFence)
-                if (isNoteFence)
+                //  if (isPortalContainer|| isNoteContainer)
+                if (isNoteContainer)
                 {
                     DisableIconControls();
                 }
                 else
                 {
                     EnableIconControls();
-                    LoadDropdownValue(_cmbIconSize, _fence.IconSize?.ToString(), "IconSize");
-                    LoadNumericValue(_nudIconSpacing, _fence.IconSpacing?.ToString(), "IconSpacing", 5);
-                    LoadDropdownValue(_cmbTextColor, _fence.TextColor?.ToString(), "TextColor");
-                    LoadCheckboxValue(_chkDisableTextShadow, _fence.DisableTextShadow?.ToString(), "DisableTextShadow");
-                    LoadCheckboxValue(_chkGrayscaleIcons, _fence.GrayscaleIcons?.ToString(), "GrayscaleIcons");
+                    LoadDropdownValue(_cmbIconSize, _container.IconSize?.ToString(), "IconSize");
+                    LoadNumericValue(_nudIconSpacing, _container.IconSpacing?.ToString(), "IconSpacing", 5);
+                    LoadDropdownValue(_cmbTextColor, _container.TextColor?.ToString(), "TextColor");
+                    LoadCheckboxValue(_chkDisableTextShadow, _container.DisableTextShadow?.ToString(), "DisableTextShadow");
+                    LoadCheckboxValue(_chkGrayscaleIcons, _container.GrayscaleIcons?.ToString(), "GrayscaleIcons");
                 }
 
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Successfully loaded all current values for fence '{_fence.Title}' (Portal: {isPortalFence})");
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Successfully loaded all current values for container '{_container.Title}' (Portal: {isPortalContainer})");
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, $"Error loading current values for fence '{_fence.Title}': {ex.Message}");
-              MessageBoxesManager.ShowOKOnlyMessageBoxForm($"Error loading fence properties: {ex.Message}", "Load Error");
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, $"Error loading current values for container '{_container.Title}': {ex.Message}");
+              MessageBoxesManager.ShowOKOnlyMessageBoxForm($"Error loading container properties: {ex.Message}", "Load Error");
             }
         }
 
@@ -811,9 +811,9 @@ namespace Desktop_Fences
                 _cmbTextColor.Background = SystemColors.ControlBrush;
                 _cmbCustomLaunchEffect.Background = SystemColors.ControlBrush;
 
-                string fenceType = _fence.ItemsType?.ToString();
-                string tooltipMessage = fenceType == "Portal" ? "Icon appearance settings are not available for Portal Fences"
-                                     : fenceType == "Note" ? "Icon appearance settings are not available for Note Fences"
+                string containerType = _container.ItemsType?.ToString();
+                string tooltipMessage = containerType == "Portal" ? "Icon appearance settings are not available for Portal Containers"
+                                     : containerType == "Note" ? "Icon appearance settings are not available for Note Containers"
                                      : "Icon appearance settings are disabled";
 
                 _cmbIconSize.ToolTip = tooltipMessage;
@@ -823,7 +823,7 @@ namespace Desktop_Fences
                 _chkGrayscaleIcons.ToolTip = tooltipMessage;
                 _cmbCustomLaunchEffect.ToolTip = tooltipMessage;
 
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, "Disabled icon controls for Portal Fence");
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, "Disabled icon controls for Portal Container");
             }
             catch (Exception ex)
             {
@@ -854,7 +854,7 @@ namespace Desktop_Fences
                 _chkGrayscaleIcons.ToolTip = null;
                 _cmbCustomLaunchEffect.ToolTip = null;
 
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, "Enabled icon controls for regular fence");
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, "Enabled icon controls for regular container");
             }
             catch (Exception ex)
             {
@@ -961,13 +961,13 @@ namespace Desktop_Fences
         {
             try
             {
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Saving all properties to JSON for fence '{_fence.Title}'");
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Saving all properties to JSON for container '{_container.Title}'");
 
                 // Get values from all 12 controls
                 string customColor = GetDropdownValue(_cmbCustomColor);
                 string customLaunchEffect = GetDropdownValue(_cmbCustomLaunchEffect);
-                string fenceBorderColor = GetDropdownValue(_cmbFenceBorderColor);
-                string fenceBorderThickness = _nudFenceBorderThickness.Value.ToString();
+                string containerBorderColor = GetDropdownValue(_cmbContainerBorderColor);
+                string containerBorderThickness = _nudContainerBorderThickness.Value.ToString();
 
                 string titleTextColor = GetDropdownValue(_cmbTitleTextColor);
                 string titleTextSize = GetDropdownValue(_cmbTitleTextSize);
@@ -979,23 +979,23 @@ namespace Desktop_Fences
                 string disableTextShadow = (_chkDisableTextShadow.IsChecked ?? false).ToString().ToLower();
                 string grayscaleIcons = (_chkGrayscaleIcons.IsChecked ?? false).ToString().ToLower();
 
-                // Save all 12 properties using existing UpdateFenceProperty method
-                FenceManager.UpdateFenceProperty(_fence, "CustomColor", customColor, $"CustomColor updated to '{customColor}'");
-                FenceManager.UpdateFenceProperty(_fence, "CustomLaunchEffect", customLaunchEffect, $"CustomLaunchEffect updated to '{customLaunchEffect}'");
-                FenceManager.UpdateFenceProperty(_fence, "FenceBorderColor", fenceBorderColor, $"FenceBorderColor updated to '{fenceBorderColor}'");
-                FenceManager.UpdateFenceProperty(_fence, "FenceBorderThickness", fenceBorderThickness, $"FenceBorderThickness updated to '{fenceBorderThickness}'");
-                FenceManager.UpdateFenceProperty(_fence, "TitleTextColor", titleTextColor, $"TitleTextColor updated to '{titleTextColor}'");
-                FenceManager.UpdateFenceProperty(_fence, "TitleTextSize", titleTextSize, $"TitleTextSize updated to '{titleTextSize}'");
-                FenceManager.UpdateFenceProperty(_fence, "TitleFontFamily", GetDropdownValue(_cmbTitleFont), "TitleFontFamily updated");
-                FenceManager.UpdateFenceProperty(_fence, "TitleBarColor", GetDropdownValue(_cmbTitleBarColor), "TitleBarColor updated");
-                FenceManager.UpdateFenceProperty(_fence, "BoldTitleText", boldTitleText, $"BoldTitleText updated to '{boldTitleText}'");
-                FenceManager.UpdateFenceProperty(_fence, "IconSize", iconSize, $"IconSize updated to '{iconSize}'");
-                FenceManager.UpdateFenceProperty(_fence, "IconSpacing", iconSpacing, $"IconSpacing updated to '{iconSpacing}'");
-                FenceManager.UpdateFenceProperty(_fence, "TextColor", textColor, $"TextColor updated to '{textColor}'");
-                FenceManager.UpdateFenceProperty(_fence, "DisableTextShadow", disableTextShadow, $"DisableTextShadow updated to '{disableTextShadow}'");
-                FenceManager.UpdateFenceProperty(_fence, "GrayscaleIcons", grayscaleIcons, $"GrayscaleIcons updated to '{grayscaleIcons}'");
+                // Save all 12 properties using existing UpdateContainerProperty method
+                ContainerManager.UpdateContainerProperty(_container, "CustomColor", customColor, $"CustomColor updated to '{customColor}'");
+                ContainerManager.UpdateContainerProperty(_container, "CustomLaunchEffect", customLaunchEffect, $"CustomLaunchEffect updated to '{customLaunchEffect}'");
+                ContainerManager.UpdateContainerProperty(_container, "ContainerBorderColor", containerBorderColor, $"ContainerBorderColor updated to '{containerBorderColor}'");
+                ContainerManager.UpdateContainerProperty(_container, "ContainerBorderThickness", containerBorderThickness, $"ContainerBorderThickness updated to '{containerBorderThickness}'");
+                ContainerManager.UpdateContainerProperty(_container, "TitleTextColor", titleTextColor, $"TitleTextColor updated to '{titleTextColor}'");
+                ContainerManager.UpdateContainerProperty(_container, "TitleTextSize", titleTextSize, $"TitleTextSize updated to '{titleTextSize}'");
+                ContainerManager.UpdateContainerProperty(_container, "TitleFontFamily", GetDropdownValue(_cmbTitleFont), "TitleFontFamily updated");
+                ContainerManager.UpdateContainerProperty(_container, "TitleBarColor", GetDropdownValue(_cmbTitleBarColor), "TitleBarColor updated");
+                ContainerManager.UpdateContainerProperty(_container, "BoldTitleText", boldTitleText, $"BoldTitleText updated to '{boldTitleText}'");
+                ContainerManager.UpdateContainerProperty(_container, "IconSize", iconSize, $"IconSize updated to '{iconSize}'");
+                ContainerManager.UpdateContainerProperty(_container, "IconSpacing", iconSpacing, $"IconSpacing updated to '{iconSpacing}'");
+                ContainerManager.UpdateContainerProperty(_container, "TextColor", textColor, $"TextColor updated to '{textColor}'");
+                ContainerManager.UpdateContainerProperty(_container, "DisableTextShadow", disableTextShadow, $"DisableTextShadow updated to '{disableTextShadow}'");
+                ContainerManager.UpdateContainerProperty(_container, "GrayscaleIcons", grayscaleIcons, $"GrayscaleIcons updated to '{grayscaleIcons}'");
 
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"All 12 properties saved to JSON for fence '{_fence.Title}'");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"All 12 properties saved to JSON for container '{_container.Title}'");
             }
             catch (Exception ex)
             {
@@ -1008,22 +1008,22 @@ namespace Desktop_Fences
         {
             try
             {
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Applying ALL runtime changes for fence '{_fence.Title}'");
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Applying ALL runtime changes for container '{_container.Title}'");
 
-                string fenceId = _fence.Id?.ToString();
-                if (string.IsNullOrEmpty(fenceId)) return;
+                string containerId = _container.Id?.ToString();
+                if (string.IsNullOrEmpty(containerId)) return;
 
                 var windows = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>();
-                var win = windows.FirstOrDefault(w => w.Tag?.ToString() == fenceId);
+                var win = windows.FirstOrDefault(w => w.Tag?.ToString() == containerId);
 
                 if (win != null)
                 {
-                    ApplyFenceBorderSettings(win);
+                    ApplyContainerBorderSettings(win);
                     ApplyTitleSettings(win);
                     ApplyCustomColorSetting(win);
 
                     // --- CHANGED LOGIC START ---
-                    string itemsType = _fence.ItemsType?.ToString();
+                    string itemsType = _container.ItemsType?.ToString();
 
                     if (itemsType == "Note")
                     {
@@ -1037,7 +1037,7 @@ namespace Desktop_Fences
                     }
                     // --- CHANGED LOGIC END ---
 
-                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Applied all runtime changes to fence '{_fence.Title}'");
+                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Applied all runtime changes to container '{_container.Title}'");
                 }
             }
             catch (Exception ex)
@@ -1047,13 +1047,13 @@ namespace Desktop_Fences
         }
 
 
-        // In CustomizeFenceFormManager.cs
+        // In CustomizeContainerFormManager.cs
 
         private void ApplyNoteSettings(NonActivatingWindow win)
         {
             try
             {
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Refreshing Note visuals for fence '{_fence.Title}'");
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Refreshing Note visuals for container '{_container.Title}'");
 
                 var border = win.Content as Border;
                 var dockPanel = border?.Child as DockPanel;
@@ -1065,49 +1065,49 @@ namespace Desktop_Fences
                     if (noteTextBox != null)
                     {
                         // --- ROBUST FIX START ---
-                        // Create a temporary "Effective Fence" object using the CURRENT FORM VALUES.
+                        // Create a temporary "Effective Container" object using the CURRENT FORM VALUES.
                         // This ensures the visual update uses exactly what the user just clicked "Save" on,
                         // ignoring any stale data in the global list.
 
-                        // 1. Clone properties from the original _fence into a dictionary
-                        var effectiveFence = new Dictionary<string, object>();
+                        // 1. Clone properties from the original _container into a dictionary
+                        var effectiveContainer = new Dictionary<string, object>();
                         try
                         {
                             IDictionary<string, object> originalDict = null;
                             // Handle JObject vs ExpandoObject
-                            if (_fence is Newtonsoft.Json.Linq.JObject jObj)
+                            if (_container is Newtonsoft.Json.Linq.JObject jObj)
                                 originalDict = jObj.ToObject<Dictionary<string, object>>();
-                            else if (_fence is IDictionary<string, object> dict)
+                            else if (_container is IDictionary<string, object> dict)
                                 originalDict = dict;
 
                             if (originalDict != null)
                             {
-                                foreach (var kvp in originalDict) effectiveFence[kvp.Key] = kvp.Value;
+                                foreach (var kvp in originalDict) effectiveContainer[kvp.Key] = kvp.Value;
                             }
                         }
                         catch { }
 
                         // 2. OVERRIDE with values from the FORM CONTROLS
-                        effectiveFence["CustomColor"] = GetDropdownValue(_cmbCustomColor);
-                        effectiveFence["TextColor"] = GetDropdownValue(_cmbTextColor);
+                        effectiveContainer["CustomColor"] = GetDropdownValue(_cmbCustomColor);
+                        effectiveContainer["TextColor"] = GetDropdownValue(_cmbTextColor);
                         // Map TitleTextSize dropdown to NoteFontSize property
-                        effectiveFence["NoteFontSize"] = GetDropdownValue(_cmbTitleTextSize);
+                        effectiveContainer["NoteFontSize"] = GetDropdownValue(_cmbTitleTextSize);
 
                         // 3. Convert to ExpandoObject for dynamic compatibility
-                        dynamic dynamicFence = new System.Dynamic.ExpandoObject();
-                        var dynamicDict = (IDictionary<string, object>)dynamicFence;
-                        foreach (var kvp in effectiveFence) dynamicDict[kvp.Key] = kvp.Value;
+                        dynamic dynamicContainer = new System.Dynamic.ExpandoObject();
+                        var dynamicDict = (IDictionary<string, object>)dynamicContainer;
+                        foreach (var kvp in effectiveContainer) dynamicDict[kvp.Key] = kvp.Value;
                         // --- ROBUST FIX END ---
 
-                        // 4. Force NoteFenceManager to repaint using this fresh data
-                        NoteFenceManager.RefreshNoteVisuals(dynamicFence, noteTextBox);
+                        // 4. Force NoteContainerManager to repaint using this fresh data
+                        NoteContainerManager.RefreshNoteVisuals(dynamicContainer, noteTextBox);
 
                         // 5. Update font settings directly
                         try
                         {
                             string fontSizeStr = GetDropdownValue(_cmbTitleTextSize);
                             if (!string.IsNullOrEmpty(fontSizeStr))
-                                noteTextBox.FontSize = NoteFenceManager.GetNoteFontSizeValue(fontSizeStr);
+                                noteTextBox.FontSize = NoteContainerManager.GetNoteFontSizeValue(fontSizeStr);
                         }
                         catch { }
 
@@ -1121,38 +1121,38 @@ namespace Desktop_Fences
             }
         }
 
-        private void ApplyFenceBorderSettings(NonActivatingWindow win)
+        private void ApplyContainerBorderSettings(NonActivatingWindow win)
         {
             try
             {
-                string borderColor = GetDropdownValue(_cmbFenceBorderColor);
-                int borderThickness = _nudFenceBorderThickness.Value;
+                string borderColor = GetDropdownValue(_cmbContainerBorderColor);
+                int borderThickness = _nudContainerBorderThickness.Value;
 
-                if (win.Content is System.Windows.Controls.Border fenceBorder)
+                if (win.Content is System.Windows.Controls.Border containerBorder)
                 {
                     if (!string.IsNullOrEmpty(borderColor) && borderColor != "Default")
                     {
                         var color = Utility.GetColorFromName(borderColor);
-                        fenceBorder.BorderBrush = new System.Windows.Media.SolidColorBrush(color);
-                        LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Applied border color '{borderColor}' to fence");
+                        containerBorder.BorderBrush = new System.Windows.Media.SolidColorBrush(color);
+                        LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Applied border color '{borderColor}' to container");
                     }
                     else if (borderThickness > 0)
                     {
-                        fenceBorder.BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Gray);
+                        containerBorder.BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Gray);
                         LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Applied default border color with thickness {borderThickness}");
                     }
                     else
                     {
-                        fenceBorder.BorderBrush = null;
+                        containerBorder.BorderBrush = null;
                     }
 
-                    fenceBorder.BorderThickness = new System.Windows.Thickness(borderThickness);
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Applied border thickness {borderThickness} to fence");
+                    containerBorder.BorderThickness = new System.Windows.Thickness(borderThickness);
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Applied border thickness {borderThickness} to container");
                 }
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, $"Error applying fence border settings: {ex.Message}");
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, $"Error applying container border settings: {ex.Message}");
             }
         }
 
@@ -1174,7 +1174,7 @@ namespace Desktop_Fences
                         {
                             var color = Utility.GetColorFromName(titleColor);
                             titleLabel.Foreground = new System.Windows.Media.SolidColorBrush(color);
-                            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Applied title color '{titleColor}' to fence");
+                            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Applied title color '{titleColor}' to container");
                         }
                         else
                         {
@@ -1190,16 +1190,16 @@ namespace Desktop_Fences
                         var bandGrid = Utility.FindTitleGrid(win);
                         if (bandGrid != null) bandGrid.Background = Utility.GetTitleBarBrush(GetDropdownValue(_cmbCustomColor), GetDropdownValue(_cmbTitleBarColor));
 
-                        LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Applied title font size {fontSize} and bold={boldTitle} to fence");
+                        LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Applied title font size {fontSize} and bold={boldTitle} to container");
                     }
                     else
                     {
-                        LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.UI, $"Could not find title Label in titleGrid for fence '{_fence.Title}'");
+                        LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.UI, $"Could not find title Label in titleGrid for container '{_container.Title}'");
                     }
                 }
                 else
                 {
-                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.UI, $"Could not find titleGrid for fence '{_fence.Title}'");
+                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.UI, $"Could not find titleGrid for container '{_container.Title}'");
                 }
             }
             catch (Exception ex)
@@ -1216,13 +1216,13 @@ namespace Desktop_Fences
 
                 if (!string.IsNullOrEmpty(customColor) && customColor != "Default")
                 {
-                    Utility.ApplyTintAndColorToFence(win, customColor);
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Applied custom color '{customColor}' to fence");
+                    Utility.ApplyTintAndColorToContainer(win, customColor);
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Applied custom color '{customColor}' to container");
                 }
                 else
                 {
-                    Utility.ApplyTintAndColorToFence(win, SettingsManager.SelectedColor);
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Applied default color to fence");
+                    Utility.ApplyTintAndColorToContainer(win, SettingsManager.SelectedColor);
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Applied default color to container");
                 }
             }
             catch (Exception ex)
@@ -1235,25 +1235,25 @@ namespace Desktop_Fences
         {
             try
             {
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Refreshing icons for fence '{_fence.Title}' to apply icon settings");
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Refreshing icons for container '{_container.Title}' to apply icon settings");
 
                 var wrapPanel = FindVisualChild<System.Windows.Controls.WrapPanel>(win);
                 if (wrapPanel != null)
                 {
-                    var fenceData = FenceManager.GetFenceData();
-                    dynamic currentFence = fenceData.FirstOrDefault(f => f.Id?.ToString() == _fence.Id?.ToString());
+                    var containerData = ContainerManager.GetContainerData();
+                    dynamic currentContainer = containerData.FirstOrDefault(f => f.Id?.ToString() == _container.Id?.ToString());
 
-                    if (currentFence != null)
+                    if (currentContainer != null)
                     {
-                        string itemsType = currentFence.ItemsType?.ToString();
+                        string itemsType = currentContainer.ItemsType?.ToString();
 
                         if (itemsType == "Portal")
                         {
-                            RefreshPortalFenceIcons(wrapPanel, currentFence);
+                            RefreshPortalContainerIcons(wrapPanel, currentContainer);
                         }
                         else
                         {
-                            RefreshRegularFenceIcons(wrapPanel, currentFence);
+                            RefreshRegularContainerIcons(wrapPanel, currentContainer);
                         }
                     }
                 }
@@ -1264,51 +1264,51 @@ namespace Desktop_Fences
             }
         }
 
-        private void RefreshPortalFenceIcons(System.Windows.Controls.WrapPanel wrapPanel, dynamic portalFence)
+        private void RefreshPortalContainerIcons(System.Windows.Controls.WrapPanel wrapPanel, dynamic portalContainer)
         {
             try
             {
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Refreshing Portal Fence icons for '{portalFence.Title}'");
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Refreshing Portal Container icons for '{portalContainer.Title}'");
 
                 wrapPanel.Children.Clear();
 
-                var portalManagers = FenceManager.GetPortalFences();
-                if (portalManagers.ContainsKey(portalFence))
+                var portalManagers = ContainerManager.GetPortalContainers();
+                if (portalManagers.ContainsKey(portalContainer))
                 {
-                    portalManagers[portalFence].Dispose();
-                    portalManagers[portalFence] = new PortalFenceManager(portalFence, wrapPanel);
+                    portalManagers[portalContainer].Dispose();
+                    portalManagers[portalContainer] = new PortalContainerManager(portalContainer, wrapPanel);
 
-                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Successfully refreshed Portal Fence icons for '{portalFence.Title}'");
+                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Successfully refreshed Portal Container icons for '{portalContainer.Title}'");
                 }
                 else
                 {
-                    var newManager = new PortalFenceManager(portalFence, wrapPanel);
-                    portalManagers[portalFence] = newManager;
+                    var newManager = new PortalContainerManager(portalContainer, wrapPanel);
+                    portalManagers[portalContainer] = newManager;
 
-                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Created new PortalFenceManager for '{portalFence.Title}'");
+                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Created new PortalContainerManager for '{portalContainer.Title}'");
                 }
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, $"Error refreshing Portal Fence icons: {ex.Message}");
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, $"Error refreshing Portal Container icons: {ex.Message}");
             }
         }
 
-        private void RefreshRegularFenceIcons(System.Windows.Controls.WrapPanel wrapPanel, dynamic regularFence)
+        private void RefreshRegularContainerIcons(System.Windows.Controls.WrapPanel wrapPanel, dynamic regularContainer)
         {
             try
             {
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Refreshing regular fence icons for '{regularFence.Title}'");
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Refreshing regular container icons for '{regularContainer.Title}'");
 
                 wrapPanel.Children.Clear();
 
-                bool tabsEnabled = regularFence.TabsEnabled?.ToString().ToLower() == "true";
+                bool tabsEnabled = regularContainer.TabsEnabled?.ToString().ToLower() == "true";
                 Newtonsoft.Json.Linq.JArray items = null;
 
                 if (tabsEnabled)
                 {
-                    var tabs = regularFence.Tabs as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray();
-                    int currentTab = Convert.ToInt32(regularFence.CurrentTab?.ToString() ?? "0");
+                    var tabs = regularContainer.Tabs as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray();
+                    int currentTab = Convert.ToInt32(regularContainer.CurrentTab?.ToString() ?? "0");
 
                     if (currentTab >= 0 && currentTab < tabs.Count)
                     {
@@ -1318,15 +1318,15 @@ namespace Desktop_Fences
                             items = activeTab["Items"] as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray();
                             string tabName = activeTab["TabName"]?.ToString() ?? $"Tab {currentTab}";
                             LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI,
-                                $"Refreshing icons from tab '{tabName}' for fence '{regularFence.Title}'");
+                                $"Refreshing icons from tab '{tabName}' for container '{regularContainer.Title}'");
                         }
                     }
                 }
                 else
                 {
-                    items = regularFence.Items as Newtonsoft.Json.Linq.JArray;
+                    items = regularContainer.Items as Newtonsoft.Json.Linq.JArray;
                     LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI,
-                        $"Refreshing icons from main Items for fence '{regularFence.Title}'");
+                        $"Refreshing icons from main Items for container '{regularContainer.Title}'");
                 }
 
                 if (items != null)
@@ -1338,8 +1338,8 @@ namespace Desktop_Fences
 
                     foreach (dynamic item in sortedItems)
                     {
-                        // FIX: Pass 'regularFence' context here too!
-                        FenceManager.AddIcon(item, wrapPanel, regularFence);
+                        // FIX: Pass 'regularContainer' context here too!
+                        ContainerManager.AddIcon(item, wrapPanel, regularContainer);
 
                         if (wrapPanel.Children.Count > 0)
                         {
@@ -1351,30 +1351,30 @@ namespace Desktop_Fences
                                 // FIX: Extract arguments
                                 string arguments = Utility.GetShortcutArguments(filePath);
 
-                                FenceManager.ClickEventAdder(sp, filePath, isFolder, arguments);
+                                ContainerManager.ClickEventAdder(sp, filePath, isFolder, arguments);
 
                                 // FIX: Attach the centralized context menu
                                 // We need to find the parent window (NonActivatingWindow) of the WrapPanel
                                 var parentWindow = Window.GetWindow(wrapPanel) as NonActivatingWindow;
                                 if (parentWindow != null)
                                 {
-                                    FenceManager.AttachIconContextMenu(sp, item, regularFence, parentWindow);
+                                    ContainerManager.AttachIconContextMenu(sp, item, regularContainer, parentWindow);
                                 }
                             }
                         }
                     }
 
                     LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
-                        $"Successfully refreshed {sortedItems.Count} icons for fence '{regularFence.Title}' {(tabsEnabled ? "(from active tab)" : "(from main Items)")}");
+                        $"Successfully refreshed {sortedItems.Count} icons for container '{regularContainer.Title}' {(tabsEnabled ? "(from active tab)" : "(from main Items)")}");
                 }
                 else
                 {
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"No items found for fence '{regularFence.Title}'");
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"No items found for container '{regularContainer.Title}'");
                 }
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, $"Error refreshing regular fence icons: {ex.Message}");
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, $"Error refreshing regular container icons: {ex.Message}");
             }
         }
 

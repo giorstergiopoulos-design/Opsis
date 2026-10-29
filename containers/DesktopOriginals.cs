@@ -5,10 +5,10 @@ using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     // Opsis: when an icon of the Windows desktop is dropped into a container it leaves the desktop (the container shows it instead), like in
-    // the classic icon-fence tools. Nothing is moved or deleted: the desktop original only gets the Hidden attribute, and gets it back as soon
+    // the classic icon-container tools. Nothing is moved or deleted: the desktop original only gets the Hidden attribute, and gets it back as soon
     // as the item is removed from every container (or the container is deleted). The map shortcut -> original lives in the profile folder.
     internal static class DesktopOriginals
     {
@@ -54,14 +54,14 @@ namespace Desktop_Fences
         }
 
         /// <summary>Called on every save: originals whose shortcut is no longer in any container are shown on the desktop again.</summary>
-        public static void Reconcile(IEnumerable<JObject> fences)
+        public static void Reconcile(IEnumerable<JObject> containers)
         {
             try
             {
                 var map = Load();
                 if (map.Count == 0) return;
                 var present = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var f in fences)
+                foreach (var f in containers)
                 {
                     foreach (var arr in new[] { f["Items"] as JArray }.Concat((f["Tabs"] as JArray ?? new JArray()).Select(t => t["Items"] as JArray)))
                         if (arr != null) foreach (var i in arr) { var fn = i["Filename"]?.ToString(); if (!string.IsNullOrEmpty(fn)) { try { present.Add(Path.GetFullPath(fn)); } catch { } } }

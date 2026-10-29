@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
-using Desktop_Fences;
+using OpsisContainers;
 
 public class NonActivatingWindow : Window
 {
@@ -32,11 +32,11 @@ public class NonActivatingWindow : Window
 
         if (msg == WM_ENTERSIZEMOVE)
         {
-            FenceManager.OnResizingStarted(this);
+            ContainerManager.OnResizingStarted(this);
         }
         else if (msg == WM_EXITSIZEMOVE)
         {
-            FenceManager.OnResizingEnded(this);
+            ContainerManager.OnResizingEnded(this);
         }
 
         // Handle existing focus prevention

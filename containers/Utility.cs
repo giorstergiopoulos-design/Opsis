@@ -10,12 +10,12 @@ using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging; // Added for ImageSource
 using IWshRuntimeLibrary;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     public static class Utility
     {
 
-        public static Effect CreateIconEffect(IconVisibilityEffect effectType, string fenceColor = null)
+        public static Effect CreateIconEffect(IconVisibilityEffect effectType, string containerColor = null)
         {
             switch (effectType)
             {
@@ -60,9 +60,9 @@ namespace Desktop_Fences
                     };
 
                 case IconVisibilityEffect.ColoredGlow:
-                    var glowColor = string.IsNullOrEmpty(fenceColor)
+                    var glowColor = string.IsNullOrEmpty(containerColor)
                         ? Colors.White
-                        : GetColorFromName(fenceColor);
+                        : GetColorFromName(containerColor);
                     return new DropShadowEffect
                     {
                         Color = glowColor,
@@ -84,7 +84,7 @@ namespace Desktop_Fences
                 //        BlurRadius = 36,
                 //        Opacity = 1.0
                 //    };
-                case Desktop_Fences.IconVisibilityEffect.AngelGlow:
+                case OpsisContainers.IconVisibilityEffect.AngelGlow:
                     return new System.Windows.Media.Effects.DropShadowEffect
                     {
                         Color = System.Windows.Media.Colors.Snow,
@@ -102,10 +102,10 @@ namespace Desktop_Fences
             }
         }
 
-        // TABS FEATURE: Generate tab color scheme based on fence color
-        public static (Color activeTab, Color inactiveTab, Color hoverTab, Color borderColor) GenerateTabColorScheme(string fenceColorName)
+        // TABS FEATURE: Generate tab color scheme based on container color
+        public static (Color activeTab, Color inactiveTab, Color hoverTab, Color borderColor) GenerateTabColorScheme(string containerColorName)
         {
-            var baseColor = GetColorFromName(fenceColorName);
+            var baseColor = GetColorFromName(containerColorName);
 
             // Convert to HSV for better color manipulation
             var hsv = RgbToHsv(baseColor);
@@ -197,33 +197,33 @@ namespace Desktop_Fences
             );
         }
 
-        // Opsis: safe property read for fence data that may be a JObject (loaded), an ExpandoObject (just created) or missing the key.
-        public static string FenceProp(object fence, string name)
+        // Opsis: safe property read for container data that may be a JObject (loaded), an ExpandoObject (just created) or missing the key.
+        public static string ContainerProp(object container, string name)
         {
             try
             {
-                if (fence is Newtonsoft.Json.Linq.JObject j) return j[name]?.ToString();
-                if (fence is System.Collections.Generic.IDictionary<string, object> d) return d.TryGetValue(name, out var v) ? v?.ToString() : null;
+                if (container is Newtonsoft.Json.Linq.JObject j) return j[name]?.ToString();
+                if (container is System.Collections.Generic.IDictionary<string, object> d) return d.TryGetValue(name, out var v) ? v?.ToString() : null;
             }
             catch { }
             return null;
         }
 
-        // Opsis: title text size names -> points (shared by fence creation and the Customize window).
+        // Opsis: title text size names -> points (shared by container creation and the Customize window).
         public static double TitleSizeToPoints(string name) => name switch
         {
             "Small" => 10, "Large" => 16, "Extra Large" => 20, "Huge" => 26, _ => 12
         };
 
-        // Opsis: per-fence title bar colour ("Default"/empty = Auto = the darkest shade of the fence colour).
-        public static Brush GetTitleBarBrush(string fenceColorName, string fenceTitleBarColor)
+        // Opsis: per-container title bar colour ("Default"/empty = Auto = the darkest shade of the container colour).
+        public static Brush GetTitleBarBrush(string containerColorName, string containerTitleBarColor)
         {
-            string name = string.IsNullOrEmpty(fenceTitleBarColor) || fenceTitleBarColor == "Default" ? SettingsManager.TitleBarColor : fenceTitleBarColor;
+            string name = string.IsNullOrEmpty(containerTitleBarColor) || containerTitleBarColor == "Default" ? SettingsManager.TitleBarColor : containerTitleBarColor;
             Color c;
             if (string.IsNullOrEmpty(name) || name == "Auto")
             {
-                var b = GetColorFromName(string.IsNullOrEmpty(fenceColorName) || fenceColorName == "Default" ? SettingsManager.SelectedColor : fenceColorName);
-                c = Color.FromRgb((byte)(b.R * 0.3), (byte)(b.G * 0.3), (byte)(b.B * 0.3));      // the darkest shade of the fence colour
+                var b = GetColorFromName(string.IsNullOrEmpty(containerColorName) || containerColorName == "Default" ? SettingsManager.SelectedColor : containerColorName);
+                c = Color.FromRgb((byte)(b.R * 0.3), (byte)(b.G * 0.3), (byte)(b.B * 0.3));      // the darkest shade of the container colour
             }
             else c = GetColorFromName(name);
             byte a = (byte)Math.Clamp(SettingsManager.TitleBarOpacity * 2.55, 0, 255);
@@ -232,12 +232,12 @@ namespace Desktop_Fences
             return br;
         }
 
-        private static string FenceTitleBarColorOf(Window fence)
+        private static string ContainerTitleBarColorOf(Window container)
         {
             try
             {
-                string id = fence.Tag?.ToString();
-                foreach (var f in FenceManager.GetFenceData())
+                string id = container.Tag?.ToString();
+                foreach (var f in ContainerManager.GetContainerData())
                 {
                     string fid = f is Newtonsoft.Json.Linq.JObject j ? j["Id"]?.ToString() : (string)(f.Id?.ToString());
                     if (fid == id) return f is Newtonsoft.Json.Linq.JObject jj ? jj["TitleBarColor"]?.ToString() : (string)(f.TitleBarColor?.ToString());
@@ -248,13 +248,13 @@ namespace Desktop_Fences
         }
 
         // Opsis: title bar band colour (Settings > Appearance > Title Bar).
-        public static Brush GetTitleBarBrush(string fenceColorName)
+        public static Brush GetTitleBarBrush(string containerColorName)
         {
             string name = SettingsManager.TitleBarColor;
             Color c;
             if (string.IsNullOrEmpty(name) || name == "Auto")
             {
-                var b = GetColorFromName(string.IsNullOrEmpty(fenceColorName) || fenceColorName == "Default" ? SettingsManager.SelectedColor : fenceColorName);
+                var b = GetColorFromName(string.IsNullOrEmpty(containerColorName) || containerColorName == "Default" ? SettingsManager.SelectedColor : containerColorName);
                 c = Color.FromRgb((byte)(b.R * 0.3), (byte)(b.G * 0.3), (byte)(b.B * 0.3));
             }
             else c = GetColorFromName(name);
@@ -271,35 +271,35 @@ namespace Desktop_Fences
             for (int i = 0; i < n; i++)
             {
                 var ch = VisualTreeHelper.GetChild(root, i);
-                if (ch is Grid g && g.Name == "FenceTitleGrid") return g;
+                if (ch is Grid g && g.Name == "ContainerTitleGrid") return g;
                 var r = FindTitleGrid(ch);
                 if (r != null) return r;
             }
             return null;
         }
 
-        public static void ApplyTintAndColorToFence(Window fence, string colorName = null)
+        public static void ApplyTintAndColorToContainer(Window container, string colorName = null)
         {
-            var fenceControl = fence.Content as Border; // Matches your structure
-            if (fenceControl == null) return;
+            var containerControl = container.Content as Border; // Matches your structure
+            if (containerControl == null) return;
 
             string effectiveColor = colorName ?? SettingsManager.SelectedColor; // Fallback to global
 
             LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.Settings,
-                $"ApplyTintAndColorToFence: TintValue={SettingsManager.TintValue}, Color={effectiveColor}, Opacity={SettingsManager.TintValue / 100.0}");
+                $"ApplyTintAndColorToContainer: TintValue={SettingsManager.TintValue}, Color={effectiveColor}, Opacity={SettingsManager.TintValue / 100.0}");
 
             // Use TintValue from SettingsManager to determine if tint is applied
-            fenceControl.Background = SettingsManager.TintValue > 0
+            containerControl.Background = SettingsManager.TintValue > 0
                 ? new SolidColorBrush(GetColorFromName(effectiveColor)) { Opacity = SettingsManager.TintValue / 100.0 }
                 : Brushes.Transparent;
 
-            var titleGridToTint = FindTitleGrid(fence);
-            if (titleGridToTint != null) titleGridToTint.Background = GetTitleBarBrush(effectiveColor, FenceTitleBarColorOf(fence));
+            var titleGridToTint = FindTitleGrid(container);
+            if (titleGridToTint != null) titleGridToTint.Background = GetTitleBarBrush(effectiveColor, ContainerTitleBarColorOf(container));
 
-            // TABS FEATURE: Refresh tab colors when fence color changes
-            if (fence is NonActivatingWindow fenceWindow)
+            // TABS FEATURE: Refresh tab colors when container color changes
+            if (container is NonActivatingWindow containerWindow)
             {
-                FenceManager.RefreshTabColors(fenceWindow, effectiveColor);
+                ContainerManager.RefreshTabColors(containerWindow, effectiveColor);
             }
         }
 
@@ -307,7 +307,7 @@ namespace Desktop_Fences
         public static Color GetColorFromName(string colorName)
         {
             // --- CHAMELEON MODE HOOK ---
-            // If Chameleon is enabled and this fence is using the global default color
+            // If Chameleon is enabled and this container is using the global default color
             if (SettingsManager.EnableChameleonMode && (string.IsNullOrEmpty(colorName) || colorName == SettingsManager.SelectedColor || colorName == "Default"))
             {
                 return WallpaperColorManager.CurrentWallpaperColor;
@@ -324,7 +324,7 @@ namespace Desktop_Fences
                 "White" => (Color)ColorConverter.ConvertFromString("#F1F1F6"),
                 "Beige" => (Color)ColorConverter.ConvertFromString("#C8AD7E"),
                 "Gray" => (Color)ColorConverter.ConvertFromString("#6E6E6E"),
-                "Black" => (Color)ColorConverter.ConvertFromString("#1F1D1C"),   // Opsis: warm charcoal like Stardock Fences
+                "Black" => (Color)ColorConverter.ConvertFromString("#1F1D1C"),   // Opsis: warm charcoal like Stardock Containers
                 "Purple" => (Color)ColorConverter.ConvertFromString("#3a0b50"),
                 "Fuchsia" => (Color)ColorConverter.ConvertFromString("#5F093d"),
                 "Yellow" => (Color)ColorConverter.ConvertFromString("#C1C708"),
@@ -335,7 +335,7 @@ namespace Desktop_Fences
                 // "Blue" => (Color)ColorConverter.ConvertFromString("#012162"),
                 //  "White" => (Color)ColorConverter.ConvertFromString("#fdfdff"),
                 //  "Gray" => (Color)ColorConverter.ConvertFromString("#3d3d3f"),
-                //  "Black" => (Color)ColorConverter.ConvertFromString("#1F1D1C"),   // Opsis: warm charcoal like Stardock Fences
+                //  "Black" => (Color)ColorConverter.ConvertFromString("#1F1D1C"),   // Opsis: warm charcoal like Stardock Containers
                 // "Purple" => (Color)ColorConverter.ConvertFromString("#3a0b50"),
                 //  "Yellow" => (Color)ColorConverter.ConvertFromString("#d8da1f"),
                 //  _ => Colors.Transparent, 
@@ -343,7 +343,7 @@ namespace Desktop_Fences
         }
 
 
-        public static void UpdateFenceVisuals()
+        public static void UpdateContainerVisuals()
         {
             if (System.Windows.Application.Current == null) return;
 
@@ -364,18 +364,18 @@ namespace Desktop_Fences
                 double iconOpacity = (double)SettingsManager.MenuTintValue / 100.0;
 
                 // Get Data List Once
-                var allFences = FenceManager.GetFenceData();
+                var allContainers = ContainerManager.GetContainerData();
 
-                // 2. Iterate All Open Fences
+                // 2. Iterate All Open Containers
                 foreach (var win in System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>())
                 {
-                    string fenceId = win.Tag?.ToString();
-                    if (string.IsNullOrEmpty(fenceId)) continue;
+                    string containerId = win.Tag?.ToString();
+                    if (string.IsNullOrEmpty(containerId)) continue;
 
                     // --- FIX START: Robust Data Lookup ---
-                    // Explicitly find the fence data without relying on risky dynamic LINQ
-                    dynamic fenceData = null;
-                    foreach (var f in allFences)
+                    // Explicitly find the container data without relying on risky dynamic LINQ
+                    dynamic containerData = null;
+                    foreach (var f in allContainers)
                     {
                         string id = null;
                         // Handle JObject (Loaded from JSON)
@@ -388,9 +388,9 @@ namespace Desktop_Fences
                             if (id == null) try { id = f.Id?.ToString(); } catch { }
                         }
 
-                        if (string.Equals(id, fenceId, StringComparison.OrdinalIgnoreCase))
+                        if (string.Equals(id, containerId, StringComparison.OrdinalIgnoreCase))
                         {
-                            fenceData = f;
+                            containerData = f;
                             break;
                         }
                     }
@@ -398,16 +398,16 @@ namespace Desktop_Fences
                     // Determine Color
                     string colorToApply = SettingsManager.SelectedColor; // Default to Global
 
-                    if (fenceData != null)
+                    if (containerData != null)
                     {
                         string customColor = null;
                         // Robust CustomColor Extraction
-                        if (fenceData is Newtonsoft.Json.Linq.JObject jObj)
+                        if (containerData is Newtonsoft.Json.Linq.JObject jObj)
                             customColor = jObj["CustomColor"]?.ToString();
                         else
                         {
-                            try { customColor = fenceData.CustomColor?.ToString(); } catch { }
-                            if (customColor == null) try { customColor = fenceData.GetType().GetProperty("CustomColor")?.GetValue(fenceData)?.ToString(); } catch { }
+                            try { customColor = containerData.CustomColor?.ToString(); } catch { }
+                            if (customColor == null) try { customColor = containerData.GetType().GetProperty("CustomColor")?.GetValue(containerData)?.ToString(); } catch { }
                         }
 
                         // If valid custom color, override global
@@ -419,10 +419,10 @@ namespace Desktop_Fences
                     // --- FIX END ---
 
                     // 3. Apply Visuals
-                    ApplyTintAndColorToFence(win, colorToApply);
+                    ApplyTintAndColorToContainer(win, colorToApply);
 
                     // 4. Update Icons (Using Named FindChild for safety)
-                    var menuIcon = FindChild<TextBlock>(win, "FenceMenuIcon");
+                    var menuIcon = FindChild<TextBlock>(win, "ContainerMenuIcon");
                     if (menuIcon != null)
                     {
                         menuIcon.Text = menuSymbol;
@@ -430,7 +430,7 @@ namespace Desktop_Fences
                         menuIcon.Opacity = iconOpacity;
                     }
 
-                    var lockIcon = FindChild<TextBlock>(win, "FenceLockIcon");
+                    var lockIcon = FindChild<TextBlock>(win, "ContainerLockIcon");
                     if (lockIcon != null)
                     {
                         // Opsis: the padlock glyph follows the lock state (UpdateLockState), not the removed icon option.
@@ -439,11 +439,11 @@ namespace Desktop_Fences
 
                         // Re-apply Lock Color (Red/White)
                         bool isLocked = false;
-                        if (fenceData != null)
+                        if (containerData != null)
                         {
                             string lockedStr = null;
-                            if (fenceData is Newtonsoft.Json.Linq.JObject j) lockedStr = j["IsLocked"]?.ToString();
-                            else try { lockedStr = fenceData.IsLocked?.ToString(); } catch { }
+                            if (containerData is Newtonsoft.Json.Linq.JObject j) lockedStr = j["IsLocked"]?.ToString();
+                            else try { lockedStr = containerData.IsLocked?.ToString(); } catch { }
                             isLocked = lockedStr?.ToLower() == "true";
                         }
                         lockIcon.Foreground = isLocked ? System.Windows.Media.Brushes.Red : System.Windows.Media.Brushes.White;
@@ -453,10 +453,10 @@ namespace Desktop_Fences
                     try
                     {
                         string type = null;
-                        if (fenceData is Newtonsoft.Json.Linq.JObject j) type = j["ItemsType"]?.ToString();
-                        else try { type = fenceData.ItemsType?.ToString(); } catch { }
+                        if (containerData is Newtonsoft.Json.Linq.JObject j) type = j["ItemsType"]?.ToString();
+                        else try { type = containerData.ItemsType?.ToString(); } catch { }
 
-                        if (type == "Note" && fenceData != null)
+                        if (type == "Note" && containerData != null)
                         {
                             var border = win.Content as Border;
                             var dockPanel = border?.Child as DockPanel;
@@ -464,7 +464,7 @@ namespace Desktop_Fences
 
                             if (noteTextBox != null)
                             {
-                                NoteFenceManager.RefreshNoteVisuals(fenceData, noteTextBox);
+                                NoteContainerManager.RefreshNoteVisuals(containerData, noteTextBox);
                             }
                         }
                     }
@@ -624,7 +624,7 @@ namespace Desktop_Fences
                 // 1. PATH CORRECTION
                 if (!System.IO.Path.IsPathRooted(path))
                 {
-                    string exeDir = Desktop_Fences.DataRoot.Dir;
+                    string exeDir = OpsisContainers.DataRoot.Dir;
                     // If path is relative, assume it's in the Shortcuts folder relative to EXE
                     string checkPath = System.IO.Path.Combine(exeDir, path);
                     if (System.IO.File.Exists(checkPath)) path = checkPath;

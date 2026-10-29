@@ -4,7 +4,7 @@
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
-		<RootNamespace>Desktop_Fences</RootNamespace>
+		<RootNamespace>OpsisContainers</RootNamespace>
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
 		<UseWindowsForms>True</UseWindowsForms>
@@ -23,12 +23,8 @@
 		<None Remove="folderX.png" />
 		<None Remove="portal.png" />
 		<None Remove="Resources\ding.wav" />
-		<None Remove="Resources\donate.png" />
 		<None Remove="Resources\dot.png" />
-		<None Remove="Resources\dragon.png" />
 		<None Remove="Resources\empty.png" />
-		<None Remove="Resources\Feed.png" />
-		<None Remove="Resources\HWP_Logo.png" />
 		<None Remove="Resources\link-White.png" />
 		<None Remove="Resources\logo_blue.ico" />
 		<None Remove="Resources\spotify-White.png" />
@@ -51,22 +47,14 @@
 
 	<ItemGroup>
 		<EmbeddedResource Include="Resources\ding.wav" />
-		<EmbeddedResource Include="Resources\dragon.png" />
 		<EmbeddedResource Include="Resources\logo1.png" />
 	</ItemGroup>
 	<ItemGroup>
-		<EmbeddedResource Include="Resources\donate.png" />
 		<EmbeddedResource Include="Resources\steam-White.png" />
 		<EmbeddedResource Include="Resources\sweep-sound-effect-240243.wav" />
 		<EmbeddedResource Include="Resources\ui-8-warning-sound-effect-336254.wav" />
 	</ItemGroup>
 	<ItemGroup>
-		<Resource Include="Resources\donate.png">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</Resource>
-		<EmbeddedResource Include="Resources\Feed.png">
-		  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</EmbeddedResource>
 		<Resource Include="Resources\dot.png">
 		  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</Resource>
@@ -82,9 +70,6 @@
 		<Resource Include="Resources\folderX.png" />
 		<EmbeddedResource Include="Resources\logo_blue.ico">
 			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</EmbeddedResource>
-		<EmbeddedResource Include="Resources\HWP_Logo.png">
-		  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</EmbeddedResource>
 		<Resource Include="Resources\link-White.png">
 		  <CopyToOutputDirectory>Never</CopyToOutputDirectory>

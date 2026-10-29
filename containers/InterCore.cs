@@ -13,9 +13,9 @@ using System.Windows.Media.Effects;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
-    // InterCore system for Desktop Fences - handles special interactive features and animations.
+    // InterCore system for Opsis DeskContainers - handles special interactive features and animations.
     public static class InterCore
     {
         #region Private Fields
@@ -106,7 +106,7 @@ namespace Desktop_Fences
             if (currentValue.StartsWith("CMD_DRAW"))
             {
                 // Correct Command -> Trigger Draw Mode
-                Application.Current.Dispatcher.Invoke(() => FenceManager.StartDrawMode());
+                Application.Current.Dispatcher.Invoke(() => ContainerManager.StartDrawMode());
                 LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.General, $"Remote Command Received: Draw Mode ({currentValue})");
             }
             else
@@ -114,9 +114,9 @@ namespace Desktop_Fences
                 // Timestamp or Unknown -> Trigger Wake Up (Blockage)
                 Application.Current.Dispatcher.InvokeAsync(async () =>
                 {
-                    if (FenceManager._areFencesAutoHidden)
+                    if (ContainerManager._areContainersAutoHidden)
                     {
-                        FenceManager.WakeUpFences();
+                        ContainerManager.WakeUpContainers();
 
                         // --- BUG FIX: The Animation Race Condition ---
                         // We must wait for the WakeUp fade-in to finish completely before 
@@ -135,29 +135,29 @@ namespace Desktop_Fences
             RegistryHelper.DeleteTrigger();
         }
 
-        // Processes fence title changes for special triggers (e.g. "limbo666")
-        public static string ProcessTitleChange(dynamic fence, string newTitle, string originalTitle)
+        // Processes container title changes for special triggers (e.g. "limbo666")
+        public static string ProcessTitleChange(dynamic container, string newTitle, string originalTitle)
         {
             return newTitle;      // Opsis: no special title triggers
         }
 
         #region Legendary Mode (Nikos)
 
-        private static void ActivateLegendaryMode(Window win, string fenceId)
+        private static void ActivateLegendaryMode(Window win, string containerId)
         {
-            if (_legendaryEffects.ContainsKey(fenceId)) return; // Already active
+            if (_legendaryEffects.ContainsKey(containerId)) return; // Already active
 
             try
             {
                 var border = win.Content as Border;
                 if (border == null) return;
 
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"InterCore: Activating Legendary Mode for {fenceId}");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"InterCore: Activating Legendary Mode for {containerId}");
 
                 // 1. Save Original State
-                _originalBorders[fenceId] = border.BorderBrush;
-                _originalBorderThicknesses[fenceId] = border.BorderThickness;
-                _originalEffects[fenceId] = win.Effect;
+                _originalBorders[containerId] = border.BorderBrush;
+                _originalBorderThicknesses[containerId] = border.BorderThickness;
+                _originalEffects[containerId] = win.Effect;
 
                 // 2. Create "Mary-Go-Round" Gradient Brush
                 // A vibrant rainbow gradient
@@ -210,7 +210,7 @@ namespace Desktop_Fences
                 // Apply animation to the brush's transform
                 rainbowBrush.RelativeTransform.BeginAnimation(RotateTransform.AngleProperty, rotateAnim);
 
-                _legendaryEffects[fenceId] = new Storyboard();
+                _legendaryEffects[containerId] = new Storyboard();
             }
             catch (Exception ex)
             {
@@ -218,31 +218,31 @@ namespace Desktop_Fences
             }
         }
 
-        private static void DeactivateLegendaryMode(Window win, string fenceId)
+        private static void DeactivateLegendaryMode(Window win, string containerId)
         {
-            if (!_legendaryEffects.ContainsKey(fenceId)) return; // Not active
+            if (!_legendaryEffects.ContainsKey(containerId)) return; // Not active
 
             try
             {
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"InterCore: Deactivating Legendary Mode for {fenceId}");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"InterCore: Deactivating Legendary Mode for {containerId}");
 
                 var border = win.Content as Border;
                 if (border != null)
                 {
                     // Restore Border
-                    if (_originalBorders.ContainsKey(fenceId)) border.BorderBrush = _originalBorders[fenceId];
-                    if (_originalBorderThicknesses.ContainsKey(fenceId)) border.BorderThickness = _originalBorderThicknesses[fenceId];
+                    if (_originalBorders.ContainsKey(containerId)) border.BorderBrush = _originalBorders[containerId];
+                    if (_originalBorderThicknesses.ContainsKey(containerId)) border.BorderThickness = _originalBorderThicknesses[containerId];
                 }
 
                 // Restore Effect
-                if (_originalEffects.ContainsKey(fenceId)) win.Effect = _originalEffects[fenceId];
+                if (_originalEffects.ContainsKey(containerId)) win.Effect = _originalEffects[containerId];
                 else win.Effect = null;
 
                 // Clean up memory
-                _legendaryEffects.Remove(fenceId);
-                _originalBorders.Remove(fenceId);
-                _originalBorderThicknesses.Remove(fenceId);
-                _originalEffects.Remove(fenceId);
+                _legendaryEffects.Remove(containerId);
+                _originalBorders.Remove(containerId);
+                _originalBorderThicknesses.Remove(containerId);
+                _originalEffects.Remove(containerId);
             }
             catch (Exception ex)
             {
@@ -268,13 +268,13 @@ namespace Desktop_Fences
                 // Play MIDI music
                 PlayHappyTune2();
 
-                // Get all fence icons
-                var fenceWindows = Application.Current.Windows.OfType<NonActivatingWindow>();
+                // Get all container icons
+                var containerWindows = Application.Current.Windows.OfType<NonActivatingWindow>();
                 var allIcons = new List<StackPanel>();
 
-                foreach (var window in fenceWindows)
+                foreach (var window in containerWindows)
                 {
-                    var wrapPanel = FenceUtilities.FindWrapPanel(window);
+                    var wrapPanel = ContainerUtilities.FindWrapPanel(window);
                     if (wrapPanel != null)
                     {
                         allIcons.AddRange(wrapPanel.Children.OfType<StackPanel>());
@@ -374,13 +374,13 @@ namespace Desktop_Fences
 
             try
             {
-                var fenceWindows = Application.Current.Windows.OfType<NonActivatingWindow>();
+                var containerWindows = Application.Current.Windows.OfType<NonActivatingWindow>();
                 var allIcons = new List<StackPanel>();
                 _originalIconPositions.Clear();
 
-                foreach (var window in fenceWindows)
+                foreach (var window in containerWindows)
                 {
-                    var wrapPanel = FenceUtilities.FindWrapPanel(window);
+                    var wrapPanel = ContainerUtilities.FindWrapPanel(window);
                     if (wrapPanel != null)
                         allIcons.AddRange(wrapPanel.Children.OfType<StackPanel>());
                 }
@@ -463,28 +463,28 @@ namespace Desktop_Fences
                 LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
                     "InterCore: Lighthouse Sweep effect activated - another instance detected!");
 
-                // Get all visible fence windows
-                var allFences = Application.Current.Windows.OfType<NonActivatingWindow>()
+                // Get all visible container windows
+                var allContainers = Application.Current.Windows.OfType<NonActivatingWindow>()
                     .Where(w => w.Visibility == Visibility.Visible)
                     .OrderBy(w => w.Left)
                     .ToList();
 
-                if (allFences.Count == 0)
+                if (allContainers.Count == 0)
                 {
                     LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.UI,
-                        "InterCore: No visible fences found for Lighthouse Sweep");
+                        "InterCore: No visible containers found for Lighthouse Sweep");
                     _isLighthouseSweepActive = false;
                     return;
                 }
 
                 // Store original opacities
                 var originalOpacities = new Dictionary<NonActivatingWindow, double>();
-                foreach (var fence in allFences)
+                foreach (var container in allContainers)
                 {
-                    originalOpacities[fence] = fence.Opacity;
+                    originalOpacities[container] = container.Opacity;
 
-                    // If fence has high tint (low opacity), fade it to 0.4
-                    if (fence.Opacity > 0.4)
+                    // If container has high tint (low opacity), fade it to 0.4
+                    if (container.Opacity > 0.4)
                     {
                         var fadeOut = new DoubleAnimation
                         {
@@ -492,21 +492,21 @@ namespace Desktop_Fences
                             Duration = TimeSpan.FromMilliseconds(400),
                             FillBehavior = FillBehavior.HoldEnd
                         };
-                        fence.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+                        container.BeginAnimation(UIElement.OpacityProperty, fadeOut);
                     }
                 }
                 PlaySweepSound();
 
-                // Create wave effect across fences
-                for (int i = 0; i < allFences.Count; i++)
+                // Create wave effect across containers
+                for (int i = 0; i < allContainers.Count; i++)
                 {
-                    var fence = allFences[i];
+                    var container = allContainers[i];
                     int delay = i * 150;
 
                     var delayTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(delay) };
                     delayTimer.Tick += (s, e) =>
                     {
-                        ApplyLighthouseGlowToFence(fence);
+                        ApplyLighthouseGlowToContainer(container);
                         ((DispatcherTimer)s).Stop();
                     };
                     delayTimer.Start();
@@ -518,17 +518,17 @@ namespace Desktop_Fences
                 {
                     try
                     {
-                        foreach (var fence in allFences)
+                        foreach (var container in allContainers)
                         {
-                            if (originalOpacities.ContainsKey(fence))
+                            if (originalOpacities.ContainsKey(container))
                             {
                                 var fadeIn = new DoubleAnimation
                                 {
-                                    To = originalOpacities[fence],
+                                    To = originalOpacities[container],
                                     Duration = TimeSpan.FromMilliseconds(400),
                                     FillBehavior = FillBehavior.HoldEnd
                                 };
-                                fence.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+                                container.BeginAnimation(UIElement.OpacityProperty, fadeIn);
                             }
                         }
 
@@ -552,7 +552,7 @@ namespace Desktop_Fences
             }
         }
 
-        private static void ApplyLighthouseGlowToFence(NonActivatingWindow fence)
+        private static void ApplyLighthouseGlowToContainer(NonActivatingWindow container)
         {
             try
             {
@@ -564,8 +564,8 @@ namespace Desktop_Fences
                     Opacity = 0
                 };
 
-                var originalEffect = fence.Effect;
-                fence.Effect = lighthouseGlow;
+                var originalEffect = container.Effect;
+                container.Effect = lighthouseGlow;
 
                 var pulseAnimation = new DoubleAnimation
                 {
@@ -580,7 +580,7 @@ namespace Desktop_Fences
                 {
                     try
                     {
-                        fence.Effect = originalEffect;
+                        container.Effect = originalEffect;
                     }
                     catch { }
                 };
@@ -590,7 +590,7 @@ namespace Desktop_Fences
             catch (Exception ex)
             {
                 LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI,
-                    $"InterCore: Error applying lighthouse glow to fence '{fence?.Title}': {ex.Message}");
+                    $"InterCore: Error applying lighthouse glow to container '{container?.Title}': {ex.Message}");
             }
         }
 
@@ -910,7 +910,7 @@ namespace Desktop_Fences
             if (SettingsManager.EnableSounds == false) return;
             try
             {
-                using (Stream soundStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Desktop_Fences.Resources.sweep-sound-effect-240243.wav"))
+                using (Stream soundStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("OpsisContainers.Resources.sweep-sound-effect-240243.wav"))
                 {
                     if (soundStream != null)
                     {

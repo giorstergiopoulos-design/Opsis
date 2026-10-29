@@ -4,10 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     /// <summary>
-    /// Single Instance Checker for Desktop Fences application
+    /// Single Instance Checker for Opsis DeskContainers application
     /// Detects duplicate instances and coordinates with registry trigger system
     /// Compatible with existing project structure and logging patterns
     /// </summary>

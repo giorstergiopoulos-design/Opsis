@@ -1,13 +1,13 @@
-﻿using Desktop_Fences;
+﻿using OpsisContainers;
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows;
 
-namespace DesktopFences
+namespace OpsisContainers
 {
     /// <summary>
-    /// Installs a WH_MOUSE_LL hook and fires FenceManager.WakeUpFences()
+    /// Installs a WH_MOUSE_LL hook and fires ContainerManager.WakeUpContainers()
     /// when the user double-clicks the bare Windows desktop (Progman / WorkerW).
     /// </summary>
     public static class DesktopMouseHook
@@ -122,7 +122,7 @@ namespace DesktopFences
                 {
                     // FIX: Use BeginInvoke so the mouse hook returns instantly.
                     // This stops the UI from feeling like it is "following/lagging" your click.
-                    Application.Current?.Dispatcher.BeginInvoke(new Action(() => FenceManager.WakeUpFences()));
+                    Application.Current?.Dispatcher.BeginInvoke(new Action(() => ContainerManager.WakeUpContainers()));
                 }
             }
             else

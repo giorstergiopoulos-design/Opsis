@@ -5,16 +5,16 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     /// <summary>
-    /// Centralized utility methods for Desktop Fences
-    /// Extracted from FenceManager for better code organization and reusability
+    /// Centralized utility methods for Opsis DeskContainers
+    /// Extracted from ContainerManager for better code organization and reusability
     /// Contains standalone helper methods with minimal dependencies
     /// </summary>
-    public static class FenceUtilities
+    public static class ContainerUtilities
     {
-        #region Tab Naming - Used by: FenceManager.AddNewTab
+        #region Tab Naming - Used by: ContainerManager.AddNewTab
 
         // "Herb" names (Secretly Grim Fandango Characters) for random tab naming
         private static readonly string[] herbNames = {
@@ -40,7 +40,7 @@ namespace Desktop_Fences
 
         /// <summary>
         /// Generates random names for new tabs
-        /// Used by: FenceManager.AddNewTab
+        /// Used by: ContainerManager.AddNewTab
         /// Category: Tab Management
         /// </summary>
         public static string GenerateRandomHerbName()
@@ -52,7 +52,7 @@ namespace Desktop_Fences
         #region Visual Tree Navigation - Used by: Multiple files (centralized from duplicates)
         /// <summary>
         /// Finds WrapPanel in visual tree with depth protection
-        /// Used by: FenceManager.RefreshIconClickHandlers, IconDragDropManager, InterCore
+        /// Used by: ContainerManager.RefreshIconClickHandlers, IconDragDropManager, InterCore
         /// Category: Visual Tree Navigation
         /// Centralized from multiple file duplicates
         /// </summary>
@@ -82,7 +82,7 @@ namespace Desktop_Fences
                 // LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.General,
                 //    $"FindWrapPanel: Checking child {i} at depth {depth}, type: {child?.GetType()?.Name ?? "null"}");
 
-                var result = FenceUtilities.FindWrapPanel(child, depth + 1, maxDepth);
+                var result = ContainerUtilities.FindWrapPanel(child, depth + 1, maxDepth);
                 if (result != null)
                 {
                     return result;

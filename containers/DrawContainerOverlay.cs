@@ -6,9 +6,9 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Runtime.InteropServices; // Required for GetCursorPos
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
-    public class DrawFenceOverlay : Window
+    public class DrawContainerOverlay : Window
     {
         private Point _startPoint;
         private Rectangle _selectionRect;
@@ -25,7 +25,7 @@ namespace Desktop_Fences
         internal struct Win32Point { public Int32 X; public Int32 Y; }
         // ------------------------------------------------
 
-        public DrawFenceOverlay()
+        public DrawContainerOverlay()
         {
             // 1. VIRTUAL SCREEN SETUP (Multi-Monitor Support)
             WindowStyle = WindowStyle.None;
@@ -53,7 +53,7 @@ namespace Desktop_Fences
             //    Padding = new Thickness(10),
             //    Child = new TextBlock
             //    {
-            //        Text = Loc.T("Draw a box to create a Fence (Esc to cancel)"),
+            //        Text = Loc.T("Draw a box to create a Container (Esc to cancel)"),
             //        Foreground = Brushes.White,
             //        FontWeight = FontWeights.Bold
             //    },
@@ -62,8 +62,8 @@ namespace Desktop_Fences
 
             // --- REPLACE WITH THIS ---
             // Use the centralized design factory (assuming you put it in Utility)
-            // If you put it in FenceManager, change 'Utility' to 'FenceManager'
-            _hintBox = MessageBoxesManager.CreateUnifiedMessage("Draw a box to create a Fence (Esc to cancel)");
+            // If you put it in ContainerManager, change 'Utility' to 'ContainerManager'
+            _hintBox = MessageBoxesManager.CreateUnifiedMessage("Draw a box to create a Container (Esc to cancel)");
 
             _canvas.Children.Add(_hintBox);
 
@@ -160,7 +160,7 @@ namespace Desktop_Fences
 
                     this.Close();
 
-                    FenceManager.CreateFenceFromDraw(finalRect);
+                    ContainerManager.CreateContainerFromDraw(finalRect);
                 }
                 else
                 {

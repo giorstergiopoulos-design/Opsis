@@ -8,7 +8,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
-using Desktop_Fences;
+using OpsisContainers;
 using IWshRuntimeLibrary;
 
 public partial class EditShortcutWindow : Window
@@ -55,20 +55,20 @@ public partial class EditShortcutWindow : Window
         //    Direction = 270
         //};
 
-        // Create main container like CustomizeFenceForm
+        // Create main container like CustomizeContainerForm
         Grid mainContainer = new Grid
         {
             Background = new SolidColorBrush(Color.FromRgb(248, 249, 250)),
             Margin = new Thickness(8)
         };
 
-        // Create main card border (like CustomizeFenceForm mainCard)
+        // Create main card border (like CustomizeContainerForm mainCard)
         Border mainBorder = new Border
         {
             Background = Brushes.White,
             BorderBrush = new SolidColorBrush(Color.FromRgb(218, 220, 224)),
             BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(0) // No rounded corners like CustomizeFenceForm
+            CornerRadius = new CornerRadius(0) // No rounded corners like CustomizeContainerForm
         };
 
         Grid rootGrid = new Grid();
@@ -117,30 +117,30 @@ public partial class EditShortcutWindow : Window
 
     private void CreateModernHeader(Grid rootGrid)
     {
-        // Header with accent color background (same as CustomizeFenceForm)
+        // Header with accent color background (same as CustomizeContainerForm)
         Border headerBorder = new Border
         {
             Height = 50,
             Background = GetAccentColorBrush(), // Use user's selected theme color
-            CornerRadius = new CornerRadius(0) // No rounded corners like CustomizeFenceForm
+            CornerRadius = new CornerRadius(0) // No rounded corners like CustomizeContainerForm
         };
 
         Grid headerGrid = new Grid();
         headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-        // Title label with white text (same as CustomizeFenceForm)
+        // Title label with white text (same as CustomizeContainerForm)
         TextBlock titleText = new TextBlock
         {
             Text = Loc.T("Edit Shortcut"),
             FontSize = 14,
-            FontWeight = FontWeights.Bold, // Bold like CustomizeFenceForm
+            FontWeight = FontWeights.Bold, // Bold like CustomizeContainerForm
             Foreground = Brushes.White, // White text on colored background
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(16, 0, 0, 0)
         };
 
-        // Close button with hover effects (same as CustomizeFenceForm)
+        // Close button with hover effects (same as CustomizeContainerForm)
         Button closeButton = new Button
         {
             Content = Loc.T("✕"),
@@ -156,7 +156,7 @@ public partial class EditShortcutWindow : Window
             VerticalAlignment = VerticalAlignment.Center
         };
 
-        // Add hover effect like CustomizeFenceForm
+        // Add hover effect like CustomizeContainerForm
         closeButton.MouseEnter += (s, e) => closeButton.Background = new SolidColorBrush(Color.FromArgb(50, 255, 255, 255));
         closeButton.MouseLeave += (s, e) => closeButton.Background = Brushes.Transparent;
         closeButton.Click += (s, e) => { DialogResult = false; Close(); };
@@ -388,7 +388,7 @@ public partial class EditShortcutWindow : Window
             HorizontalAlignment = HorizontalAlignment.Right
         };
 
-        // Green default button (same as CustomizeFenceForm)
+        // Green default button (same as CustomizeContainerForm)
         Button defaultButton = new Button
         {
             Content = Loc.T("Default"),
@@ -399,7 +399,7 @@ public partial class EditShortcutWindow : Window
             Cursor = Cursors.Hand,
             BorderThickness = new Thickness(0),
             Padding = new Thickness(16, 0, 16, 0),
-            Background = new SolidColorBrush(Color.FromArgb(255,34, 139, 34)), // Green like CustomizeFenceForm
+            Background = new SolidColorBrush(Color.FromArgb(255,34, 139, 34)), // Green like CustomizeContainerForm
             Foreground = Brushes.White,
             Margin = new Thickness(0, 0, 10, 0)
         };
@@ -409,7 +409,7 @@ public partial class EditShortcutWindow : Window
         cancelButton.Margin = new Thickness(0, 0, 10, 0);
         cancelButton.Click += (s, e) => { DialogResult = false; Close(); };
 
-        // Save button with accent color (same as CustomizeFenceForm)
+        // Save button with accent color (same as CustomizeContainerForm)
         _saveButton = new Button
         {
             Content = Loc.T("Save"),
@@ -475,8 +475,8 @@ public partial class EditShortcutWindow : Window
             argumentsBox.Text = GetCurrentArguments();
             iconPathBox.Text = GetCurrentIconLocation();
 
-            // Load the actual icon being used on the fence
-            LoadActualFenceIcon();
+            // Load the actual icon being used on the container
+            LoadActualContainerIcon();
         }
         catch (Exception ex)
         {
@@ -804,7 +804,7 @@ public partial class EditShortcutWindow : Window
 
             NewDisplayName = newDisplayName;
             System.Windows.Application.Current.Dispatcher.Invoke(() => {
-                FenceManager.RefreshIconClickHandlers(shortcutPath, newDisplayName);
+                ContainerManager.RefreshIconClickHandlers(shortcutPath, newDisplayName);
             });
 
             DialogResult = true;
@@ -902,9 +902,9 @@ public partial class EditShortcutWindow : Window
     }
 
     /// <summary>
-    /// Loads the actual icon being used on the fence (same logic as fence display)
+    /// Loads the actual icon being used on the container (same logic as container display)
     /// </summary>
-    private void LoadActualFenceIcon()
+    private void LoadActualContainerIcon()
     {
         try
         {
@@ -913,13 +913,13 @@ public partial class EditShortcutWindow : Window
             bool isFolder = !isShortcut && System.IO.Directory.Exists(targetPath);
             bool isLink = System.IO.Path.GetExtension(shortcutPath).ToLower() == ".url";
 
-            // Use the same icon extraction logic as the fence
-            ImageSource fenceIcon = IconManager.GetIconForFile(targetPath, shortcutPath, isFolder, isLink, isShortcut, null);
+            // Use the same icon extraction logic as the container
+            ImageSource containerIcon = IconManager.GetIconForFile(targetPath, shortcutPath, isFolder, isLink, isShortcut, null);
 
-            if (fenceIcon != null)
+            if (containerIcon != null)
             {
-                iconPreview.Source = fenceIcon;
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Loaded actual fence icon for: {shortcutPath}");
+                iconPreview.Source = containerIcon;
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Loaded actual container icon for: {shortcutPath}");
             }
             else
             {
@@ -930,7 +930,7 @@ public partial class EditShortcutWindow : Window
         }
         catch (Exception ex)
         {
-            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Error loading fence icon: {ex.Message}, using fallback");
+            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Error loading container icon: {ex.Message}, using fallback");
             // Fallback to the original method
             LoadIconPreview(iconPathBox.Text);
         }
@@ -938,7 +938,7 @@ public partial class EditShortcutWindow : Window
 
 
     /// <summary>
-    /// Gets the user's selected accent color (same method as CustomizeFenceForm)
+    /// Gets the user's selected accent color (same method as CustomizeContainerForm)
     /// </summary>
     private SolidColorBrush GetAccentColorBrush()
     {

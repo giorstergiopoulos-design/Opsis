@@ -14,14 +14,14 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     
     
     
     /// <summary>
     /// Manages all icon operations including extraction, caching, rendering, and updates
-    /// Extracted from FenceManager for better code organization and maintainability
+    /// Extracted from ContainerManager for better code organization and maintainability
     /// Handles icon lifecycle from extraction to display with advanced caching and Unicode support
     /// </summary>
     public static class IconManager
@@ -35,7 +35,7 @@ namespace Desktop_Fences
         #endregion
 
         #region Private Fields - Icon Cache
-        // Icon cache for performance optimization - moved from FenceManager
+        // Icon cache for performance optimization - moved from ContainerManager
         // FIX: Made case-insensitive to survive FileSystemWatcher string mutations
         private static readonly Dictionary<string, ImageSource> iconCache = new Dictionary<string, ImageSource>(StringComparer.OrdinalIgnoreCase);
         #endregion
@@ -43,7 +43,7 @@ namespace Desktop_Fences
         #region Public Properties - Cache Access
         /// <summary>
         /// Provides access to icon cache for performance monitoring and cleanup
-        /// Used by: FenceManager (for compatibility), debugging operations
+        /// Used by: ContainerManager (for compatibility), debugging operations
         /// Category: Cache Management
         /// </summary>
         public static Dictionary<string, ImageSource> IconCache => iconCache;
@@ -74,12 +74,12 @@ namespace Desktop_Fences
         }
         #endregion
 
-        #region Main Icon Operations - Used by: FenceManager, PortalFenceManager, IconDragDropManager
+        #region Main Icon Operations - Used by: ContainerManager, PortalContainerManager, IconDragDropManager
         /// <summary>
         /// Main icon addition method with comprehensive icon handling and caching
-        /// Used by: FenceManager.CreateFence, FenceManager.RefreshFenceContent, PortalFenceManager.AddIcon, IconDragDropManager.RefreshUI
+        /// Used by: ContainerManager.CreateContainer, ContainerManager.RefreshContainerContent, PortalContainerManager.AddIcon, IconDragDropManager.RefreshUI
         /// Category: Icon Rendering
-        /// Moved from: FenceManager.AddIcon
+        /// Moved from: ContainerManager.AddIcon
         /// </summary>
         public static void AddIcon(dynamic icon, WrapPanel wpcont)
         {
@@ -114,7 +114,7 @@ namespace Desktop_Fences
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.IconHandling,
                     $"AddIcon: {filePath} | IsFolder:{isFolder} | IsLink:{isLink} | IsShortcut:{isShortcut}");
 
-                // Get icon spacing from fence data
+                // Get icon spacing from container data
                 int iconSpacing = GetIconSpacingForFile(filePath);
 
                 // Create main StackPanel container
@@ -313,12 +313,12 @@ namespace Desktop_Fences
 
         #endregion
 
-        #region Icon Update Operations - Used by: FenceManager.UpdateIcon, TargetChecker
+        #region Icon Update Operations - Used by: ContainerManager.UpdateIcon, TargetChecker
         /// <summary>
         /// Updates existing icon with new state (exists/missing)
-        /// Used by: FenceManager.UpdateIcon, TargetChecker validation
+        /// Used by: ContainerManager.UpdateIcon, TargetChecker validation
         /// Category: Icon Updates
-        /// Moved from: FenceManager.UpdateIcon
+        /// Moved from: ContainerManager.UpdateIcon
         /// </summary>
         public static void UpdateIcon(StackPanel sp, string filePath, bool isFolder)
         {
@@ -409,24 +409,24 @@ namespace Desktop_Fences
         }
 
         /// <summary>
-        /// Updates fence JSON data after icon refresh operations
+        /// Updates container JSON data after icon refresh operations
         /// Used by: Icon refresh operations, shortcut editing
         /// Category: Data Synchronization
-        /// Moved from: FenceManager.UpdateFenceDataForIcon
+        /// Moved from: ContainerManager.UpdateContainerDataForIcon
         /// </summary>
-        public static void UpdateFenceDataForIcon(string shortcutPath, string newDisplayName, NonActivatingWindow parentWindow)
+        public static void UpdateContainerDataForIcon(string shortcutPath, string newDisplayName, NonActivatingWindow parentWindow)
         {
             try
             {
                 if (string.IsNullOrEmpty(newDisplayName)) return;
 
-                string fenceId = parentWindow.Tag?.ToString();
-                if (string.IsNullOrEmpty(fenceId)) return;
+                string containerId = parentWindow.Tag?.ToString();
+                if (string.IsNullOrEmpty(containerId)) return;
 
-                var fence = FenceDataManager.FindFenceById(fenceId);
-                if (fence?.ItemsType?.ToString() != "Data") return;
+                var container = ContainerDataManager.FindContainerById(containerId);
+                if (container?.ItemsType?.ToString() != "Data") return;
 
-                var items = fence.Items as JArray;
+                var items = container.Items as JArray;
                 if (items == null) return;
 
                 foreach (var item in items)
@@ -442,12 +442,12 @@ namespace Desktop_Fences
                     }
                 }
 
-                FenceDataManager.SaveFenceData();
+                ContainerDataManager.SaveContainerData();
             }
             catch (Exception ex)
             {
                 LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI,
-                    $"Error updating fence JSON: {ex.Message}");
+                    $"Error updating container JSON: {ex.Message}");
             }
         }
         #endregion
@@ -790,7 +790,7 @@ namespace Desktop_Fences
         }
 
         /// <summary>
-        /// Applies icon size settings based on fence configuration
+        /// Applies icon size settings based on container configuration
         /// Used by: AddIcon
         /// Category: Icon Sizing
         /// </summary>
@@ -802,15 +802,15 @@ namespace Desktop_Fences
 
             try
             {
-                // Get icon size from fence data if available
-                foreach (var fenceData in FenceDataManager.FenceData)
+                // Get icon size from container data if available
+                foreach (var containerData in ContainerDataManager.ContainerData)
                 {
-                    if (fenceData.ItemsType?.ToString() == "Data")
+                    if (containerData.ItemsType?.ToString() == "Data")
                     {
-                        var fenceItems = fenceData.Items as JArray;
-                        if (fenceItems?.Any(i => i["Filename"]?.ToString() == filePath) == true)
+                        var containerItems = containerData.Items as JArray;
+                        if (containerItems?.Any(i => i["Filename"]?.ToString() == filePath) == true)
                         {
-                            string iconSize = fenceData.IconSize?.ToString() ?? "Medium";
+                            string iconSize = containerData.IconSize?.ToString() ?? "Medium";
                             ico.Width = ico.Height = CoreUtilities.GetIconSizePixels(iconSize);
                             break;
                         }
@@ -831,7 +831,7 @@ namespace Desktop_Fences
         /// Applies safe hardware acceleration to existing panels without breaking drag/drop logic.
         /// Category: UI Optimization
         /// </summary>
-        public static void OptimizeFencePanel(WrapPanel panel, ScrollViewer scrollViewer)
+        public static void OptimizeContainerPanel(WrapPanel panel, ScrollViewer scrollViewer)
         {
             if (panel == null) return;
 
@@ -847,16 +847,16 @@ namespace Desktop_Fences
 
 
         /// <summary>
-        /// Enhanced AddIcon with fence context for proper sizing and spacing
-        /// Used by: RefreshFenceContentSimple for tabbed fences
+        /// Enhanced AddIcon with container context for proper sizing and spacing
+        /// Used by: RefreshContainerContentSimple for tabbed containers
         /// Category: Icon Rendering
         /// </summary>
-        public static void AddIconWithFenceContext(dynamic icon, WrapPanel wpcont, dynamic fence)
+        public static void AddIconWithContainerContext(dynamic icon, WrapPanel wpcont, dynamic container)
         {
             try
             {
                 LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.IconHandling,
-            "=== AddIconWithFenceContext called ===");
+            "=== AddIconWithContainerContext called ===");
 
                 // Extract icon properties
                 IDictionary<string, object> iconDict = icon is IDictionary<string, object> dict ?
@@ -873,10 +873,10 @@ namespace Desktop_Fences
                     (string)iconDict["Arguments"] : null;
 
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.IconHandling,
-                    $"AddIconWithFenceContext: {filePath} | IsFolder:{isFolder} | IsLink:{isLink} | IsShortcut:{isShortcut}");
+                    $"AddIconWithContainerContext: {filePath} | IsFolder:{isFolder} | IsLink:{isLink} | IsShortcut:{isShortcut}");
 
-                // Get icon spacing from fence context
-                int iconSpacing = GetIconSpacingFromFence(fence);
+                // Get icon spacing from container context
+                int iconSpacing = GetIconSpacingFromContainer(container);
 
                 // Create main StackPanel container
                 StackPanel sp = new StackPanel
@@ -889,7 +889,7 @@ namespace Desktop_Fences
                 System.Windows.Controls.Image ico = new System.Windows.Controls.Image();
 
                 // Apply icon size settings FIRST
-                ApplyIconSizeFromFence(ico, fence);
+                ApplyIconSizeFromContainer(ico, container);
 
                 ImageSource cachedIcon = null;
                 lock (iconCache)
@@ -937,45 +937,45 @@ namespace Desktop_Fences
                 wpcont.Children.Add(sp);
 
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.IconHandling,
-                    $"Successfully added icon with fence context: {filePath}");
+                    $"Successfully added icon with container context: {filePath}");
             }
             catch (Exception ex)
             {
                 LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.IconHandling,
-                    $"Error in AddIconWithFenceContext: {ex.Message}");
+                    $"Error in AddIconWithContainerContext: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// Gets icon spacing directly from fence data
-        /// Used by: AddIconWithFenceContext
+        /// Gets icon spacing directly from container data
+        /// Used by: AddIconWithContainerContext
         /// Category: Layout Utilities
         /// </summary>
-        private static int GetIconSpacingFromFence(dynamic fence)
+        private static int GetIconSpacingFromContainer(dynamic container)
         {
             try
             {
-                if (fence == null) return 5;
+                if (container == null) return 5;
 
-                int spacing = Convert.ToInt32(fence.IconSpacing?.ToString() ?? "5");
+                int spacing = Convert.ToInt32(container.IconSpacing?.ToString() ?? "5");
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.IconHandling,
-                    $"Got icon spacing from fence: {spacing}");
+                    $"Got icon spacing from container: {spacing}");
                 return spacing;
             }
             catch (Exception ex)
             {
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.IconHandling,
-                    $"Error getting icon spacing from fence: {ex.Message}");
+                    $"Error getting icon spacing from container: {ex.Message}");
                 return 5; // Default spacing
             }
         }
 
         /// <summary>
-        /// Applies icon size directly from fence data
-        /// Used by: AddIconWithFenceContext
+        /// Applies icon size directly from container data
+        /// Used by: AddIconWithContainerContext
         /// Category: Icon Sizing
         /// </summary>
-        private static void ApplyIconSizeFromFence(System.Windows.Controls.Image ico, dynamic fence)
+        private static void ApplyIconSizeFromContainer(System.Windows.Controls.Image ico, dynamic container)
         {
             // Default size
             ico.Width = 40;
@@ -983,24 +983,24 @@ namespace Desktop_Fences
 
             try
             {
-                if (fence == null) return;
+                if (container == null) return;
 
-                string iconSize = fence.IconSize?.ToString() ?? "Medium";
+                string iconSize = container.IconSize?.ToString() ?? "Medium";
                 ico.Width = ico.Height = CoreUtilities.GetIconSizePixels(iconSize);
 
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.IconHandling,
-                    $"Applied icon size from fence: {iconSize} -> {ico.Width}x{ico.Height}");
+                    $"Applied icon size from container: {iconSize} -> {ico.Width}x{ico.Height}");
             }
             catch (Exception ex)
             {
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.IconHandling,
-                    $"Error applying icon size from fence: {ex.Message}");
+                    $"Error applying icon size from container: {ex.Message}");
             }
         }
 
 
         /// <summary>
-        /// Gets icon spacing from fence data for specific file
+        /// Gets icon spacing from container data for specific file
         /// Used by: AddIcon
         /// Category: Layout Utilities
         /// </summary>
@@ -1008,14 +1008,14 @@ namespace Desktop_Fences
         {
             try
             {
-                foreach (var fenceData in FenceDataManager.FenceData)
+                foreach (var containerData in ContainerDataManager.ContainerData)
                 {
-                    if (fenceData.ItemsType?.ToString() == "Data")
+                    if (containerData.ItemsType?.ToString() == "Data")
                     {
-                        var fenceItems = fenceData.Items as JArray;
-                        if (fenceItems?.Any(i => i["Filename"]?.ToString() == filePath) == true)
+                        var containerItems = containerData.Items as JArray;
+                        if (containerItems?.Any(i => i["Filename"]?.ToString() == filePath) == true)
                         {
-                            return Convert.ToInt32(fenceData.IconSpacing?.ToString() ?? "5");
+                            return Convert.ToInt32(containerData.IconSpacing?.ToString() ?? "5");
                         }
                     }
                 }

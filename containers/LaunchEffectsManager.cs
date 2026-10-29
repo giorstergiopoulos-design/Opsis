@@ -7,7 +7,7 @@ using System.Windows.Media.Effects;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
 
     // Manages visual launch effects for icons when they are activated
@@ -468,7 +468,7 @@ namespace Desktop_Fences
         {
             try
             {
-                // Get the parent window (fence window)
+                // Get the parent window (container window)
                 var parentWindow = Window.GetWindow(iconStackPanel) as NonActivatingWindow;
                 if (parentWindow == null) return null;
 
@@ -490,7 +490,7 @@ namespace Desktop_Fences
                     Width = width,
                     Height = height,
                     IsHitTestVisible = false,
-                    Owner = parentWindow // Important: set owner to fence window
+                    Owner = parentWindow // Important: set owner to container window
                 };
 
                 // Position overlay centered on the icon within the parent window

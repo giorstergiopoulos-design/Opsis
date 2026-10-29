@@ -6,16 +6,16 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     /// <summary>
-    /// Manages copy/paste operations for fence items, similar to BackupManager patterns
-    /// Allows copying items between fences with temporary storage and cleanup
+    /// Manages copy/paste operations for container items, similar to BackupManager patterns
+    /// Allows copying items between containers with temporary storage and cleanup
     /// </summary>
     public static class CopyPasteManager
     {
         #region Private Fields - State Management (BackupManager pattern)
-        // Manage copied item state - similar to _lastDeletedFence pattern
+        // Manage copied item state - similar to _lastDeletedContainer pattern
         private static dynamic _copiedItem;
         private static bool _isCopyAvailable;
         private static string _copiedItemFolderPath;
@@ -31,7 +31,7 @@ namespace Desktop_Fences
         {
             try
             {
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceUpdate, "Starting send to desktop operation");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerUpdate, "Starting send to desktop operation");
 
                 // Extract item properties - similar to Copy functionality
                 IDictionary<string, object> iconDict = icon is IDictionary<string, object> dict ?
@@ -41,25 +41,25 @@ namespace Desktop_Fences
                 string displayName = iconDict.ContainsKey("DisplayName") ? (string)iconDict["DisplayName"] :
                     System.IO.Path.GetFileNameWithoutExtension(filePath);
 
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate,
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate,
                     $"Sending to desktop: {displayName} from {filePath}");
 
                 // Verify source shortcut exists
                 if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
                 {
-                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.FenceUpdate,
+                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.ContainerUpdate,
                         $"Source file not found or invalid: {filePath}");
                     return;
                 }
 
                 // Get desktop path - BackupManager environment detection pattern
                 string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate,
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate,
                     $"Desktop path detected: {desktopPath}");
 
                 if (string.IsNullOrEmpty(desktopPath) || !Directory.Exists(desktopPath))
                 {
-                    LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceUpdate,
+                    LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerUpdate,
                         "Could not detect or access desktop folder");
                     return;
                 }
@@ -81,17 +81,17 @@ namespace Desktop_Fences
 
                 // Copy shortcut to desktop - BackupManager file copy pattern
                 File.Copy(filePath, desktopFilePath, true);
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate,
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate,
                     $"Successfully copied shortcut to desktop: {newFileName}");
 
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceUpdate,
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerUpdate,
                     $"Item '{displayName}' sent to desktop successfully");
 
                 // No user notification required per user specification
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceUpdate,
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerUpdate,
                     $"Error sending item to desktop: {ex.Message}");
                 // Silent failure - no user notification required
             }
@@ -112,18 +112,18 @@ namespace Desktop_Fences
         public static string CopiedItemFolderPath => _copiedItemFolderPath;
         #endregion
 
-        #region Copy Operations - Adapted from BackupManager.BackupDeletedFence
+        #region Copy Operations - Adapted from BackupManager.BackupDeletedContainer
         /// <summary>
-        /// Copies an item to temporary storage for pasting to other fences
+        /// Copies an item to temporary storage for pasting to other containers
         /// Uses BackupManager patterns for file operations and JSON serialization
         /// </summary>
         /// <param name="icon">The icon/item to copy</param>
-        /// <param name="fence">The source fence</param>
-        public static void CopyItem(dynamic icon, dynamic fence)
+        /// <param name="container">The source container</param>
+        public static void CopyItem(dynamic icon, dynamic container)
         {
             try
             {
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceUpdate, "Starting item copy operation");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerUpdate, "Starting item copy operation");
 
                 // Extract item properties - similar to BackupManager item handling
                 IDictionary<string, object> iconDict = icon is IDictionary<string, object> dict ?
@@ -133,18 +133,18 @@ namespace Desktop_Fences
                 string displayName = iconDict.ContainsKey("DisplayName") ? (string)iconDict["DisplayName"] :
                     System.IO.Path.GetFileNameWithoutExtension(filePath);
 
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate,
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate,
                     $"Copying item: {displayName} from {filePath}");
 
                 // Set up copy folder path - similar to BackupManager._lastDeletedFolderPath pattern
-                string exeDir = Desktop_Fences.DataRoot.Dir;
+                string exeDir = OpsisContainers.DataRoot.Dir;
                 _copiedItemFolderPath = Path.Combine(exeDir, "CopiedItem");
 
                 // Ensure the copy folder exists - BackupManager pattern
                 if (!Directory.Exists(_copiedItemFolderPath))
                 {
                     Directory.CreateDirectory(_copiedItemFolderPath);
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate,
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate,
                         $"Created CopiedItem directory: {_copiedItemFolderPath}");
                 }
 
@@ -153,7 +153,7 @@ namespace Desktop_Fences
                 {
                     File.Delete(file);
                 }
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate,
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate,
                     "Cleared previous copied item files");
 
                 // Copy the shortcut file if it exists - BackupManager file copy pattern
@@ -163,12 +163,12 @@ namespace Desktop_Fences
                     string destPath = Path.Combine(_copiedItemFolderPath, sourceFileName);
 
                     File.Copy(filePath, destPath, true);
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate,
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate,
                         $"Copied shortcut file: {sourceFileName}");
                 }
                 else
                 {
-                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.FenceUpdate,
+                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.ContainerUpdate,
                         $"Source file not found or invalid: {filePath}");
                 }
 
@@ -180,7 +180,7 @@ namespace Desktop_Fences
                 string itemJsonPath = Path.Combine(_copiedItemFolderPath, "CopiedItem.json");
                 File.WriteAllText(itemJsonPath, JsonConvert.SerializeObject(icon, Formatting.Indented));
 
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceUpdate,
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerUpdate,
                     $"Item '{displayName}' copied successfully for pasting");
 
                 // Show auto-closing success notification - MessageDialogs pattern
@@ -188,7 +188,7 @@ namespace Desktop_Fences
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceUpdate,
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerUpdate,
                     $"Error copying item: {ex.Message}");
                 MessageBoxesManager.ShowOKOnlyMessageBoxForm($"Error copying item: {ex.Message}", "Copy Error");
 
@@ -199,26 +199,26 @@ namespace Desktop_Fences
         }
         #endregion
 
-        #region Paste Operations - Adapted from BackupManager.RestoreLastDeletedFence
+        #region Paste Operations - Adapted from BackupManager.RestoreLastDeletedContainer
         /// <summary>
-        /// Pastes the copied item to a target fence
-        /// Uses BackupManager patterns for file operations and fence data updates
+        /// Pastes the copied item to a target container
+        /// Uses BackupManager patterns for file operations and container data updates
         /// </summary>
-        /// <param name="targetFence">The fence to paste the item into</param>
-        public static void PasteItem(dynamic targetFence)
+        /// <param name="targetContainer">The container to paste the item into</param>
+        public static void PasteItem(dynamic targetContainer)
         {
             try
             {
                 if (!_isCopyAvailable || _copiedItem == null || string.IsNullOrEmpty(_copiedItemFolderPath))
                 {
-                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceUpdate,
+                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerUpdate,
                         "No item available to paste");
                     MessageBoxesManager.ShowOKOnlyMessageBoxForm("No item to paste", "Paste Item");
                     return;
                 }
 
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceUpdate,
-                    $"Starting paste operation to fence: {targetFence.Title}");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerUpdate,
+                    $"Starting paste operation to container: {targetContainer.Title}");
 
                 // Read copied item data
                 string itemJsonPath = Path.Combine(_copiedItemFolderPath, "CopiedItem.json");
@@ -242,7 +242,7 @@ namespace Desktop_Fences
                     Path.GetFileNameWithoutExtension(originalFileName);
 
                 // Generate unique filename for the new shortcut
-                string exeDir = Desktop_Fences.DataRoot.Dir;
+                string exeDir = OpsisContainers.DataRoot.Dir;
                 string shortcutsDir = Path.Combine(exeDir, "Shortcuts");
 
                 if (!Directory.Exists(shortcutsDir))
@@ -268,7 +268,7 @@ namespace Desktop_Fences
                 if (File.Exists(sourceFilePath))
                 {
                     File.Copy(sourceFilePath, newFilePath, true);
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate,
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate,
                         $"Copied shortcut file: {newFileName}");
                 }
                 else
@@ -279,18 +279,18 @@ namespace Desktop_Fences
                 // Update item data for the new location
                 pastedItem["Filename"] = Path.Combine("Shortcuts", newFileName);
 
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate,
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate,
                     $"Pasted item - Filename: '{newFileName}', DisplayName: '{displayName}'");
 
                 // --- FIX: TAB AWARENESS LOGIC ---
                 JArray targetItems = null;
-                bool tabsEnabled = targetFence.TabsEnabled?.ToString().ToLower() == "true";
+                bool tabsEnabled = targetContainer.TabsEnabled?.ToString().ToLower() == "true";
 
                 if (tabsEnabled)
                 {
                     // If Tabs are enabled, we must add to the ACTIVE TAB, not the main list
-                    var tabs = targetFence.Tabs as JArray;
-                    int currentTabIdx = Convert.ToInt32(targetFence.CurrentTab?.ToString() ?? "0");
+                    var tabs = targetContainer.Tabs as JArray;
+                    int currentTabIdx = Convert.ToInt32(targetContainer.CurrentTab?.ToString() ?? "0");
 
                     if (tabs != null && currentTabIdx >= 0 && currentTabIdx < tabs.Count)
                     {
@@ -303,7 +303,7 @@ namespace Desktop_Fences
                                 targetItems = new JArray();
                                 activeTab["Items"] = targetItems;
                             }
-                            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate,
+                            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate,
                                 $"Targeting Tab {currentTabIdx} ('{activeTab["TabName"]}') for paste");
                         }
                     }
@@ -312,13 +312,13 @@ namespace Desktop_Fences
                 // Fallback: If not tabs, or tab lookup failed, use Main Items
                 if (targetItems == null)
                 {
-                    targetItems = targetFence.Items as JArray;
+                    targetItems = targetContainer.Items as JArray;
                     if (targetItems == null)
                     {
                         targetItems = new JArray();
-                        targetFence.Items = targetItems;
+                        targetContainer.Items = targetItems;
                     }
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate,
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate,
                         "Targeting Main Items list for paste");
                 }
                 // --------------------------------
@@ -326,30 +326,30 @@ namespace Desktop_Fences
                 // Add item to the identified list
                 targetItems.Add(pastedItem);
 
-                // Save fence data
-                FenceDataManager.SaveFenceData();
+                // Save container data
+                ContainerDataManager.SaveContainerData();
 
-                // Refresh fence display
+                // Refresh container display
                 var windows = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>();
-                var targetWindow = windows.FirstOrDefault(w => w.Tag?.ToString() == targetFence.Id?.ToString());
+                var targetWindow = windows.FirstOrDefault(w => w.Tag?.ToString() == targetContainer.Id?.ToString());
 
                 if (targetWindow != null)
                 {
                     // This method detects tabsEnabled internally and will render the correct list
-                    FenceManager.RefreshFenceUsingFormApproach(targetWindow, targetFence);
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate,
-                        "Refreshed fence display after paste");
+                    ContainerManager.RefreshContainerUsingFormApproach(targetWindow, targetContainer);
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate,
+                        "Refreshed container display after paste");
                 }
 
                 // Clean up copied item
                 CleanCopiedItem();
 
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceUpdate,
-                    $"Item pasted successfully to fence '{targetFence.Title}'");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerUpdate,
+                    $"Item pasted successfully to container '{targetContainer.Title}'");
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceUpdate,
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerUpdate,
                     $"Error pasting item: {ex.Message}");
                 MessageBoxesManager.ShowOKOnlyMessageBoxForm($"Error pasting item: {ex.Message}", "Paste Error");
             }
@@ -369,7 +369,7 @@ namespace Desktop_Fences
         {
             try
             {
-                string exeDir = Desktop_Fences.DataRoot.Dir;
+                string exeDir = OpsisContainers.DataRoot.Dir;
                 _copiedItemFolderPath = Path.Combine(exeDir, "CopiedItem");
 
                 if (Directory.Exists(_copiedItemFolderPath))
@@ -382,7 +382,7 @@ namespace Desktop_Fences
 
                     // Remove the directory itself
                     Directory.Delete(_copiedItemFolderPath);
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate,
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate,
                         "Cleaned copied item folder");
                 }
 
@@ -391,12 +391,12 @@ namespace Desktop_Fences
                 _copiedItem = null;
                 _copiedItemFolderPath = null;
 
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate,
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate,
                     "Reset copy/paste state");
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceUpdate,
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerUpdate,
                     $"Error cleaning copied item: {ex.Message}");
             }
         }
@@ -409,18 +409,18 @@ namespace Desktop_Fences
         {
             try
             {
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate,
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate,
                     $"Checking copied item availability - _isCopyAvailable: {_isCopyAvailable}, _copiedItem: {(_copiedItem != null ? "exists" : "null")}");
 
                 if (!_isCopyAvailable || _copiedItem == null)
                 {
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate,
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate,
                         "No copied item available - flags not set");
                     return false;
                 }
 
                 // Verify files still exist - BackupManager validation pattern
-                string exeDir = Desktop_Fences.DataRoot.Dir;
+                string exeDir = OpsisContainers.DataRoot.Dir;
                 string copiedItemPath = Path.Combine(exeDir, "CopiedItem");
                 string jsonPath = Path.Combine(copiedItemPath, "CopiedItem.json");
 
@@ -428,7 +428,7 @@ namespace Desktop_Fences
                 bool jsonExists = File.Exists(jsonPath);
                 bool hasValidCopy = folderExists && jsonExists;
 
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate,
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate,
                     $"File validation - Folder exists: {folderExists}, JSON exists: {jsonExists}, Path: {copiedItemPath}");
 
                 if (!hasValidCopy)
@@ -436,17 +436,17 @@ namespace Desktop_Fences
                     // Reset state if files are missing - BackupManager consistency pattern
                     _isCopyAvailable = false;
                     _copiedItem = null;
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate,
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate,
                         "Reset copy state - files no longer exist");
                 }
 
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate,
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate,
                     $"HasCopiedItem result: {hasValidCopy}");
                 return hasValidCopy;
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceUpdate,
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerUpdate,
                     $"Error checking copied item availability: {ex.Message}");
                 return false;
             }

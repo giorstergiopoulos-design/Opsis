@@ -6,9 +6,9 @@ using System.Security.Cryptography;
 using System.Windows;
 using System.Windows.Threading;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
-    // Opsis integration. The settings of the fences live in the Opsis application (DeskZones page), not in a separate window:
+    // Opsis integration. The settings of the containers live in the Opsis application (DeskZones page), not in a separate window:
     //  * Opsis edits  Profiles\<active>\options.json  -> this class notices the change and applies it live ("reload" below);
     //  * Opsis drops small command files into  <data>\bridge\cmd_*.txt  (backup, restore, manage profiles...) -> executed here;
     //  * the "Options..." menu entries ask Opsis to open its settings page by writing  <data>\bridge\to_opsis.txt.
@@ -74,7 +74,7 @@ namespace Desktop_Fences
 
                 bool tray = SettingsManager.ShowInTray, ctx = SettingsManager.EnableContextMenu;
                 int tbHeight = SettingsManager.TitleBarHeight;
-                bool scroll = SettingsManager.DisableFenceScrollbars, watermark = SettingsManager.ShowBackgroundImageOnPortalFences;
+                bool scroll = SettingsManager.DisableContainerScrollbars, watermark = SettingsManager.ShowBackgroundImageOnPortalContainers;
                 bool autoOrg = SettingsManager.EnableAutoOrganize, profAuto = SettingsManager.EnableProfileAutomation;
 
                 SettingsManager.LoadSettings();                       // re-reads the file (and re-hydrates missing keys)
@@ -83,16 +83,16 @@ namespace Desktop_Fences
                 if (ctx != SettingsManager.EnableContextMenu) RegistryHelper.ToggleContextMenu(SettingsManager.EnableContextMenu);
                 if (tray != SettingsManager.ShowInTray && TrayManager.Instance != null)
                     TrayManager.Instance.GetType().GetField("Showintray", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(TrayManager.Instance, SettingsManager.ShowInTray);
-                FenceManager.ResetAutoHideTimer();
+                ContainerManager.ResetAutoHideTimer();
                 if (profAuto != SettingsManager.EnableProfileAutomation)
                 {
                     TrayManager.Instance?.UpdateAutomationMenuCheck(SettingsManager.EnableProfileAutomation);
                     if (SettingsManager.EnableProfileAutomation) AutomationManager.Start();
                 }
                 TrayManager.Instance?.UpdateTrayIcon();
-                Utility.UpdateFenceVisuals();
-                if (tbHeight != SettingsManager.TitleBarHeight || scroll != SettingsManager.DisableFenceScrollbars || watermark != SettingsManager.ShowBackgroundImageOnPortalFences)
-                    TrayManager.reloadAllFences();
+                Utility.UpdateContainerVisuals();
+                if (tbHeight != SettingsManager.TitleBarHeight || scroll != SettingsManager.DisableContainerScrollbars || watermark != SettingsManager.ShowBackgroundImageOnPortalContainers)
+                    TrayManager.reloadAllContainers();
             }
             catch (Exception ex) { LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.Settings, "Applying Opsis options failed: " + ex.Message); }
         }
@@ -123,14 +123,14 @@ namespace Desktop_Fences
                 {
                     case "profile": ProfileManager.SwitchToProfile(arg); ProfileManager.SetManualBaseProfile(arg); TrayManager.Instance?.UpdateProfilesMenu(); return;
                     case "create-profile": if (ProfileManager.CreateProfile(arg)) TrayManager.Instance?.UpdateProfilesMenu(); return;
-                    case "show-hidden": TrayManager.ShowHiddenFenceByTitle(arg); return;
+                    case "show-hidden": TrayManager.ShowHiddenContainerByTitle(arg); return;
                 }
             }
             switch (cmd)
             {
-                case "quick-hide": FenceManager.ForceHideFences(); break;
-                case "quick-show": FenceManager.WakeUpFences(); break;
-                case "focus-fence": new FenceFocusFormManager().ShowDialog(); break;
+                case "quick-hide": ContainerManager.ForceHideContainers(); break;
+                case "quick-show": ContainerManager.WakeUpContainers(); break;
+                case "focus-container": new ContainerFocusFormManager().ShowDialog(); break;
                 case "toggle-automation": SettingsManager.EnableProfileAutomation = !SettingsManager.EnableProfileAutomation; try { SettingsManager.SaveSettings(); } catch { } if (SettingsManager.EnableProfileAutomation) AutomationManager.Start(); PublishState(); break;
                 case "toggle-autoorganize": SettingsManager.EnableAutoOrganize = !SettingsManager.EnableAutoOrganize; try { SettingsManager.SaveSettings(); } catch { } if (SettingsManager.EnableAutoOrganize) AutoOrganizeManager.Start(); else AutoOrganizeManager.Stop(); PublishState(); break;
                 case "backup": BackupManager.BackupData(); break;
@@ -140,14 +140,14 @@ namespace Desktop_Fences
                 case "manage-automation": new AutomationRulesForm().ShowDialog(); break;
                 case "smart-rules": new AutoOrganizeForm().ShowDialog(); break;
                 case "organize-now": AutoOrganizeManager.ProcessDesktopNow(); break;
-                case "screen-bound": FenceManager.ForceRepositionAllFences(); break;
-                case "reset-styles": FenceManager.ResetAllCustomizations(); break;
+                case "screen-bound": ContainerManager.ForceRepositionAllContainers(); break;
+                case "reset-styles": ContainerManager.ResetAllCustomizations(); break;
                 case "factory-reset": OptionsFormManager.PerformFullFactoryReset(); break;
                 case "open-log": OptionsFormManager.OpenLogFile(); break;
-                case "import-fence": BackupManager.ImportFence(); break;
-                case "new-note": FenceManager.CreateNewFenceAt("Note"); break;
-                case "new-fence": FenceManager.CreateNewFenceAt("Data"); break;
-                case "reload-all": _ = TrayManager.reloadAllFences(); break;
+                case "import-container": BackupManager.ImportContainer(); break;
+                case "new-note": ContainerManager.CreateNewContainerAt("Note"); break;
+                case "new-container": ContainerManager.CreateNewContainerAt("Data"); break;
+                case "reload-all": _ = TrayManager.reloadAllContainers(); break;
                 case "exit": DesktopOriginals.ShowAll(); Application.Current.Shutdown(); break;
             }
         }

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     /// <summary>
     /// Registry Helper Class for Single Instance Management
@@ -15,7 +15,7 @@ namespace Desktop_Fences
     {
         #region Messaging State Management (Remote Info System)
 
-        private static readonly string MSG_REGISTRY_KEY_PATH = @"SOFTWARE\Desktop_Fences_Plus\Messaging";
+        private static readonly string MSG_REGISTRY_KEY_PATH = @"SOFTWARE\Opsis_DeskContainers\Messaging";
 
         public static bool IsMessageDismissed(string msgId)
         {
@@ -88,22 +88,22 @@ namespace Desktop_Fences
         #region Constants
 
         // Registry path for our trigger system
-        private static readonly string REGISTRY_KEY_PATH = @"SOFTWARE\Desktop_Fences_Plus\InstanceTrigger";
+        private static readonly string REGISTRY_KEY_PATH = @"SOFTWARE\Opsis_DeskContainers\InstanceTrigger";
         private static readonly string TRIGGER_VALUE_NAME = "TriggerEffect";
 
         // Registry path for program management values
-        private static readonly string PROGRAM_REGISTRY_KEY_PATH = @"SOFTWARE\Desktop_Fences_Plus\ProgramManagement";
+        private static readonly string PROGRAM_REGISTRY_KEY_PATH = @"SOFTWARE\Opsis_DeskContainers\ProgramManagement";
 
         // Context Menu Constants
-        private const string MENU_PATH = @"Software\Classes\DesktopBackground\Shell\DesktopFences";
-        private const string COMMAND_PATH = @"Software\Classes\DesktopBackground\Shell\DesktopFences\command";
+        private const string MENU_PATH = @"Software\Classes\DesktopBackground\Shell\OpsisContainers";
+        private const string COMMAND_PATH = @"Software\Classes\DesktopBackground\Shell\OpsisContainers\command";
 
         #endregion
 
         #region Migration Methods
 
         // Registry path for internal app settings/flags
-        private static readonly string SETTINGS_REGISTRY_KEY_PATH = @"SOFTWARE\Desktop_Fences_Plus\Settings";
+        private static readonly string SETTINGS_REGISTRY_KEY_PATH = @"SOFTWARE\Opsis_DeskContainers\Settings";
 
         public static bool IsStartupMigrated()
         {
@@ -240,7 +240,7 @@ namespace Desktop_Fences
         {
             try
             {
-                Registry.CurrentUser.DeleteSubKeyTree(@"SOFTWARE\Desktop_Fences_Plus\InstanceTrigger", throwOnMissingSubKey: false);
+                Registry.CurrentUser.DeleteSubKeyTree(@"SOFTWARE\Opsis_DeskContainers\InstanceTrigger", throwOnMissingSubKey: false);
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.General,
                     "RegistryHelper: Cleaned up registry key");
                 return true;
@@ -419,7 +419,7 @@ namespace Desktop_Fences
 
                 using (var writer = new System.IO.StreamWriter(exportFilePath))
                 {
-                    writer.WriteLine("Desktop Fences Plus - Registry Values Export");
+                    writer.WriteLine("Opsis DeskContainers - Registry Values Export");
                     writer.WriteLine($"Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
                     writer.WriteLine(new string('-', 50));
                     writer.WriteLine();
@@ -515,7 +515,7 @@ namespace Desktop_Fences
             {
                 if (key != null)
                 {
-                    key.SetValue("", "Create New Fence");
+                    key.SetValue("", "Create New Container");
                     key.SetValue("Icon", exePath);
                 }
             }

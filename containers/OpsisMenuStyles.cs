@@ -1,9 +1,9 @@
 using System.Windows;
 using System.Windows.Markup;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
-    // Opsis integration: replaces the classic Windows look of every ContextMenu / MenuItem / Separator (heart menu, fence and icon
+    // Opsis integration: replaces the classic Windows look of every ContextMenu / MenuItem / Separator (heart menu, container and icon
     // menus, tab menus...) with the Opsis style: rounded dark surface, accent hover, thin separators. Colours come from OpsisTheme.
     internal static class OpsisMenuStyles
     {

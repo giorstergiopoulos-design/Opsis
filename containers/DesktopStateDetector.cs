@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     /// <summary>
     /// Detects Windows+D desktop state using DWM cloaking detection

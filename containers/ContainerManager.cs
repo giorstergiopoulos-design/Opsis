@@ -24,13 +24,13 @@ using System.Windows.Threading;
 using static System.Net.Mime.MediaTypeNames;
 using Color = System.Drawing.Color;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
-    public static class FenceManager
+    public static class ContainerManager
     {
         internal static readonly System.Collections.Generic.Dictionary<string, Action> RenameStarters = new System.Collections.Generic.Dictionary<string, Action>();
 
-        // Opsis: expand-on-hover roll-up (the Stardock/DeskContainers behaviour). When "Auto roll-up on hover" is on, a fence rolls up
+        // Opsis: expand-on-hover roll-up (the Stardock/DeskContainers behaviour). When "Auto roll-up on hover" is on, a container rolls up
         // 0.7 s after the mouse leaves it and unrolls when the mouse comes back, reusing the normal roll-up code (toggleRoll).
         internal static readonly System.Collections.Generic.Dictionary<string, Action> RollToggles = new System.Collections.Generic.Dictionary<string, Action>();
         private static System.Windows.Threading.DispatcherTimer _hoverRollTimer;
@@ -45,9 +45,9 @@ namespace Desktop_Fences
                 if (!SettingsManager.AutoRollUpOnHover || System.Windows.Application.Current == null) return;
                 foreach (var w in System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>().ToList())
                 {
-                    if (!(w.Tag is string id) || !RollToggles.TryGetValue(id, out var toggle) || _fencesInTransition.Contains(id)) continue;
-                    dynamic f = FenceDataManager.FenceData.FirstOrDefault(x => x.Id?.ToString() == id);
-                    if (f == null || f.ItemsType?.ToString() == "Note") continue;                       // note fences keep their text visible
+                    if (!(w.Tag is string id) || !RollToggles.TryGetValue(id, out var toggle) || _containersInTransition.Contains(id)) continue;
+                    dynamic f = ContainerDataManager.ContainerData.FirstOrDefault(x => x.Id?.ToString() == id);
+                    if (f == null || f.ItemsType?.ToString() == "Note") continue;                       // note containers keep their text visible
                     bool rolled = f.IsRolled?.ToString().ToLower() == "true";
                     bool over = w.IsMouseOver || w.IsKeyboardFocusWithin || Mouse.LeftButton == MouseButtonState.Pressed;
                     try
@@ -63,8 +63,8 @@ namespace Desktop_Fences
             _hoverRollTimer.Start();
         }
 
-        // Opsis: Left/Right arrow keys scroll the contents of the fence under the mouse (the mouse wheel already scrolls natively).
-        // The fences never take keyboard focus, so this comes from the global keyboard hook; it only acts when the pointer is over a fence
+        // Opsis: Left/Right arrow keys scroll the contents of the container under the mouse (the mouse wheel already scrolls natively).
+        // The containers never take keyboard focus, so this comes from the global keyboard hook; it only acts when the pointer is over a container
         // that no application window covers.
         internal static readonly System.Collections.Generic.Dictionary<string, ScrollViewer> ContentScrollers = new System.Collections.Generic.Dictionary<string, ScrollViewer>();
 
@@ -72,7 +72,7 @@ namespace Desktop_Fences
         [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint pid);
         [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)] private static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder sb, int max);
 
-        private static bool DesktopOrFenceIsForeground()
+        private static bool DesktopOrContainerIsForeground()
         {
             IntPtr h = GetForegroundWindow();
             if (h == IntPtr.Zero) return true;
@@ -84,9 +84,9 @@ namespace Desktop_Fences
             return cls == "Progman" || cls == "WorkerW" || cls == "Shell_TrayWnd";
         }
 
-        public static void ScrollHoveredFence(int direction)
+        public static void ScrollHoveredContainer(int direction)
         {
-            if (System.Windows.Application.Current == null) return;   // IsMouseOver below already means no application window covers the fence at the pointer
+            if (System.Windows.Application.Current == null) return;   // IsMouseOver below already means no application window covers the container at the pointer
             foreach (var w in System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>())
             {
                 if (!w.IsMouseOver || !(w.Tag is string id) || !ContentScrollers.TryGetValue(id, out var sv)) continue;
@@ -96,19 +96,19 @@ namespace Desktop_Fences
             }
         }
 
-        // Opsis: "Sort by" for Data fences (from the old DeskContainers). One-shot: reorders the stored items (current tab) and reloads.
-        internal static void SortFenceItems(string fenceId, string mode)
+        // Opsis: "Sort by" for Data containers (from the old DeskContainers). One-shot: reorders the stored items (current tab) and reloads.
+        internal static void SortContainerItems(string containerId, string mode)
         {
             try
             {
-                int idx = FenceDataManager.FenceData.FindIndex(f => f.Id?.ToString() == fenceId);
+                int idx = ContainerDataManager.ContainerData.FindIndex(f => f.Id?.ToString() == containerId);
                 if (idx < 0) return;
-                JObject fence = FenceDataManager.FenceData[idx] as JObject ?? JObject.FromObject(FenceDataManager.FenceData[idx]);
-                if (fence["ItemsType"]?.ToString() != "Data") return;
-                JArray items = fence["Items"] as JArray;
-                if (string.Equals(fence["TabsEnabled"]?.ToString(), "true", StringComparison.OrdinalIgnoreCase) && fence["Tabs"] is JArray tabs)
+                JObject container = ContainerDataManager.ContainerData[idx] as JObject ?? JObject.FromObject(ContainerDataManager.ContainerData[idx]);
+                if (container["ItemsType"]?.ToString() != "Data") return;
+                JArray items = container["Items"] as JArray;
+                if (string.Equals(container["TabsEnabled"]?.ToString(), "true", StringComparison.OrdinalIgnoreCase) && container["Tabs"] is JArray tabs)
                 {
-                    int ci = fence["CurrentTab"]?.ToObject<int>() ?? 0;
+                    int ci = container["CurrentTab"]?.ToObject<int>() ?? 0;
                     if (ci >= 0 && ci < tabs.Count) items = tabs[ci]["Items"] as JArray ?? items;
                 }
                 if (items == null || items.Count < 2) return;
@@ -130,65 +130,65 @@ namespace Desktop_Fences
                 var sorted = ordered.Select(t => t.DeepClone()).ToList();
                 items.Clear();
                 foreach (var t in sorted) items.Add(t);
-                FenceDataManager.FenceData[idx] = fence;
-                FenceDataManager.SaveFenceData();
-                ReloadFences();
+                ContainerDataManager.ContainerData[idx] = container;
+                ContainerDataManager.SaveContainerData();
+                ReloadContainers();
             }
-            catch (Exception ex) { LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.General, "SortFenceItems failed: " + ex.Message); }
+            catch (Exception ex) { LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.General, "SortContainerItems failed: " + ex.Message); }
         }
 
-        // Opsis: a fence flagged "ExcludeFromAutoHide" stays visible when the idle auto-hide hides the others.
+        // Opsis: a container flagged "ExcludeFromAutoHide" stays visible when the idle auto-hide hides the others.
         private static bool IsExcludedFromAutoHide(NonActivatingWindow w)
         {
             try
             {
                 string id = w.Tag?.ToString();
-                var f = FenceDataManager.FenceData.FirstOrDefault(x => x.Id?.ToString() == id);
+                var f = ContainerDataManager.ContainerData.FirstOrDefault(x => x.Id?.ToString() == id);
                 if (f == null) return false;
-                string v = Utility.FenceProp((object)f, "ExcludeFromAutoHide");
+                string v = Utility.ContainerProp((object)f, "ExcludeFromAutoHide");
                 return string.Equals(v, "true", StringComparison.OrdinalIgnoreCase);
             }
             catch { return false; }
         }
 
         // Opsis: create a container from the Opsis settings page (near the top-left of the primary screen, cascading).
-        public static void CreateNewFenceAt(string itemsType)
+        public static void CreateNewContainerAt(string itemsType)
         {
             int n = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>().Count();
-            CreateNewFence("", itemsType, 140 + (n % 6) * 36, 140 + (n % 6) * 36);
+            CreateNewContainer("", itemsType, 140 + (n % 6) * 36, 140 + (n % 6) * 36);
         }
 
-        // Opsis: F2 -> rename the fence currently under the mouse pointer.
-        // Opsis: first-run welcome note (replaces the upstream "Desktop Fences+ Startup Tips").
+        // Opsis: F2 -> rename the container currently under the mouse pointer.
+        // Opsis: first-run welcome note (replaces the upstream "Opsis DeskContainers+ Startup Tips").
         private static bool OpsisGreek => System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "el";
 
         private static string OpsisWelcomeTitle() => OpsisGreek ? "Καλώς ήρθες στα Opsis DeskContainers" : "Welcome to Opsis DeskContainers";
 
         private static string OpsisWelcomeText() => OpsisGreek
-            ? "ΚΑΛΩΣ ΗΡΘΕΣ ΣΤΑ OPSIS FENCES\r\n" +
+            ? "ΚΑΛΩΣ ΗΡΘΕΣ ΣΤΑ OPSIS DESKCONTAINERS\r\n" +
               "---------------------------\r\n" +
-              "• Σύρε αρχεία, φακέλους και συντομεύσεις πάνω σε ένα fence για να τα ομαδοποιήσεις.\r\n" +
-              "• Μενού: πάτα το εικονίδιο ☰ (πάνω αριστερά) για Options, νέα fences, portals και σημειώσεις.\r\n" +
-              "• Μετονομασία: F2 πάνω από ένα fence, Enter για αποθήκευση.\r\n" +
+              "• Σύρε αρχεία, φακέλους και συντομεύσεις πάνω σε ένα container για να τα ομαδοποιήσεις.\r\n" +
+              "• Μενού: πάτα το εικονίδιο ☰ (πάνω αριστερά) για Options, νέα containers, portals και σημειώσεις.\r\n" +
+              "• Μετονομασία: F2 πάνω από ένα container, Enter για αποθήκευση.\r\n" +
               "• Μάζεμα/άνοιγμα: διπλό κλικ στη γραμμή τίτλου.\r\n" +
-              "• Λουκέτο (πάνω δεξιά): κλείδωσε το fence στη θέση του.\r\n" +
+              "• Λουκέτο (πάνω δεξιά): κλείδωσε το container στη θέση του.\r\n" +
               "• Αναζήτηση παντού: Ctrl + `.\r\n" +
               "• Δεξί κλικ στη γραμμή τίτλου → Customize (χρώμα, εικονίδια, κείμενο).\r\n" +
-              "• Καρτέλες: ☰ → Enable Tabs On This Fence.\r\n\r\n" +
-              "Τα Opsis DeskContainers βασίζονται στο ανοιχτού κώδικα Desktop Fences + (MIT)."
-            : "WELCOME TO OPSIS FENCES\r\n" +
+              "• Καρτέλες: ☰ → Enable Tabs On This Container.\r\n\r\n" +
+              "Τα Opsis DeskContainers βασίζονται στο ανοιχτού κώδικα Opsis DeskContainers (MIT)."
+            : "WELCOME TO OPSIS DESKCONTAINERS\r\n" +
               "---------------------------\r\n" +
-              "• Drag files, folders and shortcuts onto a fence to group them.\r\n" +
-              "• Menu: click the ☰ icon (top-left) for Options, new fences, portals and notes.\r\n" +
-              "• Rename: F2 over a fence, Enter to save.\r\n" +
+              "• Drag files, folders and shortcuts onto a container to group them.\r\n" +
+              "• Menu: click the ☰ icon (top-left) for Options, new containers, portals and notes.\r\n" +
+              "• Rename: F2 over a container, Enter to save.\r\n" +
               "• Roll up/down: double-click the title bar.\r\n" +
-              "• Padlock (top-right): lock the fence in place.\r\n" +
+              "• Padlock (top-right): lock the container in place.\r\n" +
               "• Search everything: Ctrl + `.\r\n" +
               "• Right-click the title bar → Customize (colour, icons, text).\r\n" +
-              "• Tabs: ☰ → Enable Tabs On This Fence.\r\n\r\n" +
-              "Opsis DeskContainers is based on the open-source Desktop Fences + (MIT).";
+              "• Tabs: ☰ → Enable Tabs On This Container.\r\n\r\n" +
+              "Opsis DeskContainers is based on the open-source Opsis DeskContainers (MIT).";
 
-        public static void RenameHoveredFence()
+        public static void RenameHoveredContainer()
         {
             if (System.Windows.Application.Current == null) return;
             foreach (var w in System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>())
@@ -237,7 +237,7 @@ namespace Desktop_Fences
         }
 
 
-        // Tracks temporary navigation paths for Portal Fences. Key: FenceID, Value: CurrentPath
+        // Tracks temporary navigation paths for Portal Containers. Key: ContainerID, Value: CurrentPath
         private static Dictionary<string, string> _portalNavigationStates = new Dictionary<string, string>();
 
         // Track icon state to prevent GDI leaks from constant re-extraction
@@ -246,9 +246,9 @@ namespace Desktop_Fences
         private static Dictionary<string, (DateTime LastWrite, bool IsBroken)> _iconStates = new Dictionary<string, (DateTime, bool)>();
 
         private static dynamic _options;
-        private static Dictionary<dynamic, PortalFenceManager> _portalFences = new Dictionary<dynamic, PortalFenceManager>();
+        private static Dictionary<dynamic, PortalContainerManager> _portalContainers = new Dictionary<dynamic, PortalContainerManager>();
 
-        // Stores heart TextBlock references for each fence to enable efficient ContextMenu updates
+        // Stores heart TextBlock references for each container to enable efficient ContextMenu updates
         private static readonly Dictionary<dynamic, TextBlock> _heartTextBlocks = new Dictionary<dynamic, TextBlock>();
 
         //resize feedback
@@ -258,9 +258,9 @@ namespace Desktop_Fences
         // Add near other static fields
         private static TargetChecker _currentTargetChecker;
 
-        #region Auto-Hide Fences Engine
+        #region Auto-Hide Containers Engine
         private static DispatcherTimer _masterAutoHideTimer;
-        public static bool _areFencesAutoHidden = false;
+        public static bool _areContainersAutoHidden = false;
         private static int _hideSequenceId = 0;
 
         public static void InitializeAutoHideTimer()
@@ -278,38 +278,38 @@ namespace Desktop_Fences
             if (_masterAutoHideTimer == null) return;
             _masterAutoHideTimer.Stop();
 
-            if (SettingsManager.AutoHideFences && SettingsManager.AutoHideTime > 0)
+            if (SettingsManager.AutoHideContainers && SettingsManager.AutoHideTime > 0)
             {
                 _masterAutoHideTimer.Interval = TimeSpan.FromSeconds(SettingsManager.AutoHideTime);
                 _masterAutoHideTimer.Start();
             }
         }
 
-        public static void WakeUpFences()
+        public static void WakeUpContainers()
         {
             _hideSequenceId++;
-            _areFencesAutoHidden = false;
+            _areContainersAutoHidden = false;
             ResetAutoHideTimer();
 
-            var fences = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>().ToList();
-            foreach (var fence in fences)
+            var containers = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>().ToList();
+            foreach (var container in containers)
             {
-                if (fence.Visibility == Visibility.Visible && fence.Opacity >= 0.99) continue;
+                if (container.Visibility == Visibility.Visible && container.Opacity >= 0.99) continue;
 
-                // --- BUG FIX: Skip Individually Hidden Fences (Safe Extraction) ---
-                string fenceId = fence.Tag?.ToString();
-                if (!string.IsNullOrEmpty(fenceId))
+                // --- BUG FIX: Skip Individually Hidden Containers (Safe Extraction) ---
+                string containerId = container.Tag?.ToString();
+                if (!string.IsNullOrEmpty(containerId))
                 {
-                    var currentFence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
-                    if (currentFence != null)
+                    var currentContainer = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
+                    if (currentContainer != null)
                     {
                         bool isIndividuallyHidden = false;
                         try
                         {
-                            if (currentFence is Newtonsoft.Json.Linq.JObject jFence)
-                                isIndividuallyHidden = jFence["IsHidden"]?.ToString().ToLower() == "true";
+                            if (currentContainer is Newtonsoft.Json.Linq.JObject jContainer)
+                                isIndividuallyHidden = jContainer["IsHidden"]?.ToString().ToLower() == "true";
                             else
-                                isIndividuallyHidden = (currentFence.IsHidden?.ToString() ?? "false").ToLower() == "true";
+                                isIndividuallyHidden = (currentContainer.IsHidden?.ToString() ?? "false").ToLower() == "true";
                         }
                         catch { }
 
@@ -323,10 +323,10 @@ namespace Desktop_Fences
                 // --- WPF 1-FRAME FLASH FIX ---
                 // Set the local value to 0 FIRST, then drop the animation. 
                 // This prevents WPF from snapping back to 1.0 for a single frame.
-                fence.Opacity = 0.0;
-                fence.BeginAnimation(UIElement.OpacityProperty, null);
+                container.Opacity = 0.0;
+                container.BeginAnimation(UIElement.OpacityProperty, null);
 
-                fence.Visibility = Visibility.Visible;
+                container.Visibility = Visibility.Visible;
 
                 var fadeIn = new System.Windows.Media.Animation.DoubleAnimation
                 {
@@ -338,19 +338,19 @@ namespace Desktop_Fences
 
                 fadeIn.Completed += (s, e) =>
                 {
-                    fence.Opacity = 1.0;
+                    container.Opacity = 1.0;
                 };
 
-                fence.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+                container.BeginAnimation(UIElement.OpacityProperty, fadeIn);
             }
 
-            LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, "Fences faded in and restored.");
+            LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, "Containers faded in and restored.");
         }
 
         private static async void ExecuteAutoHideSequence()
         {
             _masterAutoHideTimer.Stop();
-            if (_areFencesAutoHidden) return;
+            if (_areContainersAutoHidden) return;
 
             int currentSequence = ++_hideSequenceId;
 
@@ -367,22 +367,22 @@ namespace Desktop_Fences
                 return;
             }
 
-            var visibleFences = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>()
+            var visibleContainers = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>()
                 .Where(w => w.Visibility == Visibility.Visible && !IsExcludedFromAutoHide(w))
                 .ToList();
 
-            if (visibleFences.Count == 0) return;
+            if (visibleContainers.Count == 0) return;
             LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, "Auto-Hide: Executing hide sequence.");
 
             if (SettingsManager.HideFlashEffect)
             {
                 for (int i = 0; i < 5; i++)
                 {
-                    foreach (var win in visibleFences) win.Opacity = 0.3;
+                    foreach (var win in visibleContainers) win.Opacity = 0.3;
                     await Task.Delay(30);
                     if (currentSequence != _hideSequenceId) return;
 
-                    foreach (var win in visibleFences) win.Opacity = 1.0;
+                    foreach (var win in visibleContainers) win.Opacity = 1.0;
                     await Task.Delay(30);
                     if (currentSequence != _hideSequenceId) return;
                 }
@@ -395,7 +395,7 @@ namespace Desktop_Fences
                 Duration = new System.Windows.Duration(TimeSpan.FromMilliseconds(200))
             };
 
-            foreach (var win in visibleFences)
+            foreach (var win in visibleContainers)
             {
                 win.BeginAnimation(System.Windows.UIElement.OpacityProperty, fadeOutAnim);
             }
@@ -404,7 +404,7 @@ namespace Desktop_Fences
 
             if (currentSequence != _hideSequenceId) return;
 
-            foreach (var win in visibleFences)
+            foreach (var win in visibleContainers)
             {
                 // --- WPF 1-FRAME FLASH FIX ---
                 // Must hard-set to 0.0 BEFORE removing the animation precedence!
@@ -413,22 +413,22 @@ namespace Desktop_Fences
                 win.Visibility = Visibility.Hidden;
             }
 
-            _areFencesAutoHidden = true;
+            _areContainersAutoHidden = true;
         }
         #endregion
 
-        // Track fences currently in rollup/rolldown transition to prevent event conflicts
-        private static readonly HashSet<string> _fencesInTransition = new HashSet<string>();
+        // Track containers currently in rollup/rolldown transition to prevent event conflicts
+        private static readonly HashSet<string> _containersInTransition = new HashSet<string>();
         // Emergency cleanup timer to prevent permanently stuck transition states
         private static System.Windows.Threading.DispatcherTimer _transitionCleanupTimer;
 
 
 
-        public static void ReloadFences()
+        public static void ReloadContainers()
         {
             try
             {
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.General, "Reloading all fences...");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.General, "Reloading all containers...");
 
                 // 1. Life Support
                 Window lifeSupport = MessageBoxesManager.CreateWaitWindow("Opsis DeskContainers", "Refreshing configuration...");
@@ -438,36 +438,36 @@ namespace Desktop_Fences
                 // 2. Clean up Old State
                 if (TrayManager.Instance != null)
                 {
-                    TrayManager.Instance.ClearHiddenFences(); // Ensure Tray is clean
+                    TrayManager.Instance.ClearHiddenContainers(); // Ensure Tray is clean
                 }
 
-                var openFences = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>().ToList();
-                foreach (var win in openFences) win.Close();
+                var openContainers = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>().ToList();
+                foreach (var win in openContainers) win.Close();
 
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
                 GC.Collect();
 
                 _heartTextBlocks.Clear();
-                foreach (var portal in _portalFences.Values) try { portal.Dispose(); } catch { }
-                _portalFences.Clear();
-                FenceDataManager.FenceData?.Clear();
+                foreach (var portal in _portalContainers.Values) try { portal.Dispose(); } catch { }
+                _portalContainers.Clear();
+                ContainerDataManager.ContainerData?.Clear();
                 _currentTargetChecker?.Stop();
 
                 // 3. Re-Load
                 _currentTargetChecker = new TargetChecker(1000);
-                LoadAndCreateFences(_currentTargetChecker);
+                LoadAndCreateContainers(_currentTargetChecker);
 
                 // Allow a brief moment for WPF to register the new windows
                 System.Windows.Forms.Application.DoEvents();
 
                 // ==================== DEBUG FIX START ====================
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.General, "Starting Hidden Fence Registration...");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.General, "Starting Hidden Container Registration...");
 
-                if (FenceDataManager.FenceData != null)
+                if (ContainerDataManager.ContainerData != null)
                 {
                     // Use 'dynamic' to bypass JValue compile errors
-                    foreach (dynamic data in FenceDataManager.FenceData)
+                    foreach (dynamic data in ContainerDataManager.ContainerData)
                     {
                         // A. Safe Title Extraction (Trim spaces)
                         string jsonTitle = (string)data.Title;
@@ -485,17 +485,17 @@ namespace Desktop_Fences
                         // C. Debug Log
                         if (isHidden)
                         {
-                            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.General, $"Fence '{jsonTitle}' is marked HIDDEN in JSON. Searching for window...");
+                            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.General, $"Container '{jsonTitle}' is marked HIDDEN in JSON. Searching for window...");
 
                             // D. Find Window
-                            var fenceWindow = System.Windows.Application.Current.Windows
+                            var containerWindow = System.Windows.Application.Current.Windows
                                 .OfType<NonActivatingWindow>()
                                 .FirstOrDefault(w => w.Title != null && w.Title.Trim() == jsonTitle);
 
-                            if (fenceWindow != null)
+                            if (containerWindow != null)
                             {
                                 LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.General, $"-> MATCH FOUND. Hiding '{jsonTitle}'");
-                                TrayManager.AddHiddenFence(fenceWindow);
+                                TrayManager.AddHiddenContainer(containerWindow);
                             }
                             else
                             {
@@ -506,17 +506,17 @@ namespace Desktop_Fences
                 }
                 else
                 {
-                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.General, "FenceDataManager.FenceData is NULL after load.");
+                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.General, "ContainerDataManager.ContainerData is NULL after load.");
                 }
                 // ==================== DEBUG FIX END ====================
 
                 lifeSupport.Close();
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.General, "Fences reloaded successfully.");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.General, "Containers reloaded successfully.");
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.Error, $"Error reloading fences: {ex.Message}");
-                MessageBoxesManager.ShowOKOnlyMessageBoxForm($"Error reloading fences: {ex.Message}", "Error");
+                LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.Error, $"Error reloading containers: {ex.Message}");
+                MessageBoxesManager.ShowOKOnlyMessageBoxForm($"Error reloading containers: {ex.Message}", "Error");
             }
         }
   
@@ -541,17 +541,17 @@ namespace Desktop_Fences
             return false;
         }
         // PORTAL FEATURE: Logic to switch folders
-        public static void NavigatePortalFence(dynamic fence, string newPath)
+        public static void NavigatePortalContainer(dynamic container, string newPath)
         {
             try
             {
                 if (string.IsNullOrEmpty(newPath) || !System.IO.Directory.Exists(newPath)) return;
 
-                string fenceId = fence.Id?.ToString();
+                string containerId = container.Id?.ToString();
 
-                // --- BUG FIX: Pull Live Fence for Accurate Base Path ---
-                var liveFence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId) ?? fence;
-                string basePath = liveFence.Path?.ToString(); // The permanent "Home"
+                // --- BUG FIX: Pull Live Container for Accurate Base Path ---
+                var liveContainer = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId) ?? container;
+                string basePath = liveContainer.Path?.ToString(); // The permanent "Home"
 
                 // --- BUG FIX: Strict Path Normalization ---
                 string normNew = newPath.TrimEnd(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar);
@@ -560,15 +560,15 @@ namespace Desktop_Fences
                 // Update State
                 if (string.Equals(normNew, normBase, StringComparison.OrdinalIgnoreCase))
                 {
-                    _portalNavigationStates.Remove(fenceId); // We returned Home
+                    _portalNavigationStates.Remove(containerId); // We returned Home
                 }
                 else
                 {
-                    _portalNavigationStates[fenceId] = normNew; // We are Deep
+                    _portalNavigationStates[containerId] = normNew; // We are Deep
                 }
 
                 // Tell the Manager to switch
-                var portalEntry = _portalFences.FirstOrDefault(kvp => kvp.Key?.Id?.ToString() == fenceId);
+                var portalEntry = _portalContainers.FirstOrDefault(kvp => kvp.Key?.Id?.ToString() == containerId);
                 if (portalEntry.Value != null)
                 {
                     portalEntry.Value.NavigateTo(normNew);
@@ -576,10 +576,10 @@ namespace Desktop_Fences
 
                 // Update UI (Show/Hide Bar)
                 var windows = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>();
-                var win = windows.FirstOrDefault(w => w.Tag?.ToString() == fenceId);
+                var win = windows.FirstOrDefault(w => w.Tag?.ToString() == containerId);
                 if (win != null)
                 {
-                    RefreshPortalNavBar(win, liveFence);
+                    RefreshPortalNavBar(win, liveContainer);
                 }
             }
             catch (Exception ex)
@@ -590,11 +590,11 @@ namespace Desktop_Fences
 
         // PORTAL FEATURE: The UI Strip [ <  Path...  ⚓ ]
         // v2.5.4 .186: Precision Alignment (Anchor under Filter)
-        public static void RefreshPortalNavBar(NonActivatingWindow fenceWindow, dynamic fence)
+        public static void RefreshPortalNavBar(NonActivatingWindow containerWindow, dynamic container)
         {
             try
             {
-                var border = fenceWindow.Content as Border;
+                var border = containerWindow.Content as Border;
                 var dockPanel = border?.Child as DockPanel;
                 if (dockPanel == null) return;
 
@@ -604,17 +604,17 @@ namespace Desktop_Fences
                 foreach (var bar in oldBars) dockPanel.Children.Remove(bar);
 
                 // 2. Check Logic
-                if (fence.ItemsType?.ToString() != "Portal") return;
+                if (container.ItemsType?.ToString() != "Portal") return;
 
-                string fenceId = fence.Id?.ToString();
+                string containerId = container.Id?.ToString();
 
-                // --- BUG FIX: Pull Live Fence for Accurate Base Path ---
-                var liveFence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId) ?? fence;
-                string basePath = liveFence.Path?.ToString();
+                // --- BUG FIX: Pull Live Container for Accurate Base Path ---
+                var liveContainer = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId) ?? container;
+                string basePath = liveContainer.Path?.ToString();
 
                 // Normalize paths to fix the "Bar won't disappear" bug
                 string normBase = basePath?.TrimEnd(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar) ?? "";
-                string currentPath = _portalNavigationStates.ContainsKey(fenceId) ? _portalNavigationStates[fenceId] : normBase;
+                string currentPath = _portalNavigationStates.ContainsKey(containerId) ? _portalNavigationStates[containerId] : normBase;
                 string normCurrent = currentPath?.TrimEnd(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar) ?? "";
 
                 // Only show bar if we are NOT at home
@@ -660,7 +660,7 @@ namespace Desktop_Fences
                     Cursor = Cursors.Hand,
                     ToolTip = Loc.T("Go Up")
                 };
-                btnBack.Click += (s, e) => NavigatePortalFence(liveFence, System.IO.Directory.GetParent(normCurrent)?.FullName);
+                btnBack.Click += (s, e) => NavigatePortalContainer(liveContainer, System.IO.Directory.GetParent(normCurrent)?.FullName);
 
                 // [ Path ] Label (Left Aligned)
                 TextBlock lblPath = new TextBlock
@@ -685,15 +685,15 @@ namespace Desktop_Fences
                     Foreground = System.Windows.Media.Brushes.Orange,
                     BorderThickness = new Thickness(0),
                     Cursor = Cursors.Hand,
-                    ToolTip = Loc.T("Set current view as the new Home for this fence")
+                    ToolTip = Loc.T("Set current view as the new Home for this container")
                 };
                 btnSetBase.Click += (s, e) =>
                 {
-                    if (MessageBoxesManager.ShowCustomYesNoMessageBox($"Set this folder as the new home?\n\n{normCurrent}", "Update Portal Fence"))
+                    if (MessageBoxesManager.ShowCustomYesNoMessageBox($"Set this folder as the new home?\n\n{normCurrent}", "Update Portal Container"))
                     {
-                        UpdateFenceProperty(liveFence, "Path", normCurrent, "Updated Portal Path");
-                        _portalNavigationStates.Remove(fenceId);
-                        RefreshPortalNavBar(fenceWindow, liveFence);
+                        UpdateContainerProperty(liveContainer, "Path", normCurrent, "Updated Portal Path");
+                        _portalNavigationStates.Remove(containerId);
+                        RefreshPortalNavBar(containerWindow, liveContainer);
                     }
                 };
 
@@ -710,7 +710,7 @@ namespace Desktop_Fences
                 for (int i = 0; i < dockPanel.Children.Count; i++)
                 {
                     if (dockPanel.Children[i] is Grid g &&
-                        g.Children.OfType<TextBlock>().Any(tb => tb.Name == "FenceLockIcon"))
+                        g.Children.OfType<TextBlock>().Any(tb => tb.Name == "ContainerLockIcon"))
                     {
                         insertIndex = i + 1;
                         titleFound = true;
@@ -807,52 +807,52 @@ namespace Desktop_Fences
         }
 
         /// <summary>
-        /// Surgically reloads only specific fences by closing and recreating their windows
+        /// Surgically reloads only specific containers by closing and recreating their windows
         /// Used by: ItemMoveDialog to prevent duplicate windows during move operations
         /// Category: Selective Window Management
         /// </summary>
-        public static void ReloadSpecificFences(dynamic sourceFence, dynamic targetFence)
+        public static void ReloadSpecificContainers(dynamic sourceContainer, dynamic targetContainer)
         {
             try
             {
                 LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
-                    $"Reloading specific fences: '{sourceFence?.Title}' and '{targetFence?.Title}'");
+                    $"Reloading specific containers: '{sourceContainer?.Title}' and '{targetContainer?.Title}'");
 
-                // Get fence IDs for identification
-                string sourceFenceId = sourceFence?.Id?.ToString();
-                string targetFenceId = targetFence?.Id?.ToString();
+                // Get container IDs for identification
+                string sourceContainerId = sourceContainer?.Id?.ToString();
+                string targetContainerId = targetContainer?.Id?.ToString();
 
-                // Check if we're about to close all fences (which would terminate the app)
-                bool isSourceTargetSame = sourceFenceId == targetFenceId;
-                int totalFenceCount = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>().Count();
-                int fencesToClose = isSourceTargetSame ? 1 : 2;
-                bool needsLifeSupport = (fencesToClose >= totalFenceCount);
+                // Check if we're about to close all containers (which would terminate the app)
+                bool isSourceTargetSame = sourceContainerId == targetContainerId;
+                int totalContainerCount = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>().Count();
+                int containersToClose = isSourceTargetSame ? 1 : 2;
+                bool needsLifeSupport = (containersToClose >= totalContainerCount);
 
                 Window lifeSupportWindow = null;
 
-                // Show "life support" wait window if we're about to close all fences
+                // Show "life support" wait window if we're about to close all containers
                 if (needsLifeSupport)
                 {
                     LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
-                        $"Creating life support window - about to close {fencesToClose} of {totalFenceCount} total fences");
+                        $"Creating life support window - about to close {containersToClose} of {totalContainerCount} total containers");
 
-                    lifeSupportWindow = MessageBoxesManager.CreateWaitWindow("Opsis DeskContainers", "Refreshing fences, please wait...");
+                    lifeSupportWindow = MessageBoxesManager.CreateWaitWindow("Opsis DeskContainers", "Refreshing containers, please wait...");
                     lifeSupportWindow.Show();
                 }
 
-                // Find and close only the specific fence windows
+                // Find and close only the specific container windows
                 var allWindows = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>().ToList();
                 var windowsToClose = new List<NonActivatingWindow>();
 
                 foreach (var window in allWindows)
                 {
-                    string windowFenceId = window.Tag?.ToString();
-                    if (!string.IsNullOrEmpty(windowFenceId) &&
-                        (windowFenceId == sourceFenceId || windowFenceId == targetFenceId))
+                    string windowContainerId = window.Tag?.ToString();
+                    if (!string.IsNullOrEmpty(windowContainerId) &&
+                        (windowContainerId == sourceContainerId || windowContainerId == targetContainerId))
                     {
                         windowsToClose.Add(window);
                         LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI,
-                            $"Marking fence window for reload: {window.Title} (ID: {windowFenceId})");
+                            $"Marking container window for reload: {window.Title} (ID: {windowContainerId})");
                     }
                 }
 
@@ -863,7 +863,7 @@ namespace Desktop_Fences
                     {
                         window.Close();
                         LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI,
-                            $"Closed fence window: {window.Title}");
+                            $"Closed container window: {window.Title}");
                     }
                     catch (Exception ex)
                     {
@@ -872,33 +872,33 @@ namespace Desktop_Fences
                     }
                 }
 
-                // Clean up portal fence managers for the specific fences
-                var portalFencesToRemove = _portalFences.Keys
-                    .Where(fence => fence?.Id?.ToString() == sourceFenceId || fence?.Id?.ToString() == targetFenceId)
+                // Clean up portal container managers for the specific containers
+                var portalContainersToRemove = _portalContainers.Keys
+                    .Where(container => container?.Id?.ToString() == sourceContainerId || container?.Id?.ToString() == targetContainerId)
                     .ToList();
 
-                foreach (var fence in portalFencesToRemove)
+                foreach (var container in portalContainersToRemove)
                 {
-                    _portalFences.Remove(fence);
+                    _portalContainers.Remove(container);
                 }
 
-                // Recreate only the specific fences with proper TargetChecker
-                var fenceData = FenceDataManager.FenceData;
-                var fencesToRecreate = fenceData.Where(f =>
-                    f.Id?.ToString() == sourceFenceId || f.Id?.ToString() == targetFenceId).ToList();
+                // Recreate only the specific containers with proper TargetChecker
+                var containerData = ContainerDataManager.ContainerData;
+                var containersToRecreate = containerData.Where(f =>
+                    f.Id?.ToString() == sourceContainerId || f.Id?.ToString() == targetContainerId).ToList();
 
-                foreach (var fence in fencesToRecreate)
+                foreach (var container in containersToRecreate)
                 {
                     try
                     {
-                        CreateFence(fence, _currentTargetChecker ?? new TargetChecker(1000));
-                        LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceUpdate,
-                            $"Recreated fence: {fence.Title}");
+                        CreateContainer(container, _currentTargetChecker ?? new TargetChecker(1000));
+                        LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerUpdate,
+                            $"Recreated container: {container.Title}");
                     }
                     catch (Exception ex)
                     {
                         LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI,
-                            $"Error recreating fence {fence.Title}: {ex.Message}");
+                            $"Error recreating container {container.Title}: {ex.Message}");
                     }
                 }
 
@@ -919,12 +919,12 @@ namespace Desktop_Fences
                 }
 
                 LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
-                    "Specific fence reload completed successfully");
+                    "Specific container reload completed successfully");
             }
             catch (Exception ex)
             {
                 LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI,
-                    $"Error in ReloadSpecificFences: {ex.Message}");
+                    $"Error in ReloadSpecificContainers: {ex.Message}");
                 throw;
             }
         }
@@ -943,7 +943,7 @@ namespace Desktop_Fences
                 return dpiX / 96.0; // Standard DPI is 96, so scale factor = dpiX / 96
             }
         }
-        private static void AdjustFencePositionToScreen(NonActivatingWindow win)
+        private static void AdjustContainerPositionToScreen(NonActivatingWindow win)
         {
             // 1. CONTROL CHECK: 
             // If Auto-Reposition is OFF ... AND ... we are NOT manually forcing it -> EXIT.
@@ -1003,16 +1003,16 @@ namespace Desktop_Fences
             {
                 win.Left = newLeft;
                 win.Top = newTop;
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ImportExport, $"Adjusted fence '{win.Title}' position to ({newLeft}, {newTop}) to fit within screen bounds.");
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ImportExport, $"Adjusted container '{win.Title}' position to ({newLeft}, {newTop}) to fit within screen bounds.");
             }
-            FenceDataManager.SaveFenceData();
+            ContainerDataManager.SaveContainerData();
   
         }
 
 
 
 
-        public static void ForceRepositionAllFences()
+        public static void ForceRepositionAllContainers()
         {
             try
             {
@@ -1022,12 +1022,12 @@ namespace Desktop_Fences
                 IsManualRepositioning = true;
 
                 // 2. Run the logic (it will now pass the check)
-                foreach (var fence in System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>())
+                foreach (var container in System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>())
                 {
-                    AdjustFencePositionToScreen(fence);
+                    AdjustContainerPositionToScreen(container);
                 }
 
-                FenceDataManager.SaveFenceData();
+                ContainerDataManager.SaveContainerData();
             }
             catch (Exception ex)
             {
@@ -1049,13 +1049,13 @@ namespace Desktop_Fences
 
 
 
-        // Builds the heart ContextMenu for a fence with consistent items and dynamic state
+        // Builds the heart ContextMenu for a container with consistent items and dynamic state
         // v2.5.4 .183: Swapped Tabs/Delete position for better UX safety
-        private static ContextMenu BuildHeartContextMenu(dynamic fence, bool showTabsOption = false)
+        private static ContextMenu BuildHeartContextMenu(dynamic container, bool showTabsOption = false)
         {
             // DEBUG: Log menu building
             LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
-                $"Building heart context menu for fence '{fence.Title}'");
+                $"Building heart context menu for container '{container.Title}'");
 
             var menu = new ContextMenu();
 
@@ -1087,48 +1087,48 @@ namespace Desktop_Fences
             // Separator
             menu.Items.Add(new Separator());
 
-            // New Fence items
-            var newFenceItem = new MenuItem { Header = Loc.T("New Fence") };
-            newFenceItem.Click += (s, e) =>
+            // New Container items
+            var newContainerItem = new MenuItem { Header = Loc.T("New Container") };
+            newContainerItem.Click += (s, e) =>
             {
                 var mousePosition = System.Windows.Forms.Cursor.Position;
-                CreateNewFence("", "Data", mousePosition.X, mousePosition.Y);
+                CreateNewContainer("", "Data", mousePosition.X, mousePosition.Y);
             };
-            menu.Items.Add(newFenceItem);
+            menu.Items.Add(newContainerItem);
 
-            var newPortalFenceItem = new MenuItem { Header = Loc.T("New Portal Fence") };
-            newPortalFenceItem.Click += (s, e) =>
+            var newPortalContainerItem = new MenuItem { Header = Loc.T("New Portal Container") };
+            newPortalContainerItem.Click += (s, e) =>
             {
                 var mousePosition = System.Windows.Forms.Cursor.Position;
-                CreateNewFence("New Portal Fence", "Portal", mousePosition.X, mousePosition.Y);
+                CreateNewContainer("New Portal Container", "Portal", mousePosition.X, mousePosition.Y);
             };
-            menu.Items.Add(newPortalFenceItem);
+            menu.Items.Add(newPortalContainerItem);
 
-            MenuItem newNoteFenceItem = new MenuItem { Header = Loc.T("New Note Fence") };
-            newNoteFenceItem.Click += (s, e) =>
+            MenuItem newNoteContainerItem = new MenuItem { Header = Loc.T("New Note Container") };
+            newNoteContainerItem.Click += (s, e) =>
             {
                 var mousePosition = System.Windows.Forms.Cursor.Position;
-                CreateNewFence("", "Note", mousePosition.X, mousePosition.Y);
+                CreateNewContainer("", "Note", mousePosition.X, mousePosition.Y);
             };
-            menu.Items.Add(newNoteFenceItem);
+            menu.Items.Add(newNoteContainerItem);
 
             menu.Items.Add(new Separator());
 
             // --- REORDERED: Tabs Option First ---
             // TABS FEATURE (Native Checkbox Logic)
-            bool isDataFence = fence.ItemsType?.ToString() == "Data";
-            if (isDataFence)
+            bool isDataContainer = container.ItemsType?.ToString() == "Data";
+            if (isDataContainer)
             {
-                bool tabsEnabled = fence.TabsEnabled?.ToString().ToLower() == "true";
+                bool tabsEnabled = container.TabsEnabled?.ToString().ToLower() == "true";
 
                 var enableTabsItem = new MenuItem
                 {
-                    Header = Loc.T("Enable Tabs On This Fence"),
+                    Header = Loc.T("Enable Tabs On This Container"),
                     IsCheckable = true,   // Shows checkbox gutter
                     IsChecked = tabsEnabled // Visual checkmark
                 };
 
-                enableTabsItem.Click += (s, e) => ToggleFenceTabs(fence);
+                enableTabsItem.Click += (s, e) => ToggleContainerTabs(container);
                 menu.Items.Add(enableTabsItem);
 
                 // Separator AFTER tabs to separate it from the Delete option
@@ -1136,60 +1136,60 @@ namespace Desktop_Fences
             }
 
             // --- REORDERED: Delete Option Second ---
-            // Delete this fence
-            var deleteThisFence = new MenuItem { Header = Loc.T("Delete this Fence") };
-            deleteThisFence.Click += (s, e) =>
+            // Delete this container
+            var deleteThisContainer = new MenuItem { Header = Loc.T("Delete this Container") };
+            deleteThisContainer.Click += (s, e) =>
             {
                 bool result = MessageBoxesManager.ShowCustomMessageBoxForm();
                 if (result == true)
                 {
-                    if (SettingsManager.ExportShortcutsOnFenceDeletion && fence.ItemsType?.ToString() == "Data")
+                    if (SettingsManager.ExportShortcutsOnContainerDeletion && container.ItemsType?.ToString() == "Data")
                     {
-                        ExportAllIconsToDesktop(fence, false);
+                        ExportAllIconsToDesktop(container, false);
                     }
 
-                    BackupManager.BackupDeletedFence(fence);
+                    BackupManager.BackupDeletedContainer(container);
 
-                    FenceDataManager.FenceData.Remove(fence);
-                    _heartTextBlocks.Remove(fence);
+                    ContainerDataManager.ContainerData.Remove(container);
+                    _heartTextBlocks.Remove(container);
 
                     // --- BUG FIX: Avoid JObject HashCode Mutation ---
-                    var targetPortal = _portalFences.FirstOrDefault(kvp => kvp.Key?.Id?.ToString() == fence.Id?.ToString());
+                    var targetPortal = _portalContainers.FirstOrDefault(kvp => kvp.Key?.Id?.ToString() == container.Id?.ToString());
                     if (targetPortal.Value != null)
                     {
                         targetPortal.Value.Dispose();
-                        _portalFences.Remove(targetPortal.Key);
+                        _portalContainers.Remove(targetPortal.Key);
                     }
 
-                    FenceDataManager.SaveFenceData();
+                    ContainerDataManager.SaveContainerData();
 
                     var windows = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>();
-                    var win = windows.FirstOrDefault(w => w.Tag?.ToString() == fence.Id?.ToString());
+                    var win = windows.FirstOrDefault(w => w.Tag?.ToString() == container.Id?.ToString());
                     if (win != null) win.Close();
 
                     UpdateAllHeartContextMenus();
                 }
             };
-            menu.Items.Add(deleteThisFence);
+            menu.Items.Add(deleteThisContainer);
 
             menu.Items.Add(new Separator());
 
             // Export/Import Group
-            var exportItem = new MenuItem { Header = Loc.T("Export this Fence") };
-            exportItem.Click += (s, e) => BackupManager.ExportFence(fence);
+            var exportItem = new MenuItem { Header = Loc.T("Export this Container") };
+            exportItem.Click += (s, e) => BackupManager.ExportContainer(container);
             menu.Items.Add(exportItem);
 
-            var importItem = new MenuItem { Header = Loc.T("Import a Fence...") };
-            importItem.Click += (s, e) => BackupManager.ImportFence();
+            var importItem = new MenuItem { Header = Loc.T("Import a Container...") };
+            importItem.Click += (s, e) => BackupManager.ImportContainer();
             menu.Items.Add(importItem);
 
-            // Restore Fence item
+            // Restore Container item
             var restoreItem = new MenuItem
             {
-                Header = Loc.T("Restore Last Deleted Fence"),
+                Header = Loc.T("Restore Last Deleted Container"),
                 Visibility = BackupManager.IsRestoreAvailable ? Visibility.Visible : Visibility.Collapsed
             };
-            restoreItem.Click += (s, e) => BackupManager.RestoreLastDeletedFence();
+            restoreItem.Click += (s, e) => BackupManager.RestoreLastDeletedContainer();
             menu.Items.Add(restoreItem);
 
             // Separator
@@ -1211,7 +1211,7 @@ namespace Desktop_Fences
         /// Layout: Edit/Move/Remove -> Copy -> Admin -> Path
         /// Includes LIVE data lookup to ensure Checkable items stay synced.
         /// </summary>
-        public static void AttachIconContextMenu(StackPanel sp, dynamic item, dynamic fence, NonActivatingWindow window)
+        public static void AttachIconContextMenu(StackPanel sp, dynamic item, dynamic container, NonActivatingWindow window)
         {
             try
             {
@@ -1228,18 +1228,18 @@ namespace Desktop_Fences
                 {
                     try
                     {
-                        string fenceId = fence.Id?.ToString();
-                        var liveFence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
-                        if (liveFence == null) return null;
+                        string containerId = container.Id?.ToString();
+                        var liveContainer = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
+                        if (liveContainer == null) return null;
 
-                        JArray itemsArray = liveFence.Items as JArray ?? new JArray();
+                        JArray itemsArray = liveContainer.Items as JArray ?? new JArray();
 
                         // Handle Tabs
-                        bool tabsEnabled = liveFence.TabsEnabled?.ToString().ToLower() == "true";
+                        bool tabsEnabled = liveContainer.TabsEnabled?.ToString().ToLower() == "true";
                         if (tabsEnabled)
                         {
-                            var tabs = liveFence.Tabs as JArray ?? new JArray();
-                            int currentTabIndex = Convert.ToInt32(liveFence.CurrentTab?.ToString() ?? "0");
+                            var tabs = liveContainer.Tabs as JArray ?? new JArray();
+                            int currentTabIndex = Convert.ToInt32(liveContainer.CurrentTab?.ToString() ?? "0");
                             if (currentTabIndex >= 0 && currentTabIndex < tabs.Count)
                             {
                                 var activeTab = tabs[currentTabIndex] as JObject;
@@ -1347,7 +1347,7 @@ namespace Desktop_Fences
                                 if (miAlwaysRunAsDifferentUser != null) miAlwaysRunAsDifferentUser.IsChecked = false;
                             }
 
-                            FenceDataManager.SaveFenceData();
+                            ContainerDataManager.SaveContainerData();
                             LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Toggled AlwaysRunAsAdmin to {newVal} for {filePath}");
                         }
                     };
@@ -1377,8 +1377,8 @@ namespace Desktop_Fences
                 }
 
                 // --- EVENT HANDLERS ---
-                miEdit.Click += (s, e) => EditItem(item, fence, window);
-                miMove.Click += (s, e) => ItemMoveDialog.ShowMoveDialog(item, fence, window.Dispatcher);
+                miEdit.Click += (s, e) => EditItem(item, container, window);
+                miMove.Click += (s, e) => ItemMoveDialog.ShowMoveDialog(item, container, window.Dispatcher);
 
                 miRemove.Click += (s, e) =>
                 {
@@ -1388,19 +1388,19 @@ namespace Desktop_Fences
                         var liveItem = GetLiveItem(); // Returns the JObject from the array
 
                         // We need the Array itself to remove the item
-                        string fenceId = fence.Id?.ToString();
-                        var liveFence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
+                        string containerId = container.Id?.ToString();
+                        var liveContainer = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
 
-                        if (liveFence != null && liveItem != null)
+                        if (liveContainer != null && liveItem != null)
                         {
                             // Logic to locate the array containing liveItem
-                            JArray targetArray = liveFence.Items as JArray; // Default to main
+                            JArray targetArray = liveContainer.Items as JArray; // Default to main
 
-                            bool tabsEnabled = liveFence.TabsEnabled?.ToString().ToLower() == "true";
+                            bool tabsEnabled = liveContainer.TabsEnabled?.ToString().ToLower() == "true";
                             if (tabsEnabled)
                             {
-                                var tabs = liveFence.Tabs as JArray;
-                                int tabIdx = Convert.ToInt32(liveFence.CurrentTab?.ToString() ?? "0");
+                                var tabs = liveContainer.Tabs as JArray;
+                                int tabIdx = Convert.ToInt32(liveContainer.CurrentTab?.ToString() ?? "0");
                                 if (tabs != null && tabIdx < tabs.Count)
                                 {
                                     targetArray = tabs[tabIdx]["Items"] as JArray;
@@ -1410,7 +1410,7 @@ namespace Desktop_Fences
                             if (targetArray != null)
                             {
                                 targetArray.Remove(liveItem);
-                                FenceDataManager.SaveFenceData();
+                                ContainerDataManager.SaveContainerData();
                                 var wp = VisualTreeHelper.GetParent(sp) as WrapPanel;
                                 if (wp != null) wp.Children.Remove(sp);
                             }
@@ -1422,7 +1422,7 @@ namespace Desktop_Fences
                     }
                 };
 
-                miCopyItem.Click += (s, e) => CopyPasteManager.CopyItem(item, fence);
+                miCopyItem.Click += (s, e) => CopyPasteManager.CopyItem(item, container);
 
                 miFindTarget.Click += (s, e) => {
                     string target = Utility.GetShortcutTarget(filePath);
@@ -1501,7 +1501,7 @@ namespace Desktop_Fences
                                     liveItem["AlwaysRunAsAdmin"] = false;
                                     miAlwaysAdmin.IsChecked = false;
                                 }
-                                FenceDataManager.SaveFenceData();
+                                ContainerDataManager.SaveContainerData();
                             }
                         };
 
@@ -1537,24 +1537,24 @@ namespace Desktop_Fences
 
 
 
-        // Updates all heart ContextMenus across all fences using stored TextBlock references
+        // Updates all heart ContextMenus across all containers using stored TextBlock references
         public static void UpdateAllHeartContextMenus()
         {
             System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
                 foreach (var entry in _heartTextBlocks)
                 {
-                    var fence = entry.Key;
+                    var container = entry.Key;
                     var heart = entry.Value;
                     if (heart != null)
                     {
-                        // heart.ContextMenu = BuildHeartContextMenu(fence);
-                        heart.ContextMenu = BuildHeartContextMenu(fence, false); // Normal menu by default
-                        LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceUpdate, $"Updated heart ContextMenu for fence '{fence.Title}'");
+                        // heart.ContextMenu = BuildHeartContextMenu(container);
+                        heart.ContextMenu = BuildHeartContextMenu(container, false); // Normal menu by default
+                        LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerUpdate, $"Updated heart ContextMenu for container '{container.Title}'");
                     }
                     else
                     {
-                        LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceUpdate, $"Skipped update for fence '{fence.Title}': heart TextBlock is null");
+                        LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerUpdate, $"Skipped update for container '{container.Title}': heart TextBlock is null");
                     }
                 }
             });
@@ -1589,32 +1589,32 @@ namespace Desktop_Fences
 
 
         /// <summary>
-        /// Exports all icons from a Data fence to the desktop
+        /// Exports all icons from a Data container to the desktop
         /// </summary>
-        /// <param name="fence">The fence to export icons from</param>
+        /// <param name="container">The container to export icons from</param>
         /// <param name="showConfirmation">If true, shows a message box on completion. False for silent automation.</param>
-        private static void ExportAllIconsToDesktop(dynamic fence, bool showConfirmation = true)
+        private static void ExportAllIconsToDesktop(dynamic container, bool showConfirmation = true)
         {
             try
             {
-                // Verify this is a Data fence
-                if (fence.ItemsType?.ToString() != "Data")
+                // Verify this is a Data container
+                if (container.ItemsType?.ToString() != "Data")
                 {
                     LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.UI,
-                        $"Export all icons attempted on non-Data fence: {fence.ItemsType}");
+                        $"Export all icons attempted on non-Data container: {container.ItemsType}");
                     return;
                 }
 
                 int exportedCount = 0;
                 int totalCount = 0;
 
-                // Check if fence has tabs
-                bool hasTabsEnabled = fence.TabsEnabled?.ToString().ToLower() == "true";
+                // Check if container has tabs
+                bool hasTabsEnabled = container.TabsEnabled?.ToString().ToLower() == "true";
 
-                if (hasTabsEnabled && fence.Tabs != null)
+                if (hasTabsEnabled && container.Tabs != null)
                 {
-                    // Handle tabbed fence - export from all tabs
-                    var tabs = fence.Tabs as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray();
+                    // Handle tabbed container - export from all tabs
+                    var tabs = container.Tabs as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray();
 
                     foreach (var tab in tabs)
                     {
@@ -1639,8 +1639,8 @@ namespace Desktop_Fences
                 }
                 else
                 {
-                    // Handle regular fence (no tabs)
-                    var items = fence.Items as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray();
+                    // Handle regular container (no tabs)
+                    var items = container.Items as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray();
 
                     foreach (var item in items)
                     {
@@ -1683,7 +1683,7 @@ namespace Desktop_Fences
                 delayTimer.Start();
 
                 LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
-                    $"Export all icons completed for fence '{fence.Title}': {exportedCount}/{totalCount} successful");
+                    $"Export all icons completed for container '{container.Title}': {exportedCount}/{totalCount} successful");
             }
             catch (Exception ex)
             {
@@ -1711,7 +1711,7 @@ namespace Desktop_Fences
                         byte[] bytes = new byte[stream.Length];
                         stream.Read(bytes, 0, (int)stream.Length);
                         string url = System.Text.Encoding.ASCII.GetString(bytes).Trim('\0');
-                        LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation,
+                        LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation,
                             $"Extracted URL from UniformResourceLocator: {url}");
                         return url;
                     }
@@ -1726,7 +1726,7 @@ namespace Desktop_Fences
                         string[] parts = mozUrl.Split('\n');
                         if (parts.Length > 0 && !string.IsNullOrEmpty(parts[0]))
                         {
-                            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation,
+                            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation,
                                 $"Extracted URL from text/x-moz-url: {parts[0]}");
                             return parts[0].Trim();
                         }
@@ -1743,7 +1743,7 @@ namespace Desktop_Fences
                         if (match.Success)
                         {
                             string url = match.Groups[1].Value;
-                            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation,
+                            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation,
                                 $"Extracted URL from HTML: {url}");
                             return url;
                         }
@@ -1756,7 +1756,7 @@ namespace Desktop_Fences
                     string text = dataObject.GetData(DataFormats.Text) as string;
                     if (!string.IsNullOrEmpty(text) && IsValidWebUrl(text.Trim()))
                     {
-                        LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation,
+                        LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation,
                             $"Extracted URL from text: {text.Trim()}");
                         return text.Trim();
                     }
@@ -1766,7 +1766,7 @@ namespace Desktop_Fences
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceCreation,
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerCreation,
                     $"Error extracting URL from drop data: {ex.Message}");
                 return null;
             }
@@ -1801,9 +1801,9 @@ namespace Desktop_Fences
 
 
         /// <summary>
-        /// Adds a URL shortcut to the fence from dropped URL
+        /// Adds a URL shortcut to the container from dropped URL
         /// </summary>
-        private static void AddUrlShortcutToFence(string url, dynamic fence, WrapPanel wrapPanel)
+        private static void AddUrlShortcutToContainer(string url, dynamic container, WrapPanel wrapPanel)
         {
             try
             {
@@ -1829,7 +1829,7 @@ namespace Desktop_Fences
                 // Create the URL shortcut file  
                 CreateWebLinkShortcut(url, shortcutPath, displayName);
 
-                // Create item data for the fence
+                // Create item data for the container
                 dynamic newItem = new System.Dynamic.ExpandoObject();
                 IDictionary<string, object> newItemDict = newItem;
                 newItemDict["Filename"] = shortcutPath;
@@ -1839,24 +1839,24 @@ namespace Desktop_Fences
                 newItemDict["DisplayName"] = displayName;
                 newItemDict["AlwaysRunAsAdmin"] = false;
 
-                // Find the fence in FenceDataManager.FenceData and update it properly
-                string fenceId = fence.Id?.ToString();
-                int fenceIndex = FenceDataManager.FenceData.FindIndex(f => f.Id?.ToString() == fenceId);
+                // Find the container in ContainerDataManager.ContainerData and update it properly
+                string containerId = container.Id?.ToString();
+                int containerIndex = ContainerDataManager.ContainerData.FindIndex(f => f.Id?.ToString() == containerId);
 
-                if (fenceIndex >= 0)
+                if (containerIndex >= 0)
                 {
-                    // Get the actual fence from FenceDataManager.FenceData
-                    dynamic actualFence = FenceDataManager.FenceData[fenceIndex];
-                    var actualItems = actualFence.Items as JArray ?? new JArray();
+                    // Get the actual container from ContainerDataManager.ContainerData
+                    dynamic actualContainer = ContainerDataManager.ContainerData[containerIndex];
+                    var actualItems = actualContainer.Items as JArray ?? new JArray();
 
                     // Handle tabs if enabled
-                    bool tabsEnabled = actualFence.TabsEnabled?.ToString().ToLower() == "true";
+                    bool tabsEnabled = actualContainer.TabsEnabled?.ToString().ToLower() == "true";
                     JArray targetList = actualItems;
 
                     if (tabsEnabled)
                     {
-                        var tabs = actualFence.Tabs as JArray ?? new JArray();
-                        int currentTab = Convert.ToInt32(actualFence.CurrentTab?.ToString() ?? "0");
+                        var tabs = actualContainer.Tabs as JArray ?? new JArray();
+                        int currentTab = Convert.ToInt32(actualContainer.CurrentTab?.ToString() ?? "0");
 
                         if (currentTab >= 0 && currentTab < tabs.Count)
                         {
@@ -1877,16 +1877,16 @@ namespace Desktop_Fences
                     // Set DisplayOrder
                     newItemDict["DisplayOrder"] = targetList.Count - 1;
 
-                    // Save fence data BEFORE creating the icon
-                    FenceDataManager.SaveFenceData();
+                    // Save container data BEFORE creating the icon
+                    ContainerDataManager.SaveContainerData();
 
-                    // Add icon to UI using FenceManager.AddIcon for proper sizing
-                    FenceManager.AddIcon(newItem, wrapPanel);
+                    // Add icon to UI using ContainerManager.AddIcon for proper sizing
+                    ContainerManager.AddIcon(newItem, wrapPanel);
                 }
                 else
                 {
-                    LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceCreation,
-                        $"Could not find fence with ID {fenceId} in FenceDataManager.FenceData");
+                    LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerCreation,
+                        $"Could not find container with ID {containerId} in ContainerDataManager.ContainerData");
                 }
 
                 // Add event handlers to the new icon
@@ -1900,7 +1900,7 @@ namespace Desktop_Fences
                     NonActivatingWindow parentWindow = FindVisualParent<NonActivatingWindow>(wrapPanel);
                     if (parentWindow != null)
                     {
-                        AttachIconContextMenu(sp, newItem, fence, parentWindow);
+                        AttachIconContextMenu(sp, newItem, container, parentWindow);
                     }
                     else
                     {
@@ -1909,13 +1909,13 @@ namespace Desktop_Fences
                     }
                 }
 
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceCreation,
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerCreation,
                     $"Successfully added URL shortcut: {displayName} -> {url}");
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceCreation,
-                    $"Error adding URL shortcut to fence: {ex.Message}");
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerCreation,
+                    $"Error adding URL shortcut to container: {ex.Message}");
             }
         }
 
@@ -1926,11 +1926,11 @@ namespace Desktop_Fences
         /// <summary>
         /// Gets the next display order for new items
         /// </summary>
-        private static int GetNextDisplayOrder(dynamic fence)
+        private static int GetNextDisplayOrder(dynamic container)
         {
             try
             {
-                var items = fence.Items as JArray ?? new JArray();
+                var items = container.Items as JArray ?? new JArray();
                 int maxOrder = items.Count > 0 ? items.Max(i => i["DisplayOrder"]?.Value<int>() ?? 0) : -1;
                 return maxOrder + 1;
             }
@@ -1955,16 +1955,16 @@ namespace Desktop_Fences
                         NonActivatingWindow parentWin = FindVisualParent<NonActivatingWindow>(sp);
                         if (parentWin != null)
                         {
-                            string fenceId = parentWin.Tag?.ToString();
-                            var fence = GetFenceData().FirstOrDefault(f => f.Id?.ToString() == fenceId);
-                            if (fence != null)
+                            string containerId = parentWin.Tag?.ToString();
+                            var container = GetContainerData().FirstOrDefault(f => f.Id?.ToString() == containerId);
+                            if (container != null)
                             {
-                                var items = fence.Items as JArray;
+                                var items = container.Items as JArray;
                                 var itemToRemove = items?.FirstOrDefault(i => i["Filename"]?.ToString() == filePath);
                                 if (itemToRemove != null)
                                 {
                                     items.Remove(itemToRemove);
-                                    FenceDataManager.SaveFenceData();
+                                    ContainerDataManager.SaveContainerData();
 
                                     WrapPanel wrapPanel = FindVisualParent<WrapPanel>(sp);
                                     wrapPanel?.Children.Remove(sp);
@@ -1974,7 +1974,7 @@ namespace Desktop_Fences
                     }
                     catch (Exception ex)
                     {
-                        LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceCreation,
+                        LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerCreation,
                             $"Error removing URL shortcut: {ex.Message}");
                     }
                 };
@@ -1997,18 +1997,18 @@ namespace Desktop_Fences
                         NonActivatingWindow parentWindow = FindVisualParent<NonActivatingWindow>(sp);
                         if (parentWindow != null)
                         {
-                            string fenceId = parentWindow.Tag?.ToString();
-                            if (!string.IsNullOrEmpty(fenceId))
+                            string containerId = parentWindow.Tag?.ToString();
+                            if (!string.IsNullOrEmpty(containerId))
                             {
-                                var currentFence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
-                                if (currentFence != null && currentFence.ItemsType?.ToString() == "Data")
+                                var currentContainer = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
+                                if (currentContainer != null && currentContainer.ItemsType?.ToString() == "Data")
                                 {
-                                    var items = currentFence.Items as JArray ?? new JArray();
-                                    bool tabsEnabled = currentFence.TabsEnabled?.ToString().ToLower() == "true";
+                                    var items = currentContainer.Items as JArray ?? new JArray();
+                                    bool tabsEnabled = currentContainer.TabsEnabled?.ToString().ToLower() == "true";
                                     if (tabsEnabled)
                                     {
-                                        var tabs = currentFence.Tabs as JArray ?? new JArray();
-                                        int currentTabIndex = Convert.ToInt32(currentFence.CurrentTab?.ToString() ?? "0");
+                                        var tabs = currentContainer.Tabs as JArray ?? new JArray();
+                                        int currentTabIndex = Convert.ToInt32(currentContainer.CurrentTab?.ToString() ?? "0");
                                         if (currentTabIndex >= 0 && currentTabIndex < tabs.Count)
                                         {
                                             var currentTab = tabs[currentTabIndex] as JObject;
@@ -2025,7 +2025,7 @@ namespace Desktop_Fences
                                         bool newValue = !currentValue;
                                         matchingItem["AlwaysRunAsAdmin"] = newValue;
                                         miAlwaysAdmin.IsChecked = newValue;
-                                        FenceDataManager.SaveFenceData();
+                                        ContainerDataManager.SaveContainerData();
                                         LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Toggled AlwaysRunAsAdmin to {newValue} for item: {filePath}");
                                     }
                                 }
@@ -2044,18 +2044,18 @@ namespace Desktop_Fences
                         NonActivatingWindow parentWindow = FindVisualParent<NonActivatingWindow>(sp);
                         if (parentWindow != null)
                         {
-                            string fenceId = parentWindow.Tag?.ToString();
-                            if (!string.IsNullOrEmpty(fenceId))
+                            string containerId = parentWindow.Tag?.ToString();
+                            if (!string.IsNullOrEmpty(containerId))
                             {
-                                var currentFence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
-                                if (currentFence != null)
+                                var currentContainer = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
+                                if (currentContainer != null)
                                 {
-                                    var items = currentFence.Items as JArray ?? new JArray();
-                                    bool tabsEnabled = currentFence.TabsEnabled?.ToString().ToLower() == "true";
+                                    var items = currentContainer.Items as JArray ?? new JArray();
+                                    bool tabsEnabled = currentContainer.TabsEnabled?.ToString().ToLower() == "true";
                                     if (tabsEnabled)
                                     {
-                                        var tabs = currentFence.Tabs as JArray ?? new JArray();
-                                        int currentTabIndex = Convert.ToInt32(currentFence.CurrentTab?.ToString() ?? "0");
+                                        var tabs = currentContainer.Tabs as JArray ?? new JArray();
+                                        int currentTabIndex = Convert.ToInt32(currentContainer.CurrentTab?.ToString() ?? "0");
                                         if (currentTabIndex >= 0 && currentTabIndex < tabs.Count)
                                         {
                                             var currentTab = tabs[currentTabIndex] as JObject;
@@ -2086,22 +2086,22 @@ namespace Desktop_Fences
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceCreation,
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerCreation,
                     $"Error creating context menu: {ex.Message}");
             }
         }
              
-        public static List<dynamic> GetFenceData()
+        public static List<dynamic> GetContainerData()
         {
-            return FenceDataManager.FenceData;
+            return ContainerDataManager.ContainerData;
         }
 
                 /// <summary>
-        /// Public access to portal fences dictionary for CustomizeFenceForm
+        /// Public access to portal containers dictionary for CustomizeContainerForm
         /// </summary>
-        public static Dictionary<dynamic, PortalFenceManager> GetPortalFences()
+        public static Dictionary<dynamic, PortalContainerManager> GetPortalContainers()
         {
-            return _portalFences;
+            return _portalContainers;
         }
 
 
@@ -2109,10 +2109,10 @@ namespace Desktop_Fences
 
  
         /// <summary>
-        /// Updates the filter history for a fence using LRU (Least Recently Used) logic.
+        /// Updates the filter history for a container using LRU (Least Recently Used) logic.
         /// Max 5 items. Duplicates move to top.
         /// </summary>
-        private static void UpdateFilterHistory(dynamic fence, string newFilter)
+        private static void UpdateFilterHistory(dynamic container, string newFilter)
         {
             if (string.IsNullOrWhiteSpace(newFilter)) return;
 
@@ -2122,25 +2122,25 @@ namespace Desktop_Fences
             try
             {
                 // 1. GET FRESH DATA (Fixes the "Replace" bug)
-                // We cannot rely on the 'fence' parameter because it might be stale 
+                // We cannot rely on the 'container' parameter because it might be stale 
                 // (referencing the state from when the window opened).
-                string fenceId = fence.Id?.ToString();
-                if (string.IsNullOrEmpty(fenceId)) return;
+                string containerId = container.Id?.ToString();
+                if (string.IsNullOrEmpty(containerId)) return;
 
-                int index = FenceDataManager.FenceData.FindIndex(f => f.Id?.ToString() == fenceId);
+                int index = ContainerDataManager.ContainerData.FindIndex(f => f.Id?.ToString() == containerId);
                 if (index < 0) return;
 
                 // Grab the LIVE object from the master list
-                dynamic liveFence = FenceDataManager.FenceData[index];
+                dynamic liveContainer = ContainerDataManager.ContainerData[index];
 
                 // 2. Convert to Dictionary for modification
-                IDictionary<string, object> fenceDict = liveFence is IDictionary<string, object> dict
+                IDictionary<string, object> containerDict = liveContainer is IDictionary<string, object> dict
                     ? dict
-                    : ((JObject)liveFence).ToObject<IDictionary<string, object>>();
+                    : ((JObject)liveContainer).ToObject<IDictionary<string, object>>();
 
                 // 3. Get existing history
                 JArray history;
-                if (fenceDict.ContainsKey("FilterHistory") && fenceDict["FilterHistory"] is JArray existingArr)
+                if (containerDict.ContainsKey("FilterHistory") && containerDict["FilterHistory"] is JArray existingArr)
                 {
                     history = existingArr;
                 }
@@ -2169,12 +2169,12 @@ namespace Desktop_Fences
                 }
 
                 // 5. Save back to Master List
-                fenceDict["FilterHistory"] = history;
-                FenceDataManager.FenceData[index] = JObject.FromObject(fenceDict);
-                FenceDataManager.SaveFenceData();
+                containerDict["FilterHistory"] = history;
+                ContainerDataManager.ContainerData[index] = JObject.FromObject(containerDict);
+                ContainerDataManager.SaveContainerData();
 
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.Settings,
-                    $"Updated Filter History for {fenceId}: {string.Join(", ", history)}");
+                    $"Updated Filter History for {containerId}: {string.Join(", ", history)}");
             }
             catch (Exception ex)
             {
@@ -2184,7 +2184,7 @@ namespace Desktop_Fences
 
 
         /// <summary>
-        /// Resets visual customizations for all fences to default values.
+        /// Resets visual customizations for all containers to default values.
         /// Preserves position, size, content, and system state (Locked/Rolled).
         /// </summary>
         public static void ResetAllCustomizations()
@@ -2195,56 +2195,56 @@ namespace Desktop_Fences
 
                 // FIX: Use .ToList() to create a snapshot copy for iteration.
                 // This prevents "Collection was modified" errors when we update the real list inside the loop.
-                var fencesSnapshot = FenceDataManager.FenceData.ToList();
+                var containersSnapshot = ContainerDataManager.ContainerData.ToList();
 
-                foreach (dynamic fence in fencesSnapshot)
+                foreach (dynamic container in containersSnapshot)
                 {
                     // Convert to JObject/Dictionary for safe property access
-                    IDictionary<string, object> fenceDict = fence is IDictionary<string, object> dict
+                    IDictionary<string, object> containerDict = container is IDictionary<string, object> dict
                         ? dict
-                        : ((JObject)fence).ToObject<IDictionary<string, object>>();
+                        : ((JObject)container).ToObject<IDictionary<string, object>>();
 
                     // --- RESET VISUALS TO DEFAULTS ---
 
-                    // Fence Appearance
-                    fenceDict["CustomColor"] = null;
-                    fenceDict["CustomLaunchEffect"] = null;
-                    fenceDict["FenceBorderColor"] = null;
-                    fenceDict["FenceBorderThickness"] = 2; // Default thickness
+                    // Container Appearance
+                    containerDict["CustomColor"] = null;
+                    containerDict["CustomLaunchEffect"] = null;
+                    containerDict["ContainerBorderColor"] = null;
+                    containerDict["ContainerBorderThickness"] = 2; // Default thickness
 
                     // Title Appearance
-                    fenceDict["TitleTextColor"] = null;
-                    fenceDict["TitleTextSize"] = "Medium";
-                    fenceDict["BoldTitleText"] = "false";
+                    containerDict["TitleTextColor"] = null;
+                    containerDict["TitleTextSize"] = "Medium";
+                    containerDict["BoldTitleText"] = "false";
 
                     // Icon Appearance
-                    fenceDict["TextColor"] = null;
-                    fenceDict["DisableTextShadow"] = "false";
-                    fenceDict["IconSize"] = "Medium";
-                    fenceDict["IconSpacing"] = 5;
-                    fenceDict["GrayscaleIcons"] = "false";
+                    containerDict["TextColor"] = null;
+                    containerDict["DisableTextShadow"] = "false";
+                    containerDict["IconSize"] = "Medium";
+                    containerDict["IconSpacing"] = 5;
+                    containerDict["GrayscaleIcons"] = "false";
 
                     // Update the object in the REAL list
-                    int index = FenceDataManager.FenceData.IndexOf(fence);
+                    int index = ContainerDataManager.ContainerData.IndexOf(container);
                     if (index >= 0)
                     {
-                        FenceDataManager.FenceData[index] = JObject.FromObject(fenceDict);
+                        ContainerDataManager.ContainerData[index] = JObject.FromObject(containerDict);
                         modificationsMade = true;
                     }
                 }
 
                 if (modificationsMade)
                 {
-                    FenceDataManager.SaveFenceData();
+                    ContainerDataManager.SaveContainerData();
 
                     // Reload to reflect changes immediately
-                    ReloadFences();
+                    ReloadContainers();
 
                     LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.Settings,
-                        "All fence customizations have been reset to defaults.");
+                        "All container customizations have been reset to defaults.");
 
                     MessageBoxesManager.ShowOKOnlyMessageBoxForm(
-                        "All visual customizations have been reset.\nYour icons and fence positions were preserved.",
+                        "All visual customizations have been reset.\nYour icons and container positions were preserved.",
                         "Reset Complete");
                 }
             }
@@ -2258,83 +2258,83 @@ namespace Desktop_Fences
 
 
 
-        // Update fence property, save to JSON, and apply runtime changes
-        public static void UpdateFenceProperty(dynamic fence, string propertyName, string value, string logMessage)
+        // Update container property, save to JSON, and apply runtime changes
+        public static void UpdateContainerProperty(dynamic container, string propertyName, string value, string logMessage)
         {
             try
             {
 
 
-                string fenceId = fence.Id?.ToString();
-                if (string.IsNullOrEmpty(fenceId))
+                string containerId = container.Id?.ToString();
+                if (string.IsNullOrEmpty(containerId))
                 {
-                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceUpdate, $"Fence '{fence.Title}' has no Id");
+                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerUpdate, $"Container '{container.Title}' has no Id");
                     return;
                 }
 
-                // Skip updates if fence is in transition (except for IsRolled and UnrolledHeight which are rollup-specific)
-                if (_fencesInTransition.Contains(fenceId) && propertyName != "IsRolled" && propertyName != "UnrolledHeight")
+                // Skip updates if container is in transition (except for IsRolled and UnrolledHeight which are rollup-specific)
+                if (_containersInTransition.Contains(containerId) && propertyName != "IsRolled" && propertyName != "UnrolledHeight")
                 {
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate, $"Skipping {propertyName} update for fence '{fenceId}' - in transition");
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate, $"Skipping {propertyName} update for container '{containerId}' - in transition");
                     return;
                 }
 
                 // Find by GUID instead of title or reference
-                int index = FenceDataManager.FenceData.FindIndex(f => f.Id?.ToString() == fenceId);
+                int index = ContainerDataManager.ContainerData.FindIndex(f => f.Id?.ToString() == containerId);
                 if (index >= 0)
                 {
-                    // Get the fence from FenceDataManager.FenceData
-                    dynamic actualFence = FenceDataManager.FenceData[index];
+                    // Get the container from ContainerDataManager.ContainerData
+                    dynamic actualContainer = ContainerDataManager.ContainerData[index];
 
 
 
 
 
                     // Convert to dictionary safely
-                    IDictionary<string, object> fenceDict = actualFence as IDictionary<string, object> ?? ((JObject)actualFence).ToObject<IDictionary<string, object>>();
+                    IDictionary<string, object> containerDict = actualContainer as IDictionary<string, object> ?? ((JObject)actualContainer).ToObject<IDictionary<string, object>>();
 
                     // Handle IsHidden specifically to store as string to match JSON format
                     if (propertyName == "IsHidden")
                     {
                         // Convert boolean-like string input to string "true" or "false"
                         bool parsedValue = value?.ToLower() == "true";
-                        fenceDict[propertyName] = parsedValue.ToString().ToLower(); // Store as "true" or "false"
+                        containerDict[propertyName] = parsedValue.ToString().ToLower(); // Store as "true" or "false"
                     }
                     else
                     {
                         // Update other properties as provided
-                        fenceDict[propertyName] = value;
+                        containerDict[propertyName] = value;
                     }
 
-                    // Update the fence in FenceDataManager.FenceData
-                    FenceDataManager.FenceData[index] = JObject.FromObject(fenceDict);
-                    FenceDataManager.SaveFenceData();
-                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceUpdate, $"{logMessage} for fence '{fence.Title}'");
+                    // Update the container in ContainerDataManager.ContainerData
+                    ContainerDataManager.ContainerData[index] = JObject.FromObject(containerDict);
+                    ContainerDataManager.SaveContainerData();
+                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerUpdate, $"{logMessage} for container '{container.Title}'");
 
                     // Find the window to apply runtime changes
                     var windows = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>();
-                    //var win = windows.FirstOrDefault(w => w.Title == fence.Title.ToString());
-                    var win = windows.FirstOrDefault(w => w.Tag?.ToString() == fenceId);
+                    //var win = windows.FirstOrDefault(w => w.Title == container.Title.ToString());
+                    var win = windows.FirstOrDefault(w => w.Tag?.ToString() == containerId);
                     if (win != null)
                     {
                         // Apply runtime changes
                         if (propertyName == "CustomColor")
                         {
-                            Utility.ApplyTintAndColorToFence(win, string.IsNullOrEmpty(value) ? _options.SelectedColor : value);
-                            LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceUpdate, $"Applied color '{value ?? "Default"}' to fence '{fence.Title}' at runtime");
+                            Utility.ApplyTintAndColorToContainer(win, string.IsNullOrEmpty(value) ? _options.SelectedColor : value);
+                            LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerUpdate, $"Applied color '{value ?? "Default"}' to container '{container.Title}' at runtime");
                         }
                         else if (propertyName == "IsHidden")
                         {
                             // Update visibility based on IsHidden
                             bool isHidden = value?.ToLower() == "true";
                             win.Visibility = isHidden ? Visibility.Hidden : Visibility.Visible;
-                            LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceUpdate, $"Set visibility to {(isHidden ? "Hidden" : "Visible")} for fence '{fence.Title}'");
+                            LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerUpdate, $"Set visibility to {(isHidden ? "Hidden" : "Visible")} for container '{container.Title}'");
                         }
                         //step 7
                         else if (propertyName == "IsRolled")
                         {
                             bool isRolled = value?.ToLower() == "true";
-                            double targetHeight = isRolled ? SettingsManager.TitleBarHeight : Convert.ToDouble(actualFence.UnrolledHeight?.ToString() ?? "130"); //rolled height
+                            double targetHeight = isRolled ? SettingsManager.TitleBarHeight : Convert.ToDouble(actualContainer.UnrolledHeight?.ToString() ?? "130"); //rolled height
                             var heightAnimation = new DoubleAnimation(win.Height, targetHeight, TimeSpan.FromSeconds(0.3))
                             {
                                 EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut }
@@ -2354,16 +2354,16 @@ namespace Desktop_Fences
                                         if (wpcont != null)
                                         {
                                             wpcont.Visibility = isRolled ? Visibility.Collapsed : Visibility.Visible;
-                                            LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceUpdate, $"Set WrapPanel visibility to {(isRolled ? "Collapsed" : "Visible")} for fence '{actualFence.Title}'");
+                                            LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerUpdate, $"Set WrapPanel visibility to {(isRolled ? "Collapsed" : "Visible")} for container '{actualContainer.Title}'");
                                         }
                                     }
                                 }
                             }
-                            LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceUpdate, $"Set height to {targetHeight} for fence '{actualFence.Title}' (IsRolled={isRolled})");
+                            LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerUpdate, $"Set height to {targetHeight} for container '{actualContainer.Title}' (IsRolled={isRolled})");
                         }
                         else if (propertyName == "UnrolledHeight")
                         {
-                            LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceUpdate, $"Set UnrolledHeight to {value} for fence '{actualFence.Title}'");
+                            LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerUpdate, $"Set UnrolledHeight to {value} for container '{actualContainer.Title}'");
                         }
 
 
@@ -2389,43 +2389,43 @@ namespace Desktop_Fences
                     }
                     else
                     {
-                        LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.FenceUpdate, $"Failed to find window for fence '{fence.Title}' to apply {propertyName}");
+                        LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.ContainerUpdate, $"Failed to find window for container '{container.Title}' to apply {propertyName}");
                     }
                 }
                 else
                 {
-                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.FenceUpdate, $"Failed to find fence '{fence.Title}' in FenceDataManager.FenceData for {propertyName} update");
+                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.ContainerUpdate, $"Failed to find container '{container.Title}' in ContainerDataManager.ContainerData for {propertyName} update");
                 }
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceUpdate, $"Error updating {propertyName} for fence '{fence.Title}': {ex.Message}");
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerUpdate, $"Error updating {propertyName} for container '{container.Title}': {ex.Message}");
             }
         }
 
 
 
         // TABS FEATURE: Toggle tabs with strict Data Migration and Effect Cleanup
-        private static void ToggleFenceTabs(dynamic fence)
+        private static void ToggleContainerTabs(dynamic container)
         {
             try
             {
                 LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
-                    $"Toggling tabs for fence '{fence.Title}'");
+                    $"Toggling tabs for container '{container.Title}'");
 
-                string fenceId = fence.Id?.ToString();
-                int fenceIndex = FenceDataManager.FenceData.FindIndex(f => f.Id?.ToString() == fenceId);
-                if (fenceIndex < 0) return;
+                string containerId = container.Id?.ToString();
+                int containerIndex = ContainerDataManager.ContainerData.FindIndex(f => f.Id?.ToString() == containerId);
+                if (containerIndex < 0) return;
 
-                dynamic liveFence = FenceDataManager.FenceData[fenceIndex];
-                IDictionary<string, object> fenceDict = liveFence is IDictionary<string, object> dict
-                    ? dict : ((JObject)liveFence).ToObject<IDictionary<string, object>>();
+                dynamic liveContainer = ContainerDataManager.ContainerData[containerIndex];
+                IDictionary<string, object> containerDict = liveContainer is IDictionary<string, object> dict
+                    ? dict : ((JObject)liveContainer).ToObject<IDictionary<string, object>>();
 
-                bool currentTabsEnabled = fenceDict.ContainsKey("TabsEnabled") && fenceDict["TabsEnabled"]?.ToString().ToLower() == "true";
+                bool currentTabsEnabled = containerDict.ContainsKey("TabsEnabled") && containerDict["TabsEnabled"]?.ToString().ToLower() == "true";
                 bool newTabsEnabled = !currentTabsEnabled;
 
-                var mainItems = fenceDict["Items"] as JArray ?? new JArray();
-                var tabs = fenceDict["Tabs"] as JArray ?? new JArray();
+                var mainItems = containerDict["Items"] as JArray ?? new JArray();
+                var tabs = containerDict["Tabs"] as JArray ?? new JArray();
 
                 // 1. Data Migration Logic
                 if (newTabsEnabled)
@@ -2435,15 +2435,15 @@ namespace Desktop_Fences
                     {
                         // Create first tab with Herb Naming
                         dynamic newTab = new JObject();
-                        string herbName = FenceUtilities.GenerateRandomHerbName();
+                        string herbName = ContainerUtilities.GenerateRandomHerbName();
                         newTab.TabName = $"0. {herbName}";
                         newTab.Items = mainItems;
                         tabs.Add(newTab);
-                        fenceDict["CurrentTab"] = 0;
+                        containerDict["CurrentTab"] = 0;
                     }
                     else
                     {
-                        int targetIdx = Convert.ToInt32(fenceDict["CurrentTab"]?.ToString() ?? "0");
+                        int targetIdx = Convert.ToInt32(containerDict["CurrentTab"]?.ToString() ?? "0");
                         if (targetIdx < 0 || targetIdx >= tabs.Count) targetIdx = 0;
 
                         var targetTab = tabs[targetIdx] as JObject;
@@ -2451,16 +2451,16 @@ namespace Desktop_Fences
 
                         foreach (var item in mainItems) targetItems.Add(item);
                         targetTab["Items"] = targetItems;
-                        fenceDict["CurrentTab"] = targetIdx;
+                        containerDict["CurrentTab"] = targetIdx;
                     }
                     // Clear main items after moving them to tab
-                    fenceDict["Items"] = new JArray();
-                    fenceDict["Tabs"] = tabs;
+                    containerDict["Items"] = new JArray();
+                    containerDict["Tabs"] = tabs;
                 }
                 else
                 {
                     // DISABLING TABS: Move Active Tab -> Main
-                    int currentTabIdx = Convert.ToInt32(fenceDict["CurrentTab"]?.ToString() ?? "0");
+                    int currentTabIdx = Convert.ToInt32(containerDict["CurrentTab"]?.ToString() ?? "0");
                     if (tabs.Count > 0 && currentTabIdx < tabs.Count && currentTabIdx >= 0)
                     {
                         var activeTab = tabs[currentTabIdx] as JObject;
@@ -2476,49 +2476,49 @@ namespace Desktop_Fences
                             activeTab["Items"] = new JArray();
                         }
                     }
-                    fenceDict["Items"] = mainItems;
+                    containerDict["Items"] = mainItems;
                 }
 
                 // 2. Save Updates
-                fenceDict["TabsEnabled"] = newTabsEnabled.ToString().ToLower();
+                containerDict["TabsEnabled"] = newTabsEnabled.ToString().ToLower();
 
                 var windows = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>();
-                var currentWindow = windows.FirstOrDefault(w => w.Tag?.ToString() == fenceId);
+                var currentWindow = windows.FirstOrDefault(w => w.Tag?.ToString() == containerId);
                 if (currentWindow != null)
                 {
-                    fenceDict["X"] = currentWindow.Left;
-                    fenceDict["Y"] = currentWindow.Top;
-                    fenceDict["Width"] = currentWindow.Width;
-                    fenceDict["Height"] = currentWindow.Height;
+                    containerDict["X"] = currentWindow.Left;
+                    containerDict["Y"] = currentWindow.Top;
+                    containerDict["Width"] = currentWindow.Width;
+                    containerDict["Height"] = currentWindow.Height;
                 }
 
-                FenceDataManager.FenceData[fenceIndex] = JObject.FromObject(fenceDict);
-                FenceDataManager.SaveFenceData();
+                ContainerDataManager.ContainerData[containerIndex] = JObject.FromObject(containerDict);
+                ContainerDataManager.SaveContainerData();
 
                 // 3. Reload Window & CLEANUP EFFECTS
                 if (currentWindow != null)
                 {
                     // Cleanup Legendary Effects
-                    string currentTitle = fence.Title?.ToString() ?? "";
+                    string currentTitle = container.Title?.ToString() ?? "";
                     if (false)
                     {
-                        InterCore.ProcessTitleChange(liveFence, "RESET_EFFECT_TEMP", "");
+                        InterCore.ProcessTitleChange(liveContainer, "RESET_EFFECT_TEMP", "");
                     }
 
-                    _heartTextBlocks.Remove(fence);
-                    if (_portalFences.ContainsKey(fence))
+                    _heartTextBlocks.Remove(container);
+                    if (_portalContainers.ContainsKey(container))
                     {
-                        _portalFences[fence].Dispose();
-                        _portalFences.Remove(fence);
+                        _portalContainers[container].Dispose();
+                        _portalContainers.Remove(container);
                     }
                     currentWindow.Close();
                 }
 
-                var updatedFence = FenceDataManager.FenceData[fenceIndex];
+                var updatedContainer = ContainerDataManager.ContainerData[containerIndex];
 
                 System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    CreateFence(updatedFence, new TargetChecker(1000));
+                    CreateContainer(updatedContainer, new TargetChecker(1000));
                 }));
             }
             catch (Exception ex)
@@ -2532,11 +2532,11 @@ namespace Desktop_Fences
 
         // TABS FEATURE: Dynamically refresh the tab strip UI (Ghost Arrows)
         // v2.5. 4.181: Adds smart left/right chevrons that appear only when tabs are hidden.
-        public static void RefreshTabStripUI(NonActivatingWindow fenceWindow, dynamic fence)
+        public static void RefreshTabStripUI(NonActivatingWindow containerWindow, dynamic container)
         {
             try
             {
-                var border = fenceWindow.Content as Border;
+                var border = containerWindow.Content as Border;
                 var dockPanel = border?.Child as DockPanel;
                 if (dockPanel == null) return;
 
@@ -2558,12 +2558,12 @@ namespace Desktop_Fences
                 foreach (var oldStrip in existingStrips) dockPanel.Children.Remove(oldStrip);
 
                 // 3. CHECK ENABLED
-                bool tabsEnabled = fence.TabsEnabled?.ToString().ToLower() == "true";
+                bool tabsEnabled = container.TabsEnabled?.ToString().ToLower() == "true";
                 if (!tabsEnabled) return;
 
                 // 4. COLOR ANALYSIS (For Arrow Visibility)
-                string fenceColorName = fence.CustomColor?.ToString() ?? SettingsManager.SelectedColor;
-                string effectiveColor = !string.IsNullOrEmpty(fenceColorName) ? fenceColorName : SettingsManager.SelectedColor;
+                string containerColorName = container.CustomColor?.ToString() ?? SettingsManager.SelectedColor;
+                string effectiveColor = !string.IsNullOrEmpty(containerColorName) ? containerColorName : SettingsManager.SelectedColor;
 
                 System.Windows.Media.Color baseColor = System.Windows.Media.Colors.Gray;
                 try
@@ -2670,8 +2670,8 @@ namespace Desktop_Fences
                 containerGrid.Children.Add(rightArrow); Grid.SetColumn(rightArrow, 2);
 
                 // 9. POPULATE TABS
-                var tabs = fence.Tabs as JArray ?? new JArray();
-                int currentTab = Convert.ToInt32(fence.CurrentTab?.ToString() ?? "0");
+                var tabs = container.Tabs as JArray ?? new JArray();
+                int currentTab = Convert.ToInt32(container.CurrentTab?.ToString() ?? "0");
 
                 for (int i = 0; i < tabs.Count; i++)
                 {
@@ -2696,26 +2696,26 @@ namespace Desktop_Fences
                         Focusable = false
                     };
 
-                    ApplyTabStyle(tabButton, isActiveTab, fenceColorName);
+                    ApplyTabStyle(tabButton, isActiveTab, containerColorName);
 
                     tabButton.PreviewMouseLeftButtonDown += (s, e) =>
                     {
-                        fenceWindow.Focus();
+                        containerWindow.Focus();
                         System.Windows.Input.Keyboard.ClearFocus();
 
                         if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
                         {
                             e.Handled = true;
-                            RenameTab(fence, capturedIndex, fenceWindow);
+                            RenameTab(container, capturedIndex, containerWindow);
                         }
                         else
                         {
-                            SwitchTabByFence(fence, capturedIndex, fenceWindow);
+                            SwitchTabByContainer(container, capturedIndex, containerWindow);
                             e.Handled = true;
                         }
                     };
 
-                    tabButton.PreviewMouseRightButtonDown += (s, e) => SwitchTabByFence(fence, capturedIndex, fenceWindow);
+                    tabButton.PreviewMouseRightButtonDown += (s, e) => SwitchTabByContainer(container, capturedIndex, containerWindow);
 
                     // Context Menu
                     ContextMenu tabContextMenu = new ContextMenu();
@@ -2733,11 +2733,11 @@ namespace Desktop_Fences
                     tabContextMenu.Items.Add(miMoveLeft);
                     tabContextMenu.Items.Add(miMoveRight);
 
-                    miAddTab.Click += (s, e) => AddNewTab(fence, fenceWindow);
-                    miRenameTab.Click += (s, e) => RenameTab(fence, capturedIndex, fenceWindow);
-                    miDeleteTab.Click += (s, e) => DeleteTab(fence, capturedIndex, fenceWindow);
-                    miMoveLeft.Click += (s, e) => MoveTab(fence, capturedIndex, -1, fenceWindow);
-                    miMoveRight.Click += (s, e) => MoveTab(fence, capturedIndex, 1, fenceWindow);
+                    miAddTab.Click += (s, e) => AddNewTab(container, containerWindow);
+                    miRenameTab.Click += (s, e) => RenameTab(container, capturedIndex, containerWindow);
+                    miDeleteTab.Click += (s, e) => DeleteTab(container, capturedIndex, containerWindow);
+                    miMoveLeft.Click += (s, e) => MoveTab(container, capturedIndex, -1, containerWindow);
+                    miMoveRight.Click += (s, e) => MoveTab(container, capturedIndex, 1, containerWindow);
 
                     tabContextMenu.Opened += (s, e) =>
                     {
@@ -2766,26 +2766,26 @@ namespace Desktop_Fences
                     Focusable = false
                 };
 
-                ApplyTabStyle(addTabButton, false, fenceColorName, true);
+                ApplyTabStyle(addTabButton, false, containerColorName, true);
 
                 bool isAddingTab = false;
                 addTabButton.PreviewMouseLeftButtonDown += async (s, e) =>
                 {
-                    fenceWindow.Focus();
+                    containerWindow.Focus();
                     e.Handled = true;
 
                     // --- NEW IMPORT LOGIC ---
                     if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
                     {
                         // Advanced: Import Tab
-                        ImportTabManager.HandleImportRequest(fence, fenceWindow);
+                        ImportTabManager.HandleImportRequest(container, containerWindow);
                         return;
                     }
                     // ------------------------
 
                     if (isAddingTab) return;
                     isAddingTab = true;
-                    try { AddNewTab(fence, fenceWindow); }
+                    try { AddNewTab(container, containerWindow); }
                     finally { await System.Threading.Tasks.Task.Delay(500); isAddingTab = false; }
                 };
 
@@ -2801,7 +2801,7 @@ namespace Desktop_Fences
                 {
                     if (dockPanel.Children[i] is Grid g)
                     {
-                        if (g.Children.OfType<TextBlock>().Any(tb => tb.Name == "FenceLockIcon"))
+                        if (g.Children.OfType<TextBlock>().Any(tb => tb.Name == "ContainerLockIcon"))
                         {
                             insertIndex = i + 1;
                             titleFound = true;
@@ -2824,7 +2824,7 @@ namespace Desktop_Fences
                 // 12. RESTORE SCROLL (Async to allow layout pass)
                 if (previousScrollOffset > 0)
                 {
-                    fenceWindow.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new Action(() =>
+                    containerWindow.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new Action(() =>
                     {
                         scrollViewer.ScrollToHorizontalOffset(previousScrollOffset);
                     }));
@@ -2837,31 +2837,31 @@ namespace Desktop_Fences
                 LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, $"Error refreshing tab strip UI: {ex.Message}");
             }
         }      // TABS FEATURE: Add new tab with random herb name
-        public static void AddNewTab(dynamic fence, NonActivatingWindow fenceWindow)
+        public static void AddNewTab(dynamic container, NonActivatingWindow containerWindow)
         {
             try
             {
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"AddNewTab called for fence '{fence.Title}'");
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"AddNewTab called for container '{container.Title}'");
 
-                // Get fresh fence data
-                string fenceId = fence.Id?.ToString();
-                if (string.IsNullOrEmpty(fenceId))
+                // Get fresh container data
+                string containerId = container.Id?.ToString();
+                if (string.IsNullOrEmpty(containerId))
                 {
-                    LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, "Cannot add tab: fence ID missing");
+                    LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, "Cannot add tab: container ID missing");
                     return;
                 }
 
-                var currentFence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
-                if (currentFence == null)
+                var currentContainer = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
+                if (currentContainer == null)
                 {
-                    LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, $"Cannot add tab: fence with ID '{fenceId}' not found");
+                    LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, $"Cannot add tab: container with ID '{containerId}' not found");
                     return;
                 }
 
-                var tabs = currentFence.Tabs as JArray ?? new JArray();
+                var tabs = currentContainer.Tabs as JArray ?? new JArray();
 
                 // Generate random herb name with tab index
-                string herbName = FenceUtilities.GenerateRandomHerbName();
+                string herbName = ContainerUtilities.GenerateRandomHerbName();
                 string newTabName = $"{tabs.Count}. {herbName}";
 
                 // Create new tab object
@@ -2872,32 +2872,32 @@ namespace Desktop_Fences
                 // Add to tabs array
                 tabs.Add(newTab);
 
-                // Update fence data properly
-                int fenceIndex = FenceDataManager.FenceData.FindIndex(f => f.Id?.ToString() == fenceId);
-                if (fenceIndex >= 0)
+                // Update container data properly
+                int containerIndex = ContainerDataManager.ContainerData.FindIndex(f => f.Id?.ToString() == containerId);
+                if (containerIndex >= 0)
                 {
-                    IDictionary<string, object> fenceDict = currentFence is IDictionary<string, object> dict ?
-                        dict : ((JObject)currentFence).ToObject<IDictionary<string, object>>();
+                    IDictionary<string, object> containerDict = currentContainer is IDictionary<string, object> dict ?
+                        dict : ((JObject)currentContainer).ToObject<IDictionary<string, object>>();
 
-                    fenceDict["Tabs"] = tabs; // Store JArray directly
-                    fenceDict["CurrentTab"] = tabs.Count - 1; // Switch to new tab
+                    containerDict["Tabs"] = tabs; // Store JArray directly
+                    containerDict["CurrentTab"] = tabs.Count - 1; // Switch to new tab
 
-                    FenceDataManager.FenceData[fenceIndex] = JObject.FromObject(fenceDict);
-                    FenceDataManager.SaveFenceData();
+                    ContainerDataManager.ContainerData[containerIndex] = JObject.FromObject(containerDict);
+                    ContainerDataManager.SaveContainerData();
 
                     LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
-                        $"Added new tab '{newTabName}' to fence '{currentFence.Title}'");
+                        $"Added new tab '{newTabName}' to container '{currentContainer.Title}'");
 
-                    // Get updated fence and refresh the display
-                    var updatedFence = FenceDataManager.FenceData[fenceIndex];
+                    // Get updated container and refresh the display
+                    var updatedContainer = ContainerDataManager.ContainerData[containerIndex];
                     int newTabIndex = tabs.Count - 1;
 
                     // Refresh content and styling
-                    RefreshFenceContentSimple(fenceWindow, updatedFence, newTabIndex);
-                    RefreshTabStyling(fenceWindow, newTabIndex);
+                    RefreshContainerContentSimple(containerWindow, updatedContainer, newTabIndex);
+                    RefreshTabStyling(containerWindow, newTabIndex);
 
                     // Refresh the entire tab strip to show new tab
-                    RefreshTabStripUI(fenceWindow, updatedFence);
+                    RefreshTabStripUI(containerWindow, updatedContainer);
                     LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, "New tab added successfully");
                 }
             }
@@ -2911,14 +2911,14 @@ namespace Desktop_Fences
 
         // TABS FEATURE: Rename tab with inline editing (in-button, focus-enabled)
         // v2.5.4.187: Fixed Visual Tree traversal to support ScrollViewer/Ghost Arrows structure
-        public static void RenameTab(dynamic fence, int tabIndex, NonActivatingWindow fenceWindow)
+        public static void RenameTab(dynamic container, int tabIndex, NonActivatingWindow containerWindow)
         {
             try
             {
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"RenameTab called for fence '{fence.Title}', tab {tabIndex}");
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"RenameTab called for container '{container.Title}', tab {tabIndex}");
 
                 // 1. Find the main DockPanel
-                var border = fenceWindow.Content as Border;
+                var border = containerWindow.Content as Border;
                 var dockPanel = border?.Child as DockPanel;
                 if (dockPanel == null) return;
 
@@ -2962,11 +2962,11 @@ namespace Desktop_Fences
                 if (targetButton == null) return;
 
                 // Get current tab data
-                string fenceId = fence.Id?.ToString();
-                var currentFence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
-                if (currentFence == null) return;
+                string containerId = container.Id?.ToString();
+                var currentContainer = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
+                if (currentContainer == null) return;
 
-                var tabs = currentFence.Tabs as JArray ?? new JArray();
+                var tabs = currentContainer.Tabs as JArray ?? new JArray();
                 if (tabIndex < 0 || tabIndex >= tabs.Count) return;
 
                 var tab = tabs[tabIndex] as JObject;
@@ -3006,7 +3006,7 @@ namespace Desktop_Fences
                 targetButton.BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromArgb(255, 70, 130, 180));
 
                 // CRITICAL: Disable NonActivatingWindow focus prevention during editing and force focus
-                fenceWindow.BeginKeyboardInteractiveEdit(editTextBox);
+                containerWindow.BeginKeyboardInteractiveEdit(editTextBox);
                 bool editingComplete = false;
 
                 // Action to complete editing and restore NonActivatingWindow behavior
@@ -3031,15 +3031,15 @@ namespace Desktop_Fences
                             tab["TabName"] = newName;
 
                             // Save to JSON
-                            int fenceIndex = FenceDataManager.FenceData.FindIndex(f => f.Id?.ToString() == fenceId);
-                            if (fenceIndex >= 0)
+                            int containerIndex = ContainerDataManager.ContainerData.FindIndex(f => f.Id?.ToString() == containerId);
+                            if (containerIndex >= 0)
                             {
-                                IDictionary<string, object> fenceDict = currentFence is IDictionary<string, object> dict ?
-                                    dict : ((JObject)currentFence).ToObject<IDictionary<string, object>>();
+                                IDictionary<string, object> containerDict = currentContainer is IDictionary<string, object> dict ?
+                                    dict : ((JObject)currentContainer).ToObject<IDictionary<string, object>>();
 
-                                fenceDict["Tabs"] = tabs;
-                                FenceDataManager.FenceData[fenceIndex] = JObject.FromObject(fenceDict);
-                                FenceDataManager.SaveFenceData();
+                                containerDict["Tabs"] = tabs;
+                                ContainerDataManager.ContainerData[containerIndex] = JObject.FromObject(containerDict);
+                                ContainerDataManager.SaveContainerData();
 
                                 LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
                                     $"Renamed tab from '{currentName}' to '{newName}'");
@@ -3062,7 +3062,7 @@ namespace Desktop_Fences
                         targetButton.Height = originalHeight;
 
                         // CRITICAL: Re-enable NonActivatingWindow focus prevention
-                        fenceWindow.EndKeyboardInteractiveEdit();
+                        containerWindow.EndKeyboardInteractiveEdit();
                     }
                     catch (Exception ex)
                     {
@@ -3075,7 +3075,7 @@ namespace Desktop_Fences
                         targetButton.Foreground = originalForeground;
                         targetButton.BorderBrush = originalBorderBrush;
                         targetButton.Height = originalHeight;
-                        fenceWindow.EndKeyboardInteractiveEdit();
+                        containerWindow.EndKeyboardInteractiveEdit();
                     }
                 };
 
@@ -3112,23 +3112,23 @@ namespace Desktop_Fences
                     $"Error starting tab rename: {ex.Message}");
 
                 // Ensure focus prevention is restored on any error
-                fenceWindow.EnableFocusPrevention(true);
+                containerWindow.EnableFocusPrevention(true);
             }
         }
 
         // TABS FEATURE: Delete tab with confirmation, Auto-Export, and Sync Fix
-        public static void DeleteTab(dynamic fence, int tabIndex, NonActivatingWindow fenceWindow)
+        public static void DeleteTab(dynamic container, int tabIndex, NonActivatingWindow containerWindow)
         {
             try
             {
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"DeleteTab called for fence '{fence.Title}', tab {tabIndex}");
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"DeleteTab called for container '{container.Title}', tab {tabIndex}");
 
                 // 1. Get Fresh Data
-                string fenceId = fence.Id?.ToString();
-                var currentFence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
-                if (currentFence == null) return;
+                string containerId = container.Id?.ToString();
+                var currentContainer = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
+                if (currentContainer == null) return;
 
-                var tabs = currentFence.Tabs as JArray ?? new JArray();
+                var tabs = currentContainer.Tabs as JArray ?? new JArray();
 
                 // 2. Validation: Don't allow deleting the last tab
                 if (tabs.Count <= 1)
@@ -3156,8 +3156,8 @@ namespace Desktop_Fences
                     }
                 }
 
-                // --- Auto-Export Logic (Tabs follow Fence Settings) ---
-                if (SettingsManager.ExportShortcutsOnFenceDeletion && items.Count > 0)
+                // --- Auto-Export Logic (Tabs follow Container Settings) ---
+                if (SettingsManager.ExportShortcutsOnContainerDeletion && items.Count > 0)
                 {
                     LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
                         $"Auto-exporting {items.Count} items from tab '{tabName}' before deletion.");
@@ -3182,7 +3182,7 @@ namespace Desktop_Fences
                 tabs.RemoveAt(tabIndex);
 
                 // 5. Calculate New Active Tab
-                int currentTab = Convert.ToInt32(currentFence.CurrentTab?.ToString() ?? "0");
+                int currentTab = Convert.ToInt32(currentContainer.CurrentTab?.ToString() ?? "0");
                 int newCurrentTab = currentTab;
 
                 // Shift logic:
@@ -3195,20 +3195,20 @@ namespace Desktop_Fences
                 }
 
                 // 6. Save Data
-                int fenceIndex = FenceDataManager.FenceData.FindIndex(f => f.Id?.ToString() == fenceId);
-                if (fenceIndex >= 0)
+                int containerIndex = ContainerDataManager.ContainerData.FindIndex(f => f.Id?.ToString() == containerId);
+                if (containerIndex >= 0)
                 {
-                    IDictionary<string, object> fenceDict = currentFence is IDictionary<string, object> dict ?
-                        dict : ((JObject)currentFence).ToObject<IDictionary<string, object>>();
+                    IDictionary<string, object> containerDict = currentContainer is IDictionary<string, object> dict ?
+                        dict : ((JObject)currentContainer).ToObject<IDictionary<string, object>>();
 
-                    fenceDict["Tabs"] = tabs;
-                    fenceDict["CurrentTab"] = newCurrentTab;
+                    containerDict["Tabs"] = tabs;
+                    containerDict["CurrentTab"] = newCurrentTab;
 
-                    FenceDataManager.FenceData[fenceIndex] = JObject.FromObject(fenceDict);
-                    FenceDataManager.SaveFenceData();
+                    ContainerDataManager.ContainerData[containerIndex] = JObject.FromObject(containerDict);
+                    ContainerDataManager.SaveContainerData();
 
                     LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
-                        $"Deleted tab '{tabName}' from fence '{currentFence.Title}'. New Active Tab: {newCurrentTab}");
+                        $"Deleted tab '{tabName}' from container '{currentContainer.Title}'. New Active Tab: {newCurrentTab}");
 
                     // --- BUG FIX: FORCE SYNC WITH MAIN ITEMS ---
                     // Now that the tabs have shifted, "Tab 0" might be different.
@@ -3216,19 +3216,19 @@ namespace Desktop_Fences
                     // from appearing if the user later disables tabs.
                     if (tabs.Count > 0)
                     {
-                        SynchronizeTab0Content(fenceId, "tab0", "full");
+                        SynchronizeTab0Content(containerId, "tab0", "full");
                         LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, "Forced Tab0 synchronization after deletion.");
                     }
                     // -------------------------------------------
 
                     // 7. REFRESH UI
-                    var updatedFence = FenceDataManager.FenceData[fenceIndex];
+                    var updatedContainer = ContainerDataManager.ContainerData[containerIndex];
 
                     // A. Refresh the Icons (Content)
-                    RefreshFenceContentSimple(fenceWindow, updatedFence, newCurrentTab);
+                    RefreshContainerContentSimple(containerWindow, updatedContainer, newCurrentTab);
 
                     // B. Refresh the Tab Buttons (Strip)
-                    RefreshTabStripUI(fenceWindow, updatedFence);
+                    RefreshTabStripUI(containerWindow, updatedContainer);
 
                     LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, "Tab deletion UI refresh complete");
                 }
@@ -3241,49 +3241,49 @@ namespace Desktop_Fences
         }
 
 
-        // TABS FEATURE: Switch tab using fence ID
+        // TABS FEATURE: Switch tab using container ID
         // FIXED: Now calls RefreshTabStripUI instead of RefreshTabStyling to force a clean redraw.
-        public static void SwitchTabByFence(dynamic fence, int newTabIndex, NonActivatingWindow fenceWindow)
+        public static void SwitchTabByContainer(dynamic container, int newTabIndex, NonActivatingWindow containerWindow)
         {
             try
             {
-                // Get fresh fence data by ID to avoid stale references
-                string fenceId = fence.Id?.ToString();
-                if (string.IsNullOrEmpty(fenceId)) return;
+                // Get fresh container data by ID to avoid stale references
+                string containerId = container.Id?.ToString();
+                if (string.IsNullOrEmpty(containerId)) return;
 
-                var currentFence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
-                if (currentFence == null) return;
+                var currentContainer = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
+                if (currentContainer == null) return;
 
                 // Validate tab index
-                var tabs = currentFence.Tabs as JArray ?? new JArray();
+                var tabs = currentContainer.Tabs as JArray ?? new JArray();
                 if (newTabIndex < 0 || newTabIndex >= tabs.Count) return;
 
                 // Check current tab
-                int currentTabIndex = Convert.ToInt32(currentFence.CurrentTab?.ToString() ?? "0");
+                int currentTabIndex = Convert.ToInt32(currentContainer.CurrentTab?.ToString() ?? "0");
                 if (currentTabIndex == newTabIndex) return; // Already there
 
                 // Update Data
-                IDictionary<string, object> fenceDict = currentFence as IDictionary<string, object> ??
-                    ((JObject)currentFence).ToObject<IDictionary<string, object>>();
-                fenceDict["CurrentTab"] = newTabIndex;
+                IDictionary<string, object> containerDict = currentContainer as IDictionary<string, object> ??
+                    ((JObject)currentContainer).ToObject<IDictionary<string, object>>();
+                containerDict["CurrentTab"] = newTabIndex;
 
                 // Save
-                int fenceIndex = FenceDataManager.FenceData.FindIndex(f => f.Id?.ToString() == fenceId);
-                if (fenceIndex >= 0)
+                int containerIndex = ContainerDataManager.ContainerData.FindIndex(f => f.Id?.ToString() == containerId);
+                if (containerIndex >= 0)
                 {
-                    FenceDataManager.FenceData[fenceIndex] = JObject.FromObject(fenceDict);
-                    FenceDataManager.SaveFenceData();
+                    ContainerDataManager.ContainerData[containerIndex] = JObject.FromObject(containerDict);
+                    ContainerDataManager.SaveContainerData();
                 }
 
-                var freshFence = FenceDataManager.FenceData[fenceIndex];
+                var freshContainer = ContainerDataManager.ContainerData[containerIndex];
 
                 // 1. Refresh Icons (Content)
-                RefreshFenceContentSimple(fenceWindow, freshFence, newTabIndex);
+                RefreshContainerContentSimple(containerWindow, freshContainer, newTabIndex);
 
                 // 2. Refresh Tabs (UI Redraw) - THE FIX
                 // We use RefreshTabStripUI instead of RefreshTabStyling.
                 // This destroys the old buttons and creates new ones with the correct "Active" state baked in.
-                RefreshTabStripUI(fenceWindow, freshFence);
+                RefreshTabStripUI(containerWindow, freshContainer);
 
                 string tabName = tabs[newTabIndex]["TabName"]?.ToString() ?? $"Tab {newTabIndex}";
                 LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Switched to tab '{tabName}'");
@@ -3301,7 +3301,7 @@ namespace Desktop_Fences
 
 
         // TABS FEATURE: Move Tab (Left/Right)
-        public static void MoveTab(dynamic fence, int fromIndex, int direction, NonActivatingWindow fenceWindow)
+        public static void MoveTab(dynamic container, int fromIndex, int direction, NonActivatingWindow containerWindow)
         {
             try
             {
@@ -3309,18 +3309,18 @@ namespace Desktop_Fences
                 int toIndex = fromIndex + direction;
 
                 // 1. Get Fresh Data
-                string fenceId = fence.Id?.ToString();
-                var currentFence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
-                if (currentFence == null) return;
+                string containerId = container.Id?.ToString();
+                var currentContainer = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
+                if (currentContainer == null) return;
 
-                var tabs = currentFence.Tabs as JArray;
+                var tabs = currentContainer.Tabs as JArray;
                 if (tabs == null) return;
 
                 // 2. Validate Bounds
                 if (toIndex < 0 || toIndex >= tabs.Count) return;
 
                 LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
-                    $"Moving tab {fromIndex} to {toIndex} for fence '{currentFence.Title}'");
+                    $"Moving tab {fromIndex} to {toIndex} for container '{currentContainer.Title}'");
 
                 // 3. Swap Tabs
                 var tempTab = tabs[fromIndex];
@@ -3330,35 +3330,35 @@ namespace Desktop_Fences
                 // 4. Update CurrentTab Index if necessary
                 // If we moved the active tab, follow it. 
                 // If we moved a tab into the active slot, update the index to stay on the same content.
-                int currentTabIdx = Convert.ToInt32(currentFence.CurrentTab?.ToString() ?? "0");
+                int currentTabIdx = Convert.ToInt32(currentContainer.CurrentTab?.ToString() ?? "0");
 
                 if (currentTabIdx == fromIndex)
                 {
-                    currentFence.CurrentTab = toIndex; // Follow the moved tab
+                    currentContainer.CurrentTab = toIndex; // Follow the moved tab
                 }
                 else if (currentTabIdx == toIndex)
                 {
-                    currentFence.CurrentTab = fromIndex; // The other tab swapped into our slot
+                    currentContainer.CurrentTab = fromIndex; // The other tab swapped into our slot
                 }
 
                 // 5. Save & Refresh
-                int fenceIndex = FenceDataManager.FenceData.FindIndex(f => f.Id?.ToString() == fenceId);
-                if (fenceIndex >= 0)
+                int containerIndex = ContainerDataManager.ContainerData.FindIndex(f => f.Id?.ToString() == containerId);
+                if (containerIndex >= 0)
                 {
-                    IDictionary<string, object> fenceDict = currentFence is IDictionary<string, object> dict ?
-                        dict : ((JObject)currentFence).ToObject<IDictionary<string, object>>();
+                    IDictionary<string, object> containerDict = currentContainer is IDictionary<string, object> dict ?
+                        dict : ((JObject)currentContainer).ToObject<IDictionary<string, object>>();
 
-                    fenceDict["Tabs"] = tabs;
-                    fenceDict["CurrentTab"] = currentFence.CurrentTab; // Updated index
+                    containerDict["Tabs"] = tabs;
+                    containerDict["CurrentTab"] = currentContainer.CurrentTab; // Updated index
 
-                    FenceDataManager.FenceData[fenceIndex] = JObject.FromObject(fenceDict);
-                    FenceDataManager.SaveFenceData();
+                    ContainerDataManager.ContainerData[containerIndex] = JObject.FromObject(containerDict);
+                    ContainerDataManager.SaveContainerData();
 
                     // Refresh Strip (Buttons)
-                    RefreshTabStripUI(fenceWindow, FenceDataManager.FenceData[fenceIndex]);
+                    RefreshTabStripUI(containerWindow, ContainerDataManager.ContainerData[containerIndex]);
 
                     // Refresh Content (Icons) - just in case the active tab index changed logic
-                    RefreshFenceContentSimple(fenceWindow, FenceDataManager.FenceData[fenceIndex], (int)fenceDict["CurrentTab"]);
+                    RefreshContainerContentSimple(containerWindow, ContainerDataManager.ContainerData[containerIndex], (int)containerDict["CurrentTab"]);
                 }
             }
             catch (Exception ex)
@@ -3372,17 +3372,17 @@ namespace Desktop_Fences
 
 
 
-        // TABS FEATURE: Tab0-Fence Content Synchronization Manager
+        // TABS FEATURE: Tab0-Container Content Synchronization Manager
         private static bool _isSynchronizing = false; // Prevent circular sync operations
 
         /// <summary>
         /// Synchronizes content between Tab0 and main Items to ensure they remain identical
         /// Called whenever items are added/removed from either location
         /// </summary>
-        /// <param name="fenceId">The fence ID to synchronize</param>
+        /// <param name="containerId">The container ID to synchronize</param>
         /// <param name="sourceLocation">Where the change originated: "tab0" or "main"</param>
         /// <param name="operationType">Type of operation: "add", "remove", "full"</param>
-        private static void SynchronizeTab0Content(string fenceId, string sourceLocation, string operationType = "full")
+        private static void SynchronizeTab0Content(string containerId, string sourceLocation, string operationType = "full")
         {
             if (_isSynchronizing)
             {
@@ -3395,17 +3395,17 @@ namespace Desktop_Fences
             {
                 _isSynchronizing = true;
 
-                var fence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
-                if (fence == null)
+                var container = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
+                if (container == null)
                 {
                     LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI,
-                        $"Cannot sync: fence {fenceId} not found");
+                        $"Cannot sync: container {containerId} not found");
                     return;
                 }
 
-                bool tabsEnabled = fence.TabsEnabled?.ToString().ToLower() == "true";
-                var tabs = fence.Tabs as JArray ?? new JArray();
-                var mainItems = fence.Items as JArray ?? new JArray();
+                bool tabsEnabled = container.TabsEnabled?.ToString().ToLower() == "true";
+                var tabs = container.Tabs as JArray ?? new JArray();
+                var mainItems = container.Items as JArray ?? new JArray();
 
                 // Only sync if tabs are enabled and Tab0 exists
                 if (!tabsEnabled || tabs.Count == 0) return;
@@ -3416,7 +3416,7 @@ namespace Desktop_Fences
                 var tab0Items = tab0["Items"] as JArray ?? new JArray();
 
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI,
-                    $"Synchronizing {operationType} from {sourceLocation} for fence '{fence.Title}' - Tab0: {tab0Items.Count} items, Main: {mainItems.Count} items");
+                    $"Synchronizing {operationType} from {sourceLocation} for container '{container.Title}' - Tab0: {tab0Items.Count} items, Main: {mainItems.Count} items");
 
                 bool syncPerformed = false;
 
@@ -3426,10 +3426,10 @@ namespace Desktop_Fences
                     // Tab0 changed - sync to main Items
                     if (!AreItemArraysEqual(tab0Items, mainItems))
                     {
-                        fence.Items = JArray.FromObject(tab0Items.ToArray());
+                        container.Items = JArray.FromObject(tab0Items.ToArray());
                         syncPerformed = true;
                         LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
-                            $"Synced {tab0Items.Count} items from Tab0 to main Items for fence '{fence.Title}'");
+                            $"Synced {tab0Items.Count} items from Tab0 to main Items for container '{container.Title}'");
                     }
                 }
                 else if (sourceLocation == "main")
@@ -3440,18 +3440,18 @@ namespace Desktop_Fences
                         tab0["Items"] = JArray.FromObject(mainItems.ToArray());
                         syncPerformed = true;
                         LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
-                            $"Synced {mainItems.Count} items from main Items to Tab0 for fence '{fence.Title}'");
+                            $"Synced {mainItems.Count} items from main Items to Tab0 for container '{container.Title}'");
                     }
                 }
 
                 // Save changes if synchronization was performed
                 if (syncPerformed)
                 {
-                    int fenceIndex = FenceDataManager.FenceData.FindIndex(f => f.Id?.ToString() == fenceId);
-                    if (fenceIndex >= 0)
+                    int containerIndex = ContainerDataManager.ContainerData.FindIndex(f => f.Id?.ToString() == containerId);
+                    if (containerIndex >= 0)
                     {
-                        FenceDataManager.FenceData[fenceIndex] = fence;
-                        FenceDataManager.SaveFenceData();
+                        ContainerDataManager.ContainerData[containerIndex] = container;
+                        ContainerDataManager.SaveContainerData();
                     }
                 }
             }
@@ -3492,15 +3492,15 @@ namespace Desktop_Fences
 
         // TABS FEATURE: Simplified content refresh that reuses existing infrastructure
 
-        public static void RefreshFenceContentSimple(NonActivatingWindow fenceWindow, dynamic fence, int tabIndex)
+        public static void RefreshContainerContentSimple(NonActivatingWindow containerWindow, dynamic container, int tabIndex)
         {
             try
             {
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI,
-                    $"RefreshFenceContentSimple: switching to tab {tabIndex}");
+                    $"RefreshContainerContentSimple: switching to tab {tabIndex}");
 
                 // 1. Find the WrapPanel
-                var border = fenceWindow.Content as Border;
+                var border = containerWindow.Content as Border;
                 var dockPanel = border?.Child as DockPanel;
                 var scrollViewer = dockPanel?.Children.OfType<ScrollViewer>().FirstOrDefault();
                 var wrapPanel = scrollViewer?.Content as WrapPanel;
@@ -3515,7 +3515,7 @@ namespace Desktop_Fences
                 wrapPanel.Children.Clear();
 
                 // 3. Get items from the specified tab
-                var tabs = fence.Tabs as JArray ?? new JArray();
+                var tabs = container.Tabs as JArray ?? new JArray();
                 if (tabIndex >= 0 && tabIndex < tabs.Count)
                 {
                     var activeTab = tabs[tabIndex] as JObject;
@@ -3536,9 +3536,9 @@ namespace Desktop_Fences
                         // 5. Iterate and Add Icons (Using Unified Logic)
                         foreach (dynamic icon in sortedItems)
                         {
-                            // FIX A: Use the main FenceManager.AddIcon method!
+                            // FIX A: Use the main ContainerManager.AddIcon method!
                             // This ensures network indicators, clean icons, and custom sizes are applied.
-                            AddIcon(icon, wrapPanel, fence);
+                            AddIcon(icon, wrapPanel, container);
 
                             StackPanel sp = wrapPanel.Children[wrapPanel.Children.Count - 1] as StackPanel;
                             if (sp != null)
@@ -3567,7 +3567,7 @@ namespace Desktop_Fences
                                 ClickEventAdder(sp, filePath, isFolder, arguments);
 
                                 // FIX E: Attach Centralized Context Menu (Crucial for Right-Click)
-                                AttachIconContextMenu(sp, icon, fence, fenceWindow);
+                                AttachIconContextMenu(sp, icon, container, containerWindow);
                             }
                         }
                     }
@@ -3576,7 +3576,7 @@ namespace Desktop_Fences
             catch (Exception ex)
             {
                 LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI,
-                    $"Error in RefreshFenceContentSimple: {ex.Message}");
+                    $"Error in RefreshContainerContentSimple: {ex.Message}");
             }
         }
 
@@ -3586,11 +3586,11 @@ namespace Desktop_Fences
 
 
         // TABS FEATURE: Remove item from current tab
-        private static void RemoveItemFromTab(dynamic item, dynamic fence, int tabIndex, WrapPanel wrapPanel)
+        private static void RemoveItemFromTab(dynamic item, dynamic container, int tabIndex, WrapPanel wrapPanel)
         {
             try
             {
-                var tabs = fence.Tabs as JArray ?? new JArray();
+                var tabs = container.Tabs as JArray ?? new JArray();
                 if (tabIndex >= 0 && tabIndex < tabs.Count)
                 {
                     var activeTab = tabs[tabIndex] as JObject;
@@ -3614,29 +3614,29 @@ namespace Desktop_Fences
                         activeTab["Items"] = items;
 
                         // Save changes
-                        string fenceId = fence.Id?.ToString();
-                        int fenceIndex = FenceDataManager.FenceData.FindIndex(f => f.Id?.ToString() == fenceId);
-                        if (fenceIndex >= 0)
+                        string containerId = container.Id?.ToString();
+                        int containerIndex = ContainerDataManager.ContainerData.FindIndex(f => f.Id?.ToString() == containerId);
+                        if (containerIndex >= 0)
                         {
-                            FenceDataManager.FenceData[fenceIndex] = fence;
-                            FenceDataManager.SaveFenceData();
+                            ContainerDataManager.ContainerData[containerIndex] = container;
+                            ContainerDataManager.SaveContainerData();
                             // ENHANCED: Add Tab0 synchronization after removal
                             if (tabIndex == 0)
                             {
-                               // string fenceId = fence.Id?.ToString();
-                                if (!string.IsNullOrEmpty(fenceId))
+                               // string containerId = container.Id?.ToString();
+                                if (!string.IsNullOrEmpty(containerId))
                                 {
-                                    SynchronizeTab0Content(fenceId, "tab0", "remove");
+                                    SynchronizeTab0Content(containerId, "tab0", "remove");
                                 }
                             }
 
                         }
 
                         // Refresh the display
-                        var fenceWindow = FindVisualParent<NonActivatingWindow>(wrapPanel);
-                        if (fenceWindow != null)
+                        var containerWindow = FindVisualParent<NonActivatingWindow>(wrapPanel);
+                        if (containerWindow != null)
                         {
-                            RefreshFenceContentSimple(fenceWindow, fence, tabIndex);
+                            RefreshContainerContentSimple(containerWindow, container, tabIndex);
                         }
 
                         LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
@@ -3653,11 +3653,11 @@ namespace Desktop_Fences
 
         // TABS FEATURE: Update tab button styling
         // Updated to support the new ScrollViewer structure
-        public static void RefreshTabStyling(NonActivatingWindow fenceWindow, int activeTabIndex)
+        public static void RefreshTabStyling(NonActivatingWindow containerWindow, int activeTabIndex)
         {
             try
             {
-                var border = fenceWindow.Content as Border;
+                var border = containerWindow.Content as Border;
                 var dockPanel = border?.Child as DockPanel;
                 if (dockPanel == null) return;
 
@@ -3675,12 +3675,12 @@ namespace Desktop_Fences
                 var plusButton = containerGrid.Children.OfType<Button>()
                     .FirstOrDefault(b => b.Tag?.ToString() == "ADD_TAB");
 
-                string fenceId = fenceWindow.Tag?.ToString();
-                var currentFence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
-                if (currentFence == null) return;
+                string containerId = containerWindow.Tag?.ToString();
+                var currentContainer = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
+                if (currentContainer == null) return;
 
-                string fenceColorName = currentFence.CustomColor?.ToString();
-                if (string.IsNullOrEmpty(fenceColorName)) fenceColorName = SettingsManager.SelectedColor;
+                string containerColorName = currentContainer.CustomColor?.ToString();
+                if (string.IsNullOrEmpty(containerColorName)) containerColorName = SettingsManager.SelectedColor;
 
                 // 4. Update Tab Buttons
                 if (tabStack != null)
@@ -3690,7 +3690,7 @@ namespace Desktop_Fences
                         if (child is Button tabButton && tabButton.Tag is int idx)
                         {
                             bool isActive = (idx == activeTabIndex);
-                            ApplyTabStyle(tabButton, isActive, fenceColorName);
+                            ApplyTabStyle(tabButton, isActive, containerColorName);
                         }
                     }
                 }
@@ -3698,7 +3698,7 @@ namespace Desktop_Fences
                 // 5. Update [+] Button
                 if (plusButton != null)
                 {
-                    ApplyTabStyle(plusButton, false, fenceColorName, true);
+                    ApplyTabStyle(plusButton, false, containerColorName, true);
                 }
             }
             catch { }
@@ -3743,22 +3743,22 @@ namespace Desktop_Fences
         }
 
 
-        public static void RefreshTabColors(NonActivatingWindow fenceWindow, string newColorName)
+        public static void RefreshTabColors(NonActivatingWindow containerWindow, string newColorName)
         {
             try
             {
-                var border = fenceWindow.Content as Border;
+                var border = containerWindow.Content as Border;
                 if (border == null) return;
                 var dockPanel = border.Child as DockPanel;
                 if (dockPanel == null) return;
                 var tabStrip = dockPanel.Children.OfType<StackPanel>().FirstOrDefault(sp => sp.Orientation == Orientation.Horizontal && sp.Height == 20);
                 if (tabStrip == null) return;
 
-                string fenceId = fenceWindow.Tag?.ToString();
-                var currentFence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
-                if (currentFence == null) return;
+                string containerId = containerWindow.Tag?.ToString();
+                var currentContainer = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
+                if (currentContainer == null) return;
 
-                int currentTab = Convert.ToInt32(currentFence.CurrentTab?.ToString() ?? "0");
+                int currentTab = Convert.ToInt32(currentContainer.CurrentTab?.ToString() ?? "0");
 
                 foreach (var child in tabStrip.Children)
                 {
@@ -3795,33 +3795,33 @@ namespace Desktop_Fences
                 var validColors = new HashSet<string> { "Red", "Green", "Teal", "Blue", "Bismark", "White", "Beige", "Gray", "Black", "Purple", "Fuchsia", "Yellow", "Orange" };
                 var validEffects = Enum.GetNames(typeof(LaunchEffectsManager.LaunchEffect)).ToHashSet();
 
-                for (int i = 0; i < FenceDataManager.FenceData.Count; i++)
+                for (int i = 0; i < ContainerDataManager.ContainerData.Count; i++)
                 {
-                    dynamic fence = FenceDataManager.FenceData[i];
-                    IDictionary<string, object> fenceDict = fence is IDictionary<string, object> dict
-                        ? dict : ((JObject)fence).ToObject<IDictionary<string, object>>();
+                    dynamic container = ContainerDataManager.ContainerData[i];
+                    IDictionary<string, object> containerDict = container is IDictionary<string, object> dict
+                        ? dict : ((JObject)container).ToObject<IDictionary<string, object>>();
 
                     // --- 1. CORE VALIDATION (VITAL) ---
                     // Add GUID if missing
-                    if (!fenceDict.ContainsKey("Id"))
+                    if (!containerDict.ContainsKey("Id"))
                     {
-                        fenceDict["Id"] = Guid.NewGuid().ToString();
+                        containerDict["Id"] = Guid.NewGuid().ToString();
                         jsonModified = true;
                     }
 
-                    // --- 2. PORTAL FENCE MIGRATION ---
-                    if (fence.ItemsType?.ToString() == "Portal")
+                    // --- 2. PORTAL CONTAINER MIGRATION ---
+                    if (container.ItemsType?.ToString() == "Portal")
                     {
-                        string portalPath = fence.Items?.ToString();
+                        string portalPath = container.Items?.ToString();
                         if (!string.IsNullOrEmpty(portalPath) && !System.IO.Directory.Exists(portalPath))
                         {
-                            fenceDict["IsFolder"] = true;
+                            containerDict["IsFolder"] = true;
                             jsonModified = true;
                         }
                     }
                     else
                     {
-                        var items = fence.Items as JArray ?? new JArray();
+                        var items = container.Items as JArray ?? new JArray();
                         bool itemsModified = false;
                         foreach (var item in items)
                         {
@@ -3857,61 +3857,61 @@ namespace Desktop_Fences
                         }
                         if (itemsModified)
                         {
-                            fenceDict["Items"] = items;
+                            containerDict["Items"] = items;
                             jsonModified = true;
                         }
                     }
 
                     // --- 3. PROPERTY INITIALIZATION (DEFAULTS) ---
                     // Visuals
-                    if (!fenceDict.ContainsKey("IsLocked")) { fenceDict["IsLocked"] = "false"; jsonModified = true; }
-                    if (!fenceDict.ContainsKey("IsRolled")) { fenceDict["IsRolled"] = "false"; jsonModified = true; }
-                    if (!fenceDict.ContainsKey("UnrolledHeight"))
+                    if (!containerDict.ContainsKey("IsLocked")) { containerDict["IsLocked"] = "false"; jsonModified = true; }
+                    if (!containerDict.ContainsKey("IsRolled")) { containerDict["IsRolled"] = "false"; jsonModified = true; }
+                    if (!containerDict.ContainsKey("UnrolledHeight"))
                     {
-                        double height = fenceDict.ContainsKey("Height") ? Convert.ToDouble(fenceDict["Height"]) : 130;
-                        fenceDict["UnrolledHeight"] = height;
+                        double height = containerDict.ContainsKey("Height") ? Convert.ToDouble(containerDict["Height"]) : 130;
+                        containerDict["UnrolledHeight"] = height;
                         jsonModified = true;
                     }
 
-                    if (!fenceDict.ContainsKey("IconSize")) { fenceDict["IconSize"] = "Medium"; jsonModified = true; }
-                    if (!fenceDict.ContainsKey("IconSpacing")) { fenceDict["IconSpacing"] = 5; jsonModified = true; }
-                    if (!fenceDict.ContainsKey("CustomColor")) { fenceDict["CustomColor"] = null; jsonModified = true; }
-                    if (!fenceDict.ContainsKey("CustomLaunchEffect")) { fenceDict["CustomLaunchEffect"] = null; jsonModified = true; }
-                    if (!fenceDict.ContainsKey("IsHidden")) { fenceDict["IsHidden"] = "false"; jsonModified = true; }
+                    if (!containerDict.ContainsKey("IconSize")) { containerDict["IconSize"] = "Medium"; jsonModified = true; }
+                    if (!containerDict.ContainsKey("IconSpacing")) { containerDict["IconSpacing"] = 5; jsonModified = true; }
+                    if (!containerDict.ContainsKey("CustomColor")) { containerDict["CustomColor"] = null; jsonModified = true; }
+                    if (!containerDict.ContainsKey("CustomLaunchEffect")) { containerDict["CustomLaunchEffect"] = null; jsonModified = true; }
+                    if (!containerDict.ContainsKey("IsHidden")) { containerDict["IsHidden"] = "false"; jsonModified = true; }
 
                     // Text
-                    if (!fenceDict.ContainsKey("TextColor")) { fenceDict["TextColor"] = null; jsonModified = true; }
-                    if (!fenceDict.ContainsKey("TitleTextColor")) { fenceDict["TitleTextColor"] = null; jsonModified = true; }
-                    if (!fenceDict.ContainsKey("TitleTextSize")) { fenceDict["TitleTextSize"] = "Medium"; jsonModified = true; }
-                    if (!fenceDict.ContainsKey("BoldTitleText")) { fenceDict["BoldTitleText"] = "false"; jsonModified = true; }
-                    if (!fenceDict.ContainsKey("DisableTextShadow")) { fenceDict["DisableTextShadow"] = "false"; jsonModified = true; }
-                    if (!fenceDict.ContainsKey("GrayscaleIcons")) { fenceDict["GrayscaleIcons"] = "false"; jsonModified = true; }
+                    if (!containerDict.ContainsKey("TextColor")) { containerDict["TextColor"] = null; jsonModified = true; }
+                    if (!containerDict.ContainsKey("TitleTextColor")) { containerDict["TitleTextColor"] = null; jsonModified = true; }
+                    if (!containerDict.ContainsKey("TitleTextSize")) { containerDict["TitleTextSize"] = "Medium"; jsonModified = true; }
+                    if (!containerDict.ContainsKey("BoldTitleText")) { containerDict["BoldTitleText"] = "false"; jsonModified = true; }
+                    if (!containerDict.ContainsKey("DisableTextShadow")) { containerDict["DisableTextShadow"] = "false"; jsonModified = true; }
+                    if (!containerDict.ContainsKey("GrayscaleIcons")) { containerDict["GrayscaleIcons"] = "false"; jsonModified = true; }
 
                     // Border
-                    if (!fenceDict.ContainsKey("FenceBorderColor")) { fenceDict["FenceBorderColor"] = null; jsonModified = true; }
-                    if (!fenceDict.ContainsKey("FenceBorderThickness")) { fenceDict["FenceBorderThickness"] = 0; jsonModified = true; }
+                    if (!containerDict.ContainsKey("ContainerBorderColor")) { containerDict["ContainerBorderColor"] = null; jsonModified = true; }
+                    if (!containerDict.ContainsKey("ContainerBorderThickness")) { containerDict["ContainerBorderThickness"] = 0; jsonModified = true; }
 
                     // --- 4. TABS FEATURE (Structure Only, No Merge) ---
-                    if (!fenceDict.ContainsKey("TabsEnabled"))
+                    if (!containerDict.ContainsKey("TabsEnabled"))
                     {
-                        fenceDict["TabsEnabled"] = "false";
+                        containerDict["TabsEnabled"] = "false";
                         jsonModified = true;
                     }
-                    if (!fenceDict.ContainsKey("CurrentTab"))
+                    if (!containerDict.ContainsKey("CurrentTab"))
                     {
-                        fenceDict["CurrentTab"] = 0;
+                        containerDict["CurrentTab"] = 0;
                         jsonModified = true;
                     }
-                    if (!fenceDict.ContainsKey("Tabs"))
+                    if (!containerDict.ContainsKey("Tabs"))
                     {
-                        fenceDict["Tabs"] = new JArray();
+                        containerDict["Tabs"] = new JArray();
                         jsonModified = true;
                     }
 
                     // --- 5. TAB VALIDATION (Structure Repair) ---
                     // Ensure existing tabs have valid structure (Name, Items Array)
                     // but DO NOT move items around or merge lists.
-                    var tabs = fenceDict["Tabs"] as JArray ?? new JArray();
+                    var tabs = containerDict["Tabs"] as JArray ?? new JArray();
                     if (tabs.Count > 0)
                     {
                         bool tabsModified = false;
@@ -3933,29 +3933,29 @@ namespace Desktop_Fences
                         }
                         if (tabsModified)
                         {
-                            fenceDict["Tabs"] = tabs;
+                            containerDict["Tabs"] = tabs;
                             jsonModified = true;
                         }
                     }
 
                     // Update Master List
-                    FenceDataManager.FenceData[i] = JObject.FromObject(fenceDict);
+                    ContainerDataManager.ContainerData[i] = JObject.FromObject(containerDict);
                 }
 
                 if (jsonModified)
                 {
-                    FenceDataManager.SaveFenceData();
-                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.General, "Migrated fences.json with updated fields (Validations Only)");
+                    ContainerDataManager.SaveContainerData();
+                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.General, "Migrated containers.json with updated fields (Validations Only)");
                 }
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.Error, $"Error migrating fences.json: {ex.Message}");
+                LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.Error, $"Error migrating containers.json: {ex.Message}");
             }
         }
 
 
-        public static void LoadAndCreateFences(TargetChecker targetChecker)
+        public static void LoadAndCreateContainers(TargetChecker targetChecker)
         {
             // Get current program version from assembly
             string currentVersion = Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? "0.0.0";
@@ -3963,7 +3963,7 @@ namespace Desktop_Fences
             RegistryHelper.SetProgramManagementValues(currentVersion);
 
             // CRITICAL FIX: Load settings EARLY so the single instance check knows the user's preference
-            FenceDataManager.Initialize();
+            ContainerDataManager.Initialize();
             SettingsManager.LoadSettings();
 
             // === PRE-FLIGHT CHECK FOR SINGLE INSTANCE SETTING ===
@@ -3971,7 +3971,7 @@ namespace Desktop_Fences
             bool disableSingleInstance = SettingsManager.DisableSingleInstance;
             try
             {
-                string baseDir = Desktop_Fences.DataRoot.Dir;
+                string baseDir = OpsisContainers.DataRoot.Dir;
                 string optionsPath = System.IO.Path.Combine(baseDir, "options.json"); // Legacy fallback
                 string masterOptionsPath = System.IO.Path.Combine(baseDir, "MasterOptions.json");
 
@@ -4065,7 +4065,7 @@ namespace Desktop_Fences
 
 
             // REMOVED: Legacy path override. 
-            // FenceDataManager.Initialize() now sets the correct Profile path internally.
+            // ContainerDataManager.Initialize() now sets the correct Profile path internally.
 
             // Below added for reload function
             _currentTargetChecker = targetChecker;
@@ -4075,7 +4075,7 @@ namespace Desktop_Fences
             {
                 try
                 {
-                    string logPath = System.IO.Path.Combine(Desktop_Fences.DataRoot.Dir, "Desktop_Fences.log");
+                    string logPath = System.IO.Path.Combine(OpsisContainers.DataRoot.Dir, "OpsisContainers.log");
                     if (System.IO.File.Exists(logPath))
                     {
                         System.IO.File.Delete(logPath);
@@ -4095,7 +4095,7 @@ namespace Desktop_Fences
             _options = new
             {
                 IsSnapEnabled = SettingsManager.IsSnapEnabled,
-                ShowBackgroundImageOnPortalFences = SettingsManager.ShowBackgroundImageOnPortalFences,
+                ShowBackgroundImageOnPortalContainers = SettingsManager.ShowBackgroundImageOnPortalContainers,
                 Showintray = SettingsManager.ShowInTray,
                 EnableSounds = SettingsManager.EnableSounds,
                 TintValue = SettingsManager.TintValue,
@@ -4111,15 +4111,15 @@ namespace Desktop_Fences
 
             bool jsonLoadSuccessful = false;
 
-            if (System.IO.File.Exists(FenceDataManager.JsonFilePath))
+            if (System.IO.File.Exists(ContainerDataManager.JsonFilePath))
             {
-                jsonLoadSuccessful = LoadFenceDataFromJson();
+                jsonLoadSuccessful = LoadContainerDataFromJson();
             }
 
             // If JSON loading failed or file doesn't exist, initialize with defaults
-            if (!jsonLoadSuccessful || FenceDataManager.FenceData == null || FenceDataManager.FenceData.Count == 0)
+            if (!jsonLoadSuccessful || ContainerDataManager.ContainerData == null || ContainerDataManager.ContainerData.Count == 0)
             {
-                InitializeDefaultFence();
+                InitializeDefaultContainer();
             }
             else
             {
@@ -4127,31 +4127,31 @@ namespace Desktop_Fences
                 MigrateLegacyJson();
             }
 
-            // Sanitize Portal Fences with missing target folders
-            var invalidFences = new List<dynamic>();
-            foreach (dynamic fence in FenceDataManager.FenceData.ToList()) // Use ToList to avoid collection modification issues
+            // Sanitize Portal Containers with missing target folders
+            var invalidContainers = new List<dynamic>();
+            foreach (dynamic container in ContainerDataManager.ContainerData.ToList()) // Use ToList to avoid collection modification issues
             {
-                if (fence.ItemsType?.ToString() == "Portal")
+                if (container.ItemsType?.ToString() == "Portal")
                 {
-                    string targetPath = fence.Path?.ToString();
+                    string targetPath = container.Path?.ToString();
                     if (string.IsNullOrEmpty(targetPath) || !System.IO.Directory.Exists(targetPath))
                     {
-                        invalidFences.Add(fence);
-                        LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.FenceCreation, $"Marked Portal Fence '{fence.Title}' for removal due to missing target folder: {targetPath ?? "null"}");
+                        invalidContainers.Add(container);
+                        LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.ContainerCreation, $"Marked Portal Container '{container.Title}' for removal due to missing target folder: {targetPath ?? "null"}");
                     }
                 }
             }
 
-            // Remove invalid fences and save
-            if (invalidFences.Any())
+            // Remove invalid containers and save
+            if (invalidContainers.Any())
             {
-                foreach (var fence in invalidFences)
+                foreach (var container in invalidContainers)
                 {
-                    FenceDataManager.FenceData.Remove(fence);
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation, $"Removed Portal Fence '{fence.Title}' from FenceDataManager.FenceData");
+                    ContainerDataManager.ContainerData.Remove(container);
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation, $"Removed Portal Container '{container.Title}' from ContainerDataManager.ContainerData");
                 }
-                FenceDataManager.SaveFenceData();
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation, $"Saved updated fences.json after removing {invalidFences.Count} invalid Portal Fences");
+                ContainerDataManager.SaveContainerData();
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation, $"Saved updated containers.json after removing {invalidContainers.Count} invalid Portal Containers");
             }
 
             // Clear any stuck transition states from previous session
@@ -4166,18 +4166,18 @@ namespace Desktop_Fences
                 };
                 _transitionCleanupTimer.Tick += (s, e) =>
                 {
-                    if (_fencesInTransition.Count > 0)
+                    if (_containersInTransition.Count > 0)
                     {
-                        LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.FenceUpdate, $"Emergency cleanup: Found {_fencesInTransition.Count} fences stuck in transition state");
+                        LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.ContainerUpdate, $"Emergency cleanup: Found {_containersInTransition.Count} containers stuck in transition state");
                         ClearAllTransitionStates();
                     }
                 };
                 _transitionCleanupTimer.Start();
             }
 
-            foreach (dynamic fence in FenceDataManager.FenceData.ToList())
+            foreach (dynamic container in ContainerDataManager.ContainerData.ToList())
             {
-                CreateFence(fence, targetChecker);
+                CreateContainer(container, targetChecker);
             }
 
             // --- NEW: Initialize Auto-Hide Engine ---
@@ -4197,112 +4197,112 @@ namespace Desktop_Fences
         public static void StartDrawMode()
         {
             // Called by App.xaml.cs (Context Menu) or InterCore (IPC)
-            var overlay = new DrawFenceOverlay();
+            var overlay = new DrawContainerOverlay();
             overlay.Show();
         }
 
-        public static void CreateFenceFromDraw(Rect r)
+        public static void CreateContainerFromDraw(Rect r)
         {
             // 1. Generate Random Unique Name (Adjective + Place pattern)
-            string defaultName = CoreUtilities.GenerateUniqueFenceName();
+            string defaultName = CoreUtilities.GenerateUniqueContainerName();
 
             // 2. Ask for Name (Pre-filled with the random name)
-            string name = Microsoft.VisualBasic.Interaction.InputBox("Enter name for new Fence:", "Create Fence", defaultName);
+            string name = Microsoft.VisualBasic.Interaction.InputBox("Enter name for new Container:", "Create Container", defaultName);
             if (string.IsNullOrWhiteSpace(name)) return;
 
             // 2. Create Data
             // FIX: Changed "Standard" to "Data" so it functions correctly
-            var fence = FenceDataManager.CreateNewFence(name, "Data", r.X, r.Y);
+            var container = ContainerDataManager.CreateNewContainer(name, "Data", r.X, r.Y);
 
             // 3. Update Dimensions & Title
-            // CreateNewFence uses defaults (230x130) and generates a random name for Data fences.
+            // CreateNewContainer uses defaults (230x130) and generates a random name for Data containers.
             // We must override these with the User's Input and the Drawn Size.
-            var fenceDict = fence as System.Collections.Generic.IDictionary<string, object>;
-            if (fenceDict != null)
+            var containerDict = container as System.Collections.Generic.IDictionary<string, object>;
+            if (containerDict != null)
             {
-                fenceDict["Width"] = r.Width;
-                fenceDict["Height"] = r.Height;
+                containerDict["Width"] = r.Width;
+                containerDict["Height"] = r.Height;
 
                 // FIX: Force set the title to what the user actually typed
-                fenceDict["Title"] = name;
+                containerDict["Title"] = name;
 
-                FenceDataManager.SaveFenceData();
+                ContainerDataManager.SaveContainerData();
             }
 
             // 4. Refresh UI
-            // Your ReloadFences() correctly rebuilds the entire UI state
-            ReloadFences();
+            // Your ReloadContainers() correctly rebuilds the entire UI state
+            ReloadContainers();
         }
 
 
 
 
-        private static bool LoadFenceDataFromJson()
+        private static bool LoadContainerDataFromJson()
         {
             try
             {
-                string jsonContent = System.IO.File.ReadAllText(FenceDataManager.JsonFilePath);
+                string jsonContent = System.IO.File.ReadAllText(ContainerDataManager.JsonFilePath);
 
                 // Check if the file is empty or contains only whitespace
                 if (string.IsNullOrWhiteSpace(jsonContent))
                 {
-                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.FenceCreation,
-                        "JSON file is empty or contains only whitespace. Using default fence configuration.");
+                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.ContainerCreation,
+                        "JSON file is empty or contains only whitespace. Using default container configuration.");
                     return false;
                 }
 
-                // First, try to parse as a list of fences
+                // First, try to parse as a list of containers
                 try
                 {
-                    FenceDataManager.FenceData = JsonConvert.DeserializeObject<List<dynamic>>(jsonContent);
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation,
-                        $"Successfully loaded {FenceDataManager.FenceData?.Count ?? 0} fences from JSON array.");
-                    return FenceDataManager.FenceData != null;
+                    ContainerDataManager.ContainerData = JsonConvert.DeserializeObject<List<dynamic>>(jsonContent);
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation,
+                        $"Successfully loaded {ContainerDataManager.ContainerData?.Count ?? 0} containers from JSON array.");
+                    return ContainerDataManager.ContainerData != null;
                 }
                 catch (JsonSerializationException)
                 {
-                    // If that fails, try to parse as a single fence object
+                    // If that fails, try to parse as a single container object
                     try
                     {
-                        var singleFence = JsonConvert.DeserializeObject<dynamic>(jsonContent);
-                        if (singleFence != null)
+                        var singleContainer = JsonConvert.DeserializeObject<dynamic>(jsonContent);
+                        if (singleContainer != null)
                         {
-                            FenceDataManager.FenceData = new List<dynamic> { singleFence };
-                            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation,
-                                "Successfully loaded single fence from JSON object.");
+                            ContainerDataManager.ContainerData = new List<dynamic> { singleContainer };
+                            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation,
+                                "Successfully loaded single container from JSON object.");
                             return true;
                         }
                     }
                     catch (JsonSerializationException innerEx)
                     {
-                        LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceCreation,
-                            $"Failed to parse JSON as single fence object: {innerEx.Message}");
+                        LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerCreation,
+                            $"Failed to parse JSON as single container object: {innerEx.Message}");
                     }
                 }
             }
             catch (System.IO.IOException ioEx)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceCreation,
-                    $"IO error reading fences.json: {ioEx.Message}");
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerCreation,
+                    $"IO error reading containers.json: {ioEx.Message}");
             }
             catch (UnauthorizedAccessException accessEx)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceCreation,
-                    $"Access denied reading fences.json: {accessEx.Message}");
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerCreation,
+                    $"Access denied reading containers.json: {accessEx.Message}");
             }
             catch (JsonReaderException jsonEx)
             {
                 // Handle malformed JSON (syntax errors, invalid characters, etc.)
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceCreation,
-                    $"Malformed JSON detected in fences.json: {jsonEx.Message}");
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerCreation,
+                    $"Malformed JSON detected in containers.json: {jsonEx.Message}");
 
                 // Optionally, create a backup of the corrupted file
                 CreateCorruptedFileBackup();
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceCreation,
-                    $"Unexpected error loading fences.json: {ex.Message}");
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerCreation,
+                    $"Unexpected error loading containers.json: {ex.Message}");
             }
 
             return false;
@@ -4312,36 +4312,36 @@ namespace Desktop_Fences
         {
             try
             {
-                string backupPath = FenceDataManager.JsonFilePath + ".corrupted." + DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                System.IO.File.Copy(FenceDataManager.JsonFilePath, backupPath, true);
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceCreation,
+                string backupPath = ContainerDataManager.JsonFilePath + ".corrupted." + DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                System.IO.File.Copy(ContainerDataManager.JsonFilePath, backupPath, true);
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerCreation,
                     $"Created backup of corrupted JSON file: {backupPath}");
             }
             catch (Exception backupEx)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceCreation,
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerCreation,
                     $"Failed to create backup of corrupted JSON file: {backupEx.Message}");
             }
         }
 
-        //private static void InitializeDefaultFence()
+        //private static void InitializeDefaultContainer()
         //{
-        //    string defaultJson = "[{\"Id\":\"" + Guid.NewGuid().ToString() + "\",\"Title\":\"New Fence\",\"X\":20,\"Y\":20,\"Width\":230,\"Height\":130,\"ItemsType\":\"Data\",\"Items\":[],\"IsLocked\":\"false\",\"IsHidden\":\"false\",\"CustomColor\":null,\"CustomLaunchEffect\":null,\"IsRolled\":\"false\",\"UnrolledHeight\":130,\"TabsEnabled\":\"false\",\"CurrentTab\":0,\"Tabs\":[]}]";
-        //    System.IO.File.WriteAllText(FenceDataManager.JsonFilePath, defaultJson);
-        //    FenceDataManager.FenceData = JsonConvert.DeserializeObject<List<dynamic>>(defaultJson);
+        //    string defaultJson = "[{\"Id\":\"" + Guid.NewGuid().ToString() + "\",\"Title\":\"New Container\",\"X\":20,\"Y\":20,\"Width\":230,\"Height\":130,\"ItemsType\":\"Data\",\"Items\":[],\"IsLocked\":\"false\",\"IsHidden\":\"false\",\"CustomColor\":null,\"CustomLaunchEffect\":null,\"IsRolled\":\"false\",\"UnrolledHeight\":130,\"TabsEnabled\":\"false\",\"CurrentTab\":0,\"Tabs\":[]}]";
+        //    System.IO.File.WriteAllText(ContainerDataManager.JsonFilePath, defaultJson);
+        //    ContainerDataManager.ContainerData = JsonConvert.DeserializeObject<List<dynamic>>(defaultJson);
         //}
         //Replacement on v 2.5 .3. 141
 
 
-        private static void InitializeDefaultFence()
+        private static void InitializeDefaultContainer()
         {
             try
             {
-                // 1. Create the Standard Data Fence (For user icons)
-                var dataFence = new
+                // 1. Create the Standard Data Container (For user icons)
+                var dataContainer = new
                 {
                     Id = Guid.NewGuid().ToString(),
-                    Title = Loc.T("New Fence - Drop your shortcuts here"),
+                    Title = Loc.T("New Container - Drop your shortcuts here"),
                     X = 20.0,
                     Y = 20.0,
                     Width = 360.0,
@@ -4360,16 +4360,16 @@ namespace Desktop_Fences
 
                     // Visual Defaults
                     CustomColor = (string)null,
-                    FenceBorderThickness = 2
+                    ContainerBorderThickness = 2
                 };
 
-                // 2. Create the "Startup Tips" Note Fence
-                var noteFence = new
+                // 2. Create the "Startup Tips" Note Container
+                var noteContainer = new
                 {
                     Id = Guid.NewGuid().ToString(), // Unique ID
                     Title = OpsisWelcomeTitle(), // Explicit Name
-                    X = 20.0,   // Positioned below the data fence
-                    Y = 200.0,  // Data fence ends then this fence begins
+                    X = 20.0,   // Positioned below the data container
+                    Y = 200.0,  // Data container ends then this container begins
                     Width = 555.0,
                     Height = 318.0,
                     ItemsType = "Note",
@@ -4396,33 +4396,33 @@ namespace Desktop_Fences
                     DisableTextShadow = "false",
                     IconSize = "Medium",
                     IconSpacing = 5,
-                    FenceBorderThickness = 2
+                    ContainerBorderThickness = 2
                 };
 
                 // 3. Combine and Save
-                var fences = new List<object> { dataFence };   // Opsis: no welcome note; the instructions live in the Opsis About page
-                string defaultJson = JsonConvert.SerializeObject(fences, Formatting.Indented);
+                var containers = new List<object> { dataContainer };   // Opsis: no welcome note; the instructions live in the Opsis About page
+                string defaultJson = JsonConvert.SerializeObject(containers, Formatting.Indented);
 
-                System.IO.File.WriteAllText(FenceDataManager.JsonFilePath, defaultJson);
+                System.IO.File.WriteAllText(ContainerDataManager.JsonFilePath, defaultJson);
 
                 // Load into memory
-                FenceDataManager.FenceData = JsonConvert.DeserializeObject<List<dynamic>>(defaultJson);
+                ContainerDataManager.ContainerData = JsonConvert.DeserializeObject<List<dynamic>>(defaultJson);
 
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceCreation,
-                    "Initialized default configuration with Data Fence and Startup Tips");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerCreation,
+                    "Initialized default configuration with Data Container and Startup Tips");
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceCreation,
-                    $"Error initializing default fences: {ex.Message}");
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerCreation,
+                    $"Error initializing default containers: {ex.Message}");
 
                 // Fallback to empty list if something explodes
-                FenceDataManager.FenceData = new List<dynamic>();
+                ContainerDataManager.ContainerData = new List<dynamic>();
             }
         }
 
 
-        public static void CreateFence(dynamic fence, TargetChecker targetChecker)
+        public static void CreateContainer(dynamic container, TargetChecker targetChecker)
         {
 
             // --- FIX: Declare Title TextBox EARLY ---
@@ -4439,39 +4439,39 @@ namespace Desktop_Fences
             Action CommitRename = null;
             // ---------------------------------------------------
 
-            // Check for valid Portal Fence target folder
-            if (fence.ItemsType?.ToString() == "Portal")
+            // Check for valid Portal Container target folder
+            if (container.ItemsType?.ToString() == "Portal")
             {
-                string targetPath = fence.Path?.ToString();
+                string targetPath = container.Path?.ToString();
                 if (string.IsNullOrEmpty(targetPath) || !System.IO.Directory.Exists(targetPath))
                 {
-                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceCreation, $"Skipping creation of Portal Fence '{fence.Title}' due to missing target folder: {targetPath ?? "null"}");
-                    FenceDataManager.FenceData.Remove(fence);
-                    FenceDataManager.SaveFenceData();
+                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerCreation, $"Skipping creation of Portal Container '{container.Title}' due to missing target folder: {targetPath ?? "null"}");
+                    ContainerDataManager.ContainerData.Remove(container);
+                    ContainerDataManager.SaveContainerData();
                     return;
                 }
             }
             DockPanel dp = new DockPanel();
-            // Get fence border color and thickness from fence data
+            // Get container border color and thickness from container data
             System.Windows.Media.Brush borderBrush = null;
             double borderThickness = 0;
             try
             {
-                string borderColorName = fence.FenceBorderColor?.ToString();
-                int customThickness = Convert.ToInt32(fence.FenceBorderThickness?.ToString() ?? "2");
+                string borderColorName = container.ContainerBorderColor?.ToString();
+                int customThickness = Convert.ToInt32(container.ContainerBorderThickness?.ToString() ?? "2");
                 if (!string.IsNullOrEmpty(borderColorName))
                 {
                     var borderColor = Utility.GetColorFromName(borderColorName);
                     borderBrush = new SolidColorBrush(borderColor);
                     borderThickness = customThickness; // Use custom thickness
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.General, $"Applied border color '{borderColorName}' with thickness {borderThickness} to fence '{fence.Title}'");
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.General, $"Applied border color '{borderColorName}' with thickness {borderThickness} to container '{container.Title}'");
                 }
                 else if (customThickness > 0)
                 {
                     // Even without color, apply thickness with default color
                     borderBrush = new SolidColorBrush(System.Windows.Media.Colors.Gray);
                     borderThickness = customThickness;
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.General, $"Applied default border with thickness {borderThickness} to fence '{fence.Title}'");
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.General, $"Applied default border with thickness {borderThickness} to container '{container.Title}'");
                 }
             }
             catch (Exception ex)
@@ -4524,7 +4524,7 @@ namespace Desktop_Fences
             {
                 // Text = Loc.T("♥"),
 
-                Name = "FenceMenuIcon", // New! Name
+                Name = "ContainerMenuIcon", // New! Name
                 Text = MenuSymbol,
                 FontSize = 18,
                 Foreground = System.Windows.Media.Brushes.White, // Match title and icon text color
@@ -4536,7 +4536,7 @@ namespace Desktop_Fences
 
             };
   
-            _heartTextBlocks[fence] = heart;
+            _heartTextBlocks[container] = heart;
 
 
 
@@ -4564,14 +4564,14 @@ namespace Desktop_Fences
             };
 
 
-            // Opsis: the menu icon now lives inside the title grid (see below) so the title band spans the whole fence width.
+            // Opsis: the menu icon now lives inside the title grid (see below) so the title band spans the whole container width.
             Panel.SetZIndex(heart, 100); // Ensure heart is above titleGrid to receive clicks
 
-            // Store heart TextBlock reference for this fence
-            _heartTextBlocks[fence] = heart;
+            // Store heart TextBlock reference for this container
+            _heartTextBlocks[container] = heart;
             // Create and assign heart ContextMenu using centralized builder
-            // heart.ContextMenu = BuildHeartContextMenu(fence);
-            heart.ContextMenu = BuildHeartContextMenu(fence, false); // Normal menu by default
+            // heart.ContextMenu = BuildHeartContextMenu(container);
+            heart.ContextMenu = BuildHeartContextMenu(container, false); // Normal menu by default
                                                                      //// Handle left-click to open heart context menu
                                                                      //heart.MouseLeftButtonDown += (s, e) =>
                                                                      //{
@@ -4602,7 +4602,7 @@ namespace Desktop_Fences
                     LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
                         $"Heart clicked - Ctrl pressed: {isCtrlPressed}");
                     // Rebuild context menu based on Ctrl state
-                    heart.ContextMenu = BuildHeartContextMenu(fence, isCtrlPressed);
+                    heart.ContextMenu = BuildHeartContextMenu(container, isCtrlPressed);
                     heart.ContextMenu.IsOpen = true;
                     e.Handled = true;
                 }
@@ -4640,15 +4640,15 @@ namespace Desktop_Fences
                 //     Text = Loc.T("🔑"),
                 //     Text = Loc.T("🔒"),
                 //     Text = Loc.T("🔓"),
-                Name = "FenceLockIcon", // New! Name
+                Name = "ContainerLockIcon", // New! Name
                 Text = LockSymbol,//"🛡️",
                                 FontSize = 14,
-                Foreground = fence.IsLocked?.ToString().ToLower() == "true" ? System.Windows.Media.Brushes.Red : System.Windows.Media.Brushes.White,
+                Foreground = container.IsLocked?.ToString().ToLower() == "true" ? System.Windows.Media.Brushes.Red : System.Windows.Media.Brushes.White,
                 Margin = new Thickness(0, 3, 2, 0), // Adjusted for top-right positioning
                 HorizontalAlignment = HorizontalAlignment.Right,
                 VerticalAlignment = VerticalAlignment.Top,
                 Cursor = Cursors.Hand,
-                ToolTip = fence.IsLocked?.ToString().ToLower() == "true" ? "Fence is locked (click to unlock)" : "Fence is unlocked (click to lock)",
+                ToolTip = container.IsLocked?.ToString().ToLower() == "true" ? "Container is locked (click to unlock)" : "Container is unlocked (click to lock)",
                 Opacity = (double)SettingsManager.MenuTintValue / 100
             };
 
@@ -4680,7 +4680,7 @@ namespace Desktop_Fences
 
 
             // Set initial state without saving to JSON
-            UpdateLockState(lockIcon, fence, null, saveToJson: false);
+            UpdateLockState(lockIcon, container, null, saveToJson: false);
             // Lock icon click handler
             lockIcon.MouseLeftButtonDown += (s, e) =>
             {
@@ -4694,33 +4694,33 @@ namespace Desktop_Fences
                         return;
                     }
 
-                    // Get the NonActivatingWindow to find the fence by Id
+                    // Get the NonActivatingWindow to find the container by Id
                     NonActivatingWindow win = FindVisualParent<NonActivatingWindow>(lockIcon);
                     if (win == null)
                     {
-                        LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.Error, $"Could not find NonActivatingWindow for lock icon click in fence '{fence.Title}'");
+                        LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.Error, $"Could not find NonActivatingWindow for lock icon click in container '{container.Title}'");
                         return;
                     }
-                    // Find the fence in FenceDataManager.FenceData using the window's Tag (Id)
-                    string fenceId = win.Tag?.ToString();
-                    if (string.IsNullOrEmpty(fenceId))
+                    // Find the container in ContainerDataManager.ContainerData using the window's Tag (Id)
+                    string containerId = win.Tag?.ToString();
+                    if (string.IsNullOrEmpty(containerId))
                     {
-                        LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.Error, $"Fence Id is missing for window '{win.Title}'");
+                        LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.Error, $"Container Id is missing for window '{win.Title}'");
                         return;
                     }
-                    dynamic currentFence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
-                    if (currentFence == null)
+                    dynamic currentContainer = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
+                    if (currentContainer == null)
                     {
-                        LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceUpdate, $"Fence with Id '{fenceId}' not found in FenceDataManager.FenceData");
+                        LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerUpdate, $"Container with Id '{containerId}' not found in ContainerDataManager.ContainerData");
                         return;
                     }
                     // Toggle the lock state
-                    bool currentState = currentFence.IsLocked?.ToString().ToLower() == "true";
+                    bool currentState = currentContainer.IsLocked?.ToString().ToLower() == "true";
                     bool newState = !currentState;
                     // Update UI and JSON on the main thread
                     System.Windows.Application.Current.Dispatcher.Invoke(() =>
                     {
-                        UpdateLockState(lockIcon, currentFence, newState, saveToJson: true);
+                        UpdateLockState(lockIcon, currentContainer, newState, saveToJson: true);
                     });
                 }
             };
@@ -4730,78 +4730,78 @@ namespace Desktop_Fences
             // Create a Grid for the titlebar - move here to ensure it is created before mouse handler
             Grid titleGrid = new Grid
             {
-                Name = "FenceTitleGrid",
+                Name = "ContainerTitleGrid",
                 MinHeight = SettingsManager.TitleBarHeight,
-                Background = Utility.GetTitleBarBrush(Utility.FenceProp((object)fence, "CustomColor"), Utility.FenceProp((object)fence, "TitleBarColor"))
+                Background = Utility.GetTitleBarBrush(Utility.ContainerProp((object)container, "CustomColor"), Utility.ContainerProp((object)container, "TitleBarColor"))
             };
             titleGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(0, GridUnitType.Pixel) }); // Col 0: Spacer
             titleGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // Col 1: Title
             titleGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });                      // Col 2: Filter Icon (Auto width)
             titleGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(30, GridUnitType.Pixel) }); // Col 3: Lock Icon
                                                                                                                       // End of ctrl+click handler
-            ContextMenu CnMnFenceManager = new ContextMenu();
-            // MenuItem miNewFence = new MenuItem { Header = Loc.T("New Fence") };
-            // MenuItem miNewPortalFence = new MenuItem { Header = Loc.T("New Portal Fence") };
-            MenuItem miNewNoteFence = new MenuItem { Header = Loc.T("New Note Fence") };
-            // MenuItem miRemoveFence = new MenuItem { Header = Loc.T("Delete Fence") };
+            ContextMenu CnMnContainerManager = new ContextMenu();
+            // MenuItem miNewContainer = new MenuItem { Header = Loc.T("New Container") };
+            // MenuItem miNewPortalContainer = new MenuItem { Header = Loc.T("New Portal Container") };
+            MenuItem miNewNoteContainer = new MenuItem { Header = Loc.T("New Note Container") };
+            // MenuItem miRemoveContainer = new MenuItem { Header = Loc.T("Delete Container") };
             // MenuItem miXT = new MenuItem { Header = Loc.T("Exit") };
-            MenuItem miHide = new MenuItem { Header = Loc.T("Hide Fence") }; // New Hide Fence item
-                                                                      // CnMnFenceManager.Items.Add(miRemoveFence);
-            CnMnFenceManager.Items.Add(miHide); // Add Hide Fence
-                                                // Add Note fence specific context menu items if this is a Note fence
-            if (fence.ItemsType?.ToString() == "Note")
+            MenuItem miHide = new MenuItem { Header = Loc.T("Hide Container") }; // New Hide Container item
+                                                                      // CnMnContainerManager.Items.Add(miRemoveContainer);
+            CnMnContainerManager.Items.Add(miHide); // Add Hide Container
+                                                // Add Note container specific context menu items if this is a Note container
+            if (container.ItemsType?.ToString() == "Note")
             {
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation,
-                    $"Adding Note fence context menu items for '{fence.Title}'");
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation,
+                    $"Adding Note container context menu items for '{container.Title}'");
                 // We'll add the TextBox reference after the window is created
                 // For now, just mark that this will need Note menu items
             }
             NonActivatingWindow win = new NonActivatingWindow
             {
-                ContextMenu = CnMnFenceManager,
+                ContextMenu = CnMnContainerManager,
                 AllowDrop = true,
                 AllowsTransparency = true,
                 Background = System.Windows.Media.Brushes.Transparent,
-                Title = fence.Title?.ToString() ?? "New Fence", // Handle null title
+                Title = container.Title?.ToString() ?? "New Container", // Handle null title
                 ShowInTaskbar = false,
                 WindowStyle = WindowStyle.None,
                 Content = cborder,
-                ResizeMode = fence.IsLocked?.ToString().ToLower() == "true" ? ResizeMode.NoResize : ResizeMode.CanResizeWithGrip,
+                ResizeMode = container.IsLocked?.ToString().ToLower() == "true" ? ResizeMode.NoResize : ResizeMode.CanResizeWithGrip,
                 // ResizeMode = ResizeMode.CanResizeWithGrip,
-                Width = (double)fence.Width,
-                Height = (double)fence.Height,
-                Top = (double)fence.Y,
-                Left = (double)fence.X,
-                Tag = fence.Id?.ToString() ?? Guid.NewGuid().ToString() // Ensure ID exists
+                Width = (double)container.Width,
+                Height = (double)container.Height,
+                Top = (double)container.Y,
+                Left = (double)container.X,
+                Tag = container.Id?.ToString() ?? Guid.NewGuid().ToString() // Ensure ID exists
             };
-            // Add Note fence specific context menu items after window creation
-            if (fence.ItemsType?.ToString() == "Note")
+            // Add Note container specific context menu items after window creation
+            if (container.ItemsType?.ToString() == "Note")
             {
                 // The TextBox will be created in InitContent(), so we need to add menu items after that
                 // We'll modify the context menu after InitContent() is called
             }
-            //Peek behind fence
-            // Opsis: Sort by (Data fences) and Exclude from auto-hide, ported from the old DeskContainers.
-            if (fence.ItemsType?.ToString() == "Data")
+            //Peek behind container
+            // Opsis: Sort by (Data containers) and Exclude from auto-hide, ported from the old DeskContainers.
+            if (container.ItemsType?.ToString() == "Data")
             {
                 MenuItem miSortBy = new MenuItem { Header = Loc.T("Sort by") };
                 foreach (var (label, key) in new[] { ("Name", "name"), ("Type", "type"), ("Date modified", "date"), ("Size", "size") })
                 {
                     var sortItem = new MenuItem { Header = label };
                     string capturedKey = key;
-                    sortItem.Click += (s, e) => SortFenceItems(win.Tag?.ToString(), capturedKey);
+                    sortItem.Click += (s, e) => SortContainerItems(win.Tag?.ToString(), capturedKey);
                     miSortBy.Items.Add(sortItem);
                 }
-                CnMnFenceManager.Items.Add(miSortBy);
+                CnMnContainerManager.Items.Add(miSortBy);
             }
             MenuItem miExcludeAutoHide = new MenuItem { Header = Loc.T("Exclude from auto-hide"), IsCheckable = true, IsChecked = IsExcludedFromAutoHide(win) };
-            miExcludeAutoHide.Click += (s, e) => UpdateFenceProperty(fence, "ExcludeFromAutoHide", miExcludeAutoHide.IsChecked ? "true" : "false", $"Auto-hide exclusion for '{fence.Title}'");
-            CnMnFenceManager.Items.Add(miExcludeAutoHide);
+            miExcludeAutoHide.Click += (s, e) => UpdateContainerProperty(container, "ExcludeFromAutoHide", miExcludeAutoHide.IsChecked ? "true" : "false", $"Auto-hide exclusion for '{container.Title}'");
+            CnMnContainerManager.Items.Add(miExcludeAutoHide);
             MenuItem miPeekBehind = new MenuItem { Header = Loc.T("Peek Behind") };
-            CnMnFenceManager.Items.Add(miPeekBehind);
+            CnMnContainerManager.Items.Add(miPeekBehind);
             miPeekBehind.Click += (s, e) =>
             {
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Initiating Peek Behind for fence '{fence.Title}'");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Initiating Peek Behind for container '{container.Title}'");
                 // Create a separate transparent window for the countdown
                 var countdownWindow = new Window
                 {
@@ -4830,8 +4830,8 @@ namespace Desktop_Fences
                 countdownWindow.Content = countdownLabel;
                 // Show the countdown window
                 countdownWindow.Show();
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Created countdown window for fence '{fence.Title}' at ({countdownWindow.Left}, {countdownWindow.Top})");
-                // Fade out animation for the fence
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Created countdown window for container '{container.Title}' at ({countdownWindow.Left}, {countdownWindow.Top})");
+                // Fade out animation for the container
                 var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromSeconds(0.3))
                 {
                     EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseIn }
@@ -4846,7 +4846,7 @@ namespace Desktop_Fences
                     if (countdownSeconds <= 0)
                     {
                         timer.Stop();
-                        // Fade in animation for the fence
+                        // Fade in animation for the container
                         var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromSeconds(0.8))
                         {
                             EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
@@ -4854,13 +4854,13 @@ namespace Desktop_Fences
                         win.BeginAnimation(UIElement.OpacityProperty, fadeIn);
                         // Close the countdown window
                         countdownWindow.Close();
-                        LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Peek Behind completed for fence '{fence.Title}'");
+                        LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Peek Behind completed for container '{container.Title}'");
                     }
                 };
                 // Start fade out and timer
                 win.BeginAnimation(UIElement.OpacityProperty, fadeOut);
                 timer.Start();
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Started Peek Behind fade-out and countdown for fence '{fence.Title}'");
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Started Peek Behind fade-out and countdown for container '{container.Title}'");
             };
 
 
@@ -4871,103 +4871,103 @@ namespace Desktop_Fences
             MenuItem miClearDeadShortcuts = null;
             Separator sepClearDead = null;
 
-            if (fence.ItemsType?.ToString() == "Data")
+            if (container.ItemsType?.ToString() == "Data")
             {
                 sepClearDead = new Separator { Visibility = Visibility.Collapsed };
-                CnMnFenceManager.Items.Add(sepClearDead);
+                CnMnContainerManager.Items.Add(sepClearDead);
 
                 miClearDeadShortcuts = new MenuItem { Header = Loc.T("Clear Dead Shortcuts"), Visibility = Visibility.Collapsed };
-                CnMnFenceManager.Items.Add(miClearDeadShortcuts);
+                CnMnContainerManager.Items.Add(miClearDeadShortcuts);
 
                 miClearDeadShortcuts.Click += (s, e) =>
                 {
-                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceUpdate, $"Clear Dead Shortcuts clicked for fence '{fence.Title}'");
+                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerUpdate, $"Clear Dead Shortcuts clicked for container '{container.Title}'");
                     try
                     {
-                        int removedCount = FilePathUtilities.ClearDeadShortcutsFromFence(fence);
+                        int removedCount = FilePathUtilities.ClearDeadShortcutsFromContainer(container);
                         if (removedCount > 0)
                         {
-                            FenceDataManager.SaveFenceData();
-                            RefreshFenceUsingFormApproach(win, fence);
+                            ContainerDataManager.SaveContainerData();
+                            RefreshContainerUsingFormApproach(win, container);
                         }
                     }
                     catch (Exception ex)
                     {
-                        LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceUpdate, $"Error in Clear Dead Shortcuts: {ex.Message}");
+                        LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerUpdate, $"Error in Clear Dead Shortcuts: {ex.Message}");
                     }
                 };
             }
 
             // 2. Open Folder (Portal Only)
-            if (fence.ItemsType?.ToString() == "Portal")
+            if (container.ItemsType?.ToString() == "Portal")
             {
-                MenuItem miOpenFolder = new MenuItem { Header = Loc.T("Open fence folder") };
+                MenuItem miOpenFolder = new MenuItem { Header = Loc.T("Open container folder") };
                 miOpenFolder.Click += (s, e) =>
                 {
                     try
                     {
-                        string folderPath = fence.Path?.ToString();
+                        string folderPath = container.Path?.ToString();
                         if (!string.IsNullOrEmpty(folderPath) && Directory.Exists(folderPath))
                             Process.Start("explorer.exe", folderPath);
                     }
                     catch { }
                 };
-                CnMnFenceManager.Items.Add(miOpenFolder);
+                CnMnContainerManager.Items.Add(miOpenFolder);
             }
 
-            CnMnFenceManager.Items.Add(new Separator());
+            CnMnContainerManager.Items.Add(new Separator());
 
             // 3. Paste Item (Initially Hidden)
             MenuItem miPasteItem = new MenuItem { Header = Loc.T("Paste Item"), Visibility = Visibility.Collapsed };
-            miPasteItem.Click += (s, e) => CopyPasteManager.PasteItem(fence);
-            CnMnFenceManager.Items.Add(miPasteItem);
+            miPasteItem.Click += (s, e) => CopyPasteManager.PasteItem(container);
+            CnMnContainerManager.Items.Add(miPasteItem);
 
  
 
 
-            //  CnMnFenceManager.Items.Add(new Separator());
+            //  CnMnContainerManager.Items.Add(new Separator());
 
-            //CnMnFenceManager.Items.Add(miNewCustomize);
+            //CnMnContainerManager.Items.Add(miNewCustomize);
             MenuItem miCustomize = new MenuItem { Header = Loc.T("Customize...") };
             miCustomize.Click += (s, e) =>
             {
                 try
                 {
-                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Opening CustomizeFenceFormManager for fence '{fence.Title}'");
-                    var customizeForm = new CustomizeFenceFormManager(fence);
+                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Opening CustomizeContainerFormManager for container '{container.Title}'");
+                    var customizeForm = new CustomizeContainerFormManager(container);
                     customizeForm.ShowDialog();
                     if (customizeForm.DialogResult)
                     {
-                        LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"User saved changes in CustomizeFenceFormManager for fence '{fence.Title}'");
+                        LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"User saved changes in CustomizeContainerFormManager for container '{container.Title}'");
                     }
                     else
                     {
-                        LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"User cancelled CustomizeFenceFormManager for fence '{fence.Title}'");
+                        LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"User cancelled CustomizeContainerFormManager for container '{container.Title}'");
                     }
                 }
                 catch (Exception ex)
                 {
-                    LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, $"Error opening CustomizeFenceFormManager: {ex.Message}");
+                    LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, $"Error opening CustomizeContainerFormManager: {ex.Message}");
                     MessageBoxesManager.ShowOKOnlyMessageBoxForm($"Error opening customize form: {ex.Message}", "Form Error");
                 }
             };
-            CnMnFenceManager.Items.Add(miCustomize);
-            // CnMnFenceManager.Items.Add(new Separator());
-            // CnMnFenceManager.Items.Add(new Separator());
-            // CnMnFenceManager.Items.Add(miXT);
+            CnMnContainerManager.Items.Add(miCustomize);
+            // CnMnContainerManager.Items.Add(new Separator());
+            // CnMnContainerManager.Items.Add(new Separator());
+            // CnMnContainerManager.Items.Add(miXT);
             // Handle both JObject and ExpandoObject access
             string isHiddenString = "false"; // Default value
             try
             {
-                if (fence is JObject jFence)
+                if (container is JObject jContainer)
                 {
-                    // Existing fence from JSON
-                    isHiddenString = jFence["IsHidden"]?.ToString().ToLower() ?? "false";
+                    // Existing container from JSON
+                    isHiddenString = jContainer["IsHidden"]?.ToString().ToLower() ?? "false";
                 }
                 else
                 {
-                    // New ExpandoObject fence
-                    isHiddenString = (fence.IsHidden?.ToString() ?? "false").ToLower();
+                    // New ExpandoObject container
+                    isHiddenString = (container.IsHidden?.ToString() ?? "false").ToLower();
                 }
             }
             catch (Exception ex)
@@ -4975,22 +4975,22 @@ namespace Desktop_Fences
                 LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.Error, $"Error reading IsHidden: {ex.Message}");
             }
             bool isHidden = isHiddenString == "true";
-            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.Settings, $"Fence '{fence.Title}' IsHidden state: {isHidden}");
-            // Adjust the fence position to ensure it fits within screen bounds
-            AdjustFencePositionToScreen(win);
+            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.Settings, $"Container '{container.Title}' IsHidden state: {isHidden}");
+            // Adjust the container position to ensure it fits within screen bounds
+            AdjustContainerPositionToScreen(win);
             win.Loaded += (s, e) =>
             {
-                UpdateLockState(lockIcon, fence, null, saveToJson: false);
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation, $"Applied lock state for fence '{fence.Title}' on load: IsLocked={fence.IsLocked?.ToString().ToLower()}");
+                UpdateLockState(lockIcon, container, null, saveToJson: false);
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation, $"Applied lock state for container '{container.Title}' on load: IsLocked={container.IsLocked?.ToString().ToLower()}");
                 // Apply IsRolled state
-                bool isRolled = fence.IsRolled?.ToString().ToLower() == "true";
+                bool isRolled = container.IsRolled?.ToString().ToLower() == "true";
                 double targetHeight = SettingsManager.TitleBarHeight; // Default for rolled-up state  //rolled height
                 if (!isRolled)
                 {
-                    double unrolledHeight = (double)fence.Height; // Default to fence.Height
-                    if (fence.UnrolledHeight != null)
+                    double unrolledHeight = (double)container.Height; // Default to container.Height
+                    if (container.UnrolledHeight != null)
                     {
-                        if (double.TryParse(fence.UnrolledHeight.ToString(), out double parsedHeight))
+                        if (double.TryParse(container.UnrolledHeight.ToString(), out double parsedHeight))
                         {
                             if (parsedHeight > 0)
                             {
@@ -4998,24 +4998,24 @@ namespace Desktop_Fences
                             }
                             else
                             {
-                                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation, $"UnrolledHeight {parsedHeight} is invalid (non-positive) for fence '{fence.Title}', using Height={unrolledHeight}");
+                                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation, $"UnrolledHeight {parsedHeight} is invalid (non-positive) for container '{container.Title}', using Height={unrolledHeight}");
                             }
                         }
                         else
                         {
-                            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation, $"Failed to parse UnrolledHeight '{fence.UnrolledHeight}' for fence '{fence.Title}', using Height={unrolledHeight}");
+                            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation, $"Failed to parse UnrolledHeight '{container.UnrolledHeight}' for container '{container.Title}', using Height={unrolledHeight}");
                         }
                     }
                     else
                     {
-                        LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation, $"UnrolledHeight is null for fence '{fence.Title}', using Height={unrolledHeight}");
+                        LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation, $"UnrolledHeight is null for container '{container.Title}', using Height={unrolledHeight}");
                     }
                     targetHeight = unrolledHeight;
-                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceCreation, $"Applied rolled-down state for fence '{fence.Title}' on load: Height={targetHeight}");
+                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerCreation, $"Applied rolled-down state for container '{container.Title}' on load: Height={targetHeight}");
                 }
                 else
                 {
-                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceCreation, $"Applied rolled-up state for fence '{fence.Title}' on load: Height={targetHeight}");
+                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerCreation, $"Applied rolled-up state for container '{container.Title}' on load: Height={targetHeight}");
                 }
                 win.Height = targetHeight;
                 // Apply WrapPanel visibility
@@ -5032,7 +5032,7 @@ namespace Desktop_Fences
                             if (wpcont != null)
                             {
                                 wpcont.Visibility = isRolled ? Visibility.Collapsed : Visibility.Visible;
-                                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation, $"Set initial WrapPanel visibility to {(isRolled ? "Collapsed" : "Visible")} for fence '{fence.Title}'");
+                                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation, $"Set initial WrapPanel visibility to {(isRolled ? "Collapsed" : "Visible")} for container '{container.Title}'");
                             }
                         }
                     }
@@ -5040,54 +5040,54 @@ namespace Desktop_Fences
                 if (isHidden)
                 {
                     win.Visibility = Visibility.Hidden;
-                    TrayManager.AddHiddenFence(win);
-                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceCreation, $"Hid fence '{fence.Title}' after loading at startup");
+                    TrayManager.AddHiddenContainer(win);
+                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerCreation, $"Hid container '{container.Title}' after loading at startup");
                 }
             };
             // Step 5
             if (isHidden)
             {
-                TrayManager.AddHiddenFence(win);
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation, $"Added fence '{fence.Title}' to hidden list at startup");
+                TrayManager.AddHiddenContainer(win);
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation, $"Added container '{container.Title}' to hidden list at startup");
             }
             // Hide click
             miHide.Click += (s, e) =>
             {
-                UpdateFenceProperty(fence, "IsHidden", "true", $"Hid fence '{fence.Title}'");
-                TrayManager.AddHiddenFence(win);
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.General, $"Triggered Hide Fence for '{fence.Title}'");
+                UpdateContainerProperty(container, "IsHidden", "true", $"Hid container '{container.Title}'");
+                TrayManager.AddHiddenContainer(win);
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.General, $"Triggered Hide Container for '{container.Title}'");
             };
             // Handle manual resize to update both Height and UnrolledHeight
             win.SizeChanged += (s, e) =>
             {
-                // Get current fence reference by ID to avoid stale references
-                string fenceId = win.Tag?.ToString();
-                if (string.IsNullOrEmpty(fenceId))
+                // Get current container reference by ID to avoid stale references
+                string containerId = win.Tag?.ToString();
+                if (string.IsNullOrEmpty(containerId))
                 {
 
                     return;
                 }
 
-                // Skip updates if this fence is currently in a rollup/rolldown transition
-                if (_fencesInTransition.Contains(fenceId))
+                // Skip updates if this container is currently in a rollup/rolldown transition
+                if (_containersInTransition.Contains(containerId))
                 {
 
                     return;
                 }
-                // Find the current fence in FenceDataManager.FenceData using ID
-                var currentFence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
-                if (currentFence != null)
+                // Find the current container in ContainerDataManager.ContainerData using ID
+                var currentContainer = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
+                if (currentContainer != null)
                 {
 
                     double newHeight = e.NewSize.Height;
                     double newWidth = e.NewSize.Width;
-                    double oldHeight = Convert.ToDouble(currentFence.Height?.ToString() ?? "0");
-                    double oldUnrolledHeight = Convert.ToDouble(currentFence.UnrolledHeight?.ToString() ?? "0");
-                    bool isRolled = currentFence.IsRolled?.ToString().ToLower() == "true";
+                    double oldHeight = Convert.ToDouble(currentContainer.Height?.ToString() ?? "0");
+                    double oldUnrolledHeight = Convert.ToDouble(currentContainer.UnrolledHeight?.ToString() ?? "0");
+                    bool isRolled = currentContainer.IsRolled?.ToString().ToLower() == "true";
 
                     // Update Width and Height with the actual new values
-                    currentFence.Width = newWidth;
-                    currentFence.Height = newHeight;
+                    currentContainer.Width = newWidth;
+                    currentContainer.Height = newHeight;
 
                     // Handle UnrolledHeight update
                     if (!isRolled)
@@ -5096,9 +5096,9 @@ namespace Desktop_Fences
                         if (Math.Abs(newHeight - SettingsManager.TitleBarHeight) > 5) // Only if height is significantly different from rolled-up height   //rolled height
                         {
                             double heightDifference = Math.Abs(newHeight - oldUnrolledHeight);
-                            // DebugLog("LOGIC", fenceId, $"Height difference from old UnrolledHeight: {heightDifference:F1}");
-                            currentFence.UnrolledHeight = newHeight;
-                            // DebugLog("UPDATE", fenceId, $"UPDATED UnrolledHeight from {oldUnrolledHeight:F1} to {newHeight:F1}");
+                            // DebugLog("LOGIC", containerId, $"Height difference from old UnrolledHeight: {heightDifference:F1}");
+                            currentContainer.UnrolledHeight = newHeight;
+                            // DebugLog("UPDATE", containerId, $"UPDATED UnrolledHeight from {oldUnrolledHeight:F1} to {newHeight:F1}");
                         }
                         else
                         {
@@ -5110,11 +5110,11 @@ namespace Desktop_Fences
 
                     }
                     // Save to JSON
-                 //   MessageBox.Show("Debug: SizeChanged handler called. Saving fence data.");
-                    FenceDataManager.SaveFenceData();
-                    var verifyFence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
-                    double verifyHeight = Convert.ToDouble(verifyFence.Height?.ToString() ?? "0");
-                    double verifyUnrolled = Convert.ToDouble(verifyFence.UnrolledHeight?.ToString() ?? "0");
+                 //   MessageBox.Show("Debug: SizeChanged handler called. Saving container data.");
+                    ContainerDataManager.SaveContainerData();
+                    var verifyContainer = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
+                    double verifyHeight = Convert.ToDouble(verifyContainer.Height?.ToString() ?? "0");
+                    double verifyUnrolled = Convert.ToDouble(verifyContainer.UnrolledHeight?.ToString() ?? "0");
 
                 }
                 else
@@ -5186,8 +5186,8 @@ namespace Desktop_Fences
             {
                 if (SettingsManager.AutoResetHideTimer) ResetAutoHideTimer();
 
-                // --- NEW: Disable layout highlight for Portal Fences (since they auto-sort and cannot be manually arranged)
-                if (fence.ItemsType?.ToString() != "Portal")
+                // --- NEW: Disable layout highlight for Portal Containers (since they auto-sort and cannot be manually arranged)
+                if (container.ItemsType?.ToString() != "Portal")
                 {
                     if (ctrlPollTimer == null)
                     {
@@ -5204,10 +5204,10 @@ namespace Desktop_Fences
 
             win.MouseLeave += (s, e) =>
             {
-                if (fence.ItemsType?.ToString() != "Portal")
+                if (container.ItemsType?.ToString() != "Portal")
                 {
                     if (ctrlPollTimer != null) ctrlPollTimer.Stop();
-                    ToggleOverlays(false); // Instantly hide if mouse leaves the fence
+                    ToggleOverlays(false); // Instantly hide if mouse leaves the container
                 }
             };
 
@@ -5259,8 +5259,8 @@ namespace Desktop_Fences
 
 
 
-            LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceCreation,
-        $"Fence '{fence.Title}' successfully created and displayed");
+            LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerCreation,
+        $"Container '{container.Title}' successfully created and displayed");
   
 
 
@@ -5268,14 +5268,14 @@ namespace Desktop_Fences
             bool isBoldTitle = false;
             try
             {
-                isBoldTitle = fence.BoldTitleText?.ToString().ToLower() == "true";
+                isBoldTitle = container.BoldTitleText?.ToString().ToLower() == "true";
             }
             catch { /* Safe fallback */ }
             // Get title text color or use default white
             System.Windows.Media.Brush titleTextBrush = System.Windows.Media.Brushes.White; // Default
             try
             {
-                string titleColorName = fence.TitleTextColor?.ToString();
+                string titleColorName = container.TitleTextColor?.ToString();
                 if (!string.IsNullOrEmpty(titleColorName))
                 {
                     var titleColor = Utility.GetColorFromName(titleColorName);
@@ -5286,11 +5286,11 @@ namespace Desktop_Fences
             {
                 titleTextBrush = System.Windows.Media.Brushes.White; // Fallback
             }
-            // Get title text size from fence data
+            // Get title text size from container data
             double titleFontSize = 12; // Default Medium size
             try
             {
-                titleFontSize = Utility.TitleSizeToPoints(fence.TitleTextSize?.ToString() ?? "Medium");
+                titleFontSize = Utility.TitleSizeToPoints(container.TitleTextSize?.ToString() ?? "Medium");
             }
             catch
             {
@@ -5298,12 +5298,12 @@ namespace Desktop_Fences
             }
             Label titlelabel = new Label
             {
-                Content = fence.Title.ToString(),
+                Content = container.Title.ToString(),
                 Foreground = titleTextBrush, // Changed from hardcoded White
                 HorizontalContentAlignment = HorizontalAlignment.Center,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 Cursor = Cursors.SizeAll,
-                FontFamily = new System.Windows.Media.FontFamily(string.IsNullOrEmpty(Utility.FenceProp((object)fence, "TitleFontFamily")) || Utility.FenceProp((object)fence, "TitleFontFamily") == "Default" ? "Segoe UI" : Utility.FenceProp((object)fence, "TitleFontFamily")),
+                FontFamily = new System.Windows.Media.FontFamily(string.IsNullOrEmpty(Utility.ContainerProp((object)container, "TitleFontFamily")) || Utility.ContainerProp((object)container, "TitleFontFamily") == "Default" ? "Segoe UI" : Utility.ContainerProp((object)container, "TitleFontFamily")),
                 FontWeight = isBoldTitle ? FontWeights.Bold : FontWeights.SemiBold,
                 FontSize = titleFontSize // Apply custom title text size
             };
@@ -5317,7 +5317,7 @@ namespace Desktop_Fences
             MenuItem miNameAfterPath = null; // New: For Portal Renaming
             Separator sepNameAfterPath = null; // New: Separator for layout
 
-            CnMnFenceManager.Opened += (contextSender, contextArgs) =>
+            CnMnContainerManager.Opened += (contextSender, contextArgs) =>
             {
                 // A. Update Paste Visibility
                 bool hasCopiedItem = CopyPasteManager.HasCopiedItem();
@@ -5326,41 +5326,41 @@ namespace Desktop_Fences
                 // B. Update Clear Dead Shortcuts Visibility
                 if (miClearDeadShortcuts != null)
                 {
-                    bool hasDead = HasDeadShortcuts(fence);
+                    bool hasDead = HasDeadShortcuts(container);
                     miClearDeadShortcuts.Visibility = hasDead ? Visibility.Visible : Visibility.Collapsed;
                     if (sepClearDead != null) sepClearDead.Visibility = hasDead ? Visibility.Visible : Visibility.Collapsed;
                 }
 
                 // --- CTRL + RIGHT CLICK LOGIC ---
                 bool isCtrlPressed = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
-                bool isDataFence = fence.ItemsType?.ToString() == "Data";
-                bool isPortalFence = fence.ItemsType?.ToString() == "Portal";
+                bool isDataContainer = container.ItemsType?.ToString() == "Data";
+                bool isPortalContainer = container.ItemsType?.ToString() == "Portal";
 
 
 
                 // Clean up previous dynamic items to prevent duplicates
-                if (miExportAllToDesktop != null && CnMnFenceManager.Items.Contains(miExportAllToDesktop))
-                    CnMnFenceManager.Items.Remove(miExportAllToDesktop);
+                if (miExportAllToDesktop != null && CnMnContainerManager.Items.Contains(miExportAllToDesktop))
+                    CnMnContainerManager.Items.Remove(miExportAllToDesktop);
 
-                if (miAddSpacerMenu != null && CnMnFenceManager.Items.Contains(miAddSpacerMenu))
-                    CnMnFenceManager.Items.Remove(miAddSpacerMenu);
+                if (miAddSpacerMenu != null && CnMnContainerManager.Items.Contains(miAddSpacerMenu))
+                    CnMnContainerManager.Items.Remove(miAddSpacerMenu);
 
-                if (sepAfterSpacer != null && CnMnFenceManager.Items.Contains(sepAfterSpacer))
-                    CnMnFenceManager.Items.Remove(sepAfterSpacer);
+                if (sepAfterSpacer != null && CnMnContainerManager.Items.Contains(sepAfterSpacer))
+                    CnMnContainerManager.Items.Remove(sepAfterSpacer);
 
-                if (miNameAfterPath != null && CnMnFenceManager.Items.Contains(miNameAfterPath))
+                if (miNameAfterPath != null && CnMnContainerManager.Items.Contains(miNameAfterPath))
 
 
-                    CnMnFenceManager.Items.Remove(miNameAfterPath);
+                    CnMnContainerManager.Items.Remove(miNameAfterPath);
 
-                if (sepNameAfterPath != null && CnMnFenceManager.Items.Contains(sepNameAfterPath))
-                    CnMnFenceManager.Items.Remove(sepNameAfterPath);
+                if (sepNameAfterPath != null && CnMnContainerManager.Items.Contains(sepNameAfterPath))
+                    CnMnContainerManager.Items.Remove(sepNameAfterPath);
 
-                // C. Export All & Spacer Menu (Data Fence + Ctrl)
-                if (isCtrlPressed && isDataFence)
+                // C. Export All & Spacer Menu (Data Container + Ctrl)
+                if (isCtrlPressed && isDataContainer)
                 {
                     miExportAllToDesktop = new MenuItem { Header = Loc.T("Export all icons to desktop") };
-                    miExportAllToDesktop.Click += (s, e) => ExportAllIconsToDesktop(fence);
+                    miExportAllToDesktop.Click += (s, e) => ExportAllIconsToDesktop(container);
 
                     miAddSpacerMenu = new MenuItem { Header = Loc.T("Add spacer") };
 
@@ -5372,23 +5372,23 @@ namespace Desktop_Fences
                     {
                         try
                         {
-                            string id = fence.Id?.ToString();
-                            var liveFence = GetFenceData().FirstOrDefault(f => f.Id?.ToString() == id);
-                            if (liveFence == null) return;
+                            string id = container.Id?.ToString();
+                            var liveContainer = GetContainerData().FirstOrDefault(f => f.Id?.ToString() == id);
+                            if (liveContainer == null) return;
 
                             JArray items = null;
-                            bool tabsEnabled = liveFence.TabsEnabled?.ToString().ToLower() == "true";
+                            bool tabsEnabled = liveContainer.TabsEnabled?.ToString().ToLower() == "true";
                             if (tabsEnabled)
                             {
-                                var tabs = liveFence.Tabs as JArray ?? new JArray();
-                                int currentTab = Convert.ToInt32(liveFence.CurrentTab?.ToString() ?? "0");
+                                var tabs = liveContainer.Tabs as JArray ?? new JArray();
+                                int currentTab = Convert.ToInt32(liveContainer.CurrentTab?.ToString() ?? "0");
                                 if (currentTab >= 0 && currentTab < tabs.Count)
                                 {
                                     var activeTab = tabs[currentTab] as JObject;
                                     items = activeTab?["Items"] as JArray ?? new JArray();
                                 }
                             }
-                            if (items == null) items = liveFence.Items as JArray ?? new JArray();
+                            if (items == null) items = liveContainer.Items as JArray ?? new JArray();
 
                             int nextDisplayOrder = items.Count > 0 ? items.Max(i => i["DisplayOrder"]?.Value<int>() ?? 0) + 1 : 0;
 
@@ -5404,13 +5404,13 @@ namespace Desktop_Fences
 
                             items.Add(JObject.FromObject(newItem));
 
-                            if (tabsEnabled && Convert.ToInt32(liveFence.CurrentTab?.ToString() ?? "0") == 0)
+                            if (tabsEnabled && Convert.ToInt32(liveContainer.CurrentTab?.ToString() ?? "0") == 0)
                                 SynchronizeTab0Content(id, "tab0", "add");
                             else if (!tabsEnabled)
                                 SynchronizeTab0Content(id, "main", "add");
 
-                            FenceDataManager.SaveFenceData();
-                            RefreshFenceUsingFormApproach(win, liveFence);
+                            ContainerDataManager.SaveContainerData();
+                            RefreshContainerUsingFormApproach(win, liveContainer);
                         }
                         catch (Exception ex)
                         {
@@ -5427,36 +5427,36 @@ namespace Desktop_Fences
                     sepAfterSpacer = new Separator();
 
                     // Insert before Customize (safe lookup)
-                    int insertIndex = CnMnFenceManager.Items.Count - 1;
-                    var customizeItem = CnMnFenceManager.Items.OfType<MenuItem>()
+                    int insertIndex = CnMnContainerManager.Items.Count - 1;
+                    var customizeItem = CnMnContainerManager.Items.OfType<MenuItem>()
                         .FirstOrDefault(m => m.Header.ToString() == Loc.T("Customize..."));
-                    if (customizeItem != null) insertIndex = CnMnFenceManager.Items.IndexOf(customizeItem);
+                    if (customizeItem != null) insertIndex = CnMnContainerManager.Items.IndexOf(customizeItem);
 
-                    CnMnFenceManager.Items.Insert(insertIndex, miExportAllToDesktop);
-                    CnMnFenceManager.Items.Insert(insertIndex + 1, miAddSpacerMenu);
-                    CnMnFenceManager.Items.Insert(insertIndex + 2, sepAfterSpacer);
+                    CnMnContainerManager.Items.Insert(insertIndex, miExportAllToDesktop);
+                    CnMnContainerManager.Items.Insert(insertIndex + 1, miAddSpacerMenu);
+                    CnMnContainerManager.Items.Insert(insertIndex + 2, sepAfterSpacer);
                 }
-                // D. Name After Target (Portal Fence + Ctrl)
-                if (isCtrlPressed && isPortalFence)
+                // D. Name After Target (Portal Container + Ctrl)
+                if (isCtrlPressed && isPortalContainer)
                 {
-                    miNameAfterPath = new MenuItem { Header = Loc.T("Name Fence After Target Path") };
+                    miNameAfterPath = new MenuItem { Header = Loc.T("Name Container After Target Path") };
                     miNameAfterPath.Click += (s, e) =>
                     {
                         // Get Base Path (Not navigation path)
-                        string targetPath = fence.Path?.ToString();
+                        string targetPath = container.Path?.ToString();
 
                         if (!string.IsNullOrEmpty(targetPath))
                         {
                             // 1. Update Live Object (Global List)
-                            string id = fence.Id?.ToString();
-                            var liveFence = GetFenceData().FirstOrDefault(f => f.Id?.ToString() == id);
+                            string id = container.Id?.ToString();
+                            var liveContainer = GetContainerData().FirstOrDefault(f => f.Id?.ToString() == id);
 
-                            if (liveFence != null)
+                            if (liveContainer != null)
                             {
-                                if (liveFence is JObject jFence) jFence["Title"] = targetPath;
-                                else liveFence.Title = targetPath;
+                                if (liveContainer is JObject jContainer) jContainer["Title"] = targetPath;
+                                else liveContainer.Title = targetPath;
 
-                                fence.Title = targetPath; // Update local reference
+                                container.Title = targetPath; // Update local reference
                             }
 
                             // 2. Update UI
@@ -5465,34 +5465,34 @@ namespace Desktop_Fences
                             titletb.Text = targetPath; // Update hidden textbox too
 
                             // 3. Save
-                            FenceDataManager.SaveFenceData();
-                            LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Renamed portal fence to target: {targetPath}");
+                            ContainerDataManager.SaveContainerData();
+                            LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Renamed portal container to target: {targetPath}");
                         }
                     };
 
                     sepNameAfterPath = new Separator();
 
                     // Insert before Customize
-                    int insertIndex = CnMnFenceManager.Items.Count - 1;
-                    var customizeItem = CnMnFenceManager.Items.OfType<MenuItem>()
+                    int insertIndex = CnMnContainerManager.Items.Count - 1;
+                    var customizeItem = CnMnContainerManager.Items.OfType<MenuItem>()
                         .FirstOrDefault(m => m.Header.ToString() == Loc.T("Customize..."));
 
                     if (customizeItem != null)
                     {
-                        insertIndex = CnMnFenceManager.Items.IndexOf(customizeItem);
+                        insertIndex = CnMnContainerManager.Items.IndexOf(customizeItem);
                         // Insert Order: Name -> Separator -> Customize
-                        CnMnFenceManager.Items.Insert(insertIndex, miNameAfterPath);
-                        CnMnFenceManager.Items.Insert(insertIndex + 1, sepNameAfterPath);
+                        CnMnContainerManager.Items.Insert(insertIndex, miNameAfterPath);
+                        CnMnContainerManager.Items.Insert(insertIndex + 1, sepNameAfterPath);
                     }
                     else
                     {
-                        CnMnFenceManager.Items.Add(miNameAfterPath);
-                        CnMnFenceManager.Items.Add(sepNameAfterPath);
+                        CnMnContainerManager.Items.Add(miNameAfterPath);
+                        CnMnContainerManager.Items.Add(sepNameAfterPath);
                     }
                 }
 
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI,
-                    $"Updated fence menu - Ctrl:{isCtrlPressed}");
+                    $"Updated container menu - Ctrl:{isCtrlPressed}");
             };
 
 
@@ -5500,18 +5500,18 @@ namespace Desktop_Fences
             titleGrid.Children.Add(titletb);
 
             // --- FILTER UI START ---
-            // Only add Filter UI for Portal Fences
+            // Only add Filter UI for Portal Containers
             Grid filterBar = null;
-            if (fence.ItemsType?.ToString() == "Portal")
+            if (container.ItemsType?.ToString() == "Portal")
             {
                 // 1. The Filter Icon (Funnel)
                 // 1. The Filter Icon (Funnel)
-                string initialFilter = GetSafeProperty(fence, "FilterString");
+                string initialFilter = GetSafeProperty(container, "FilterString");
                 bool hasInitialFilter = !string.IsNullOrWhiteSpace(initialFilter);
 
                 TextBlock filterIcon = new TextBlock
                 {
-                    Name = "FenceFilterIcon", // New! Name
+                    Name = "ContainerFilterIcon", // New! Name
                     Text = Loc.T("❖"),
                     FontSize = 18,
                     Foreground = hasInitialFilter ? System.Windows.Media.Brushes.Orange : System.Windows.Media.Brushes.White,
@@ -5571,7 +5571,7 @@ namespace Desktop_Fences
                     StaysOpenOnEdit = true,
                     VerticalContentAlignment = VerticalAlignment.Center,
                     Padding = new Thickness(5, 0, 5, 0),
-                    Text = GetSafeProperty(fence, "FilterString")
+                    Text = GetSafeProperty(container, "FilterString")
                 };
 
                 // Helper: Only Repopulate when needed (prevents freeze loop)
@@ -5582,15 +5582,15 @@ namespace Desktop_Fences
                     // A. History
                     try
                     {
-                        string currentId = fence.Id?.ToString();
-                        var liveFence = GetFenceData().FirstOrDefault(f => f.Id?.ToString() == currentId);
-                        if (liveFence != null)
+                        string currentId = container.Id?.ToString();
+                        var liveContainer = GetContainerData().FirstOrDefault(f => f.Id?.ToString() == currentId);
+                        if (liveContainer != null)
                         {
                             Newtonsoft.Json.Linq.JArray history = null;
-                            if (liveFence is Newtonsoft.Json.Linq.JObject jFence)
-                                history = jFence["FilterHistory"] as Newtonsoft.Json.Linq.JArray;
+                            if (liveContainer is Newtonsoft.Json.Linq.JObject jContainer)
+                                history = jContainer["FilterHistory"] as Newtonsoft.Json.Linq.JArray;
                             else
-                                history = liveFence.GetType().GetProperty("FilterHistory")?.GetValue(liveFence) as Newtonsoft.Json.Linq.JArray;
+                                history = liveContainer.GetType().GetProperty("FilterHistory")?.GetValue(liveContainer) as Newtonsoft.Json.Linq.JArray;
 
                             if (history != null)
                             {
@@ -5648,13 +5648,13 @@ namespace Desktop_Fences
                     filterIcon.BeginAnimation(UIElement.OpacityProperty, null);
                     filterIcon.Opacity = hasFilter ? 1.0 : ((double)SettingsManager.MenuTintValue / 100);
 
-                    if (_portalFences.ContainsKey(fence))
-                        _portalFences[fence].ApplyFilter(text);
+                    if (_portalContainers.ContainsKey(container))
+                        _portalContainers[container].ApplyFilter(text);
 
-                    UpdateFenceProperty(fence, "FilterString", text, "Updated filter");
+                    UpdateContainerProperty(container, "FilterString", text, "Updated filter");
 
                     // Update history (logic now handles ignoring presets)
-                    UpdateFilterHistory(fence, text);
+                    UpdateFilterHistory(container, text);
                 };
 
                 // Typing Timer
@@ -5666,7 +5666,7 @@ namespace Desktop_Fences
                 {
                     debounceTimer.Stop();
                     // Visual update only while typing
-                    if (_portalFences.ContainsKey(fence)) _portalFences[fence].ApplyFilter(cmbFilter.Text);
+                    if (_portalContainers.ContainsKey(container)) _portalContainers[container].ApplyFilter(cmbFilter.Text);
 
                     bool hasFilter = !string.IsNullOrWhiteSpace(cmbFilter.Text);
                     filterIcon.Foreground = hasFilter ? System.Windows.Media.Brushes.Orange : System.Windows.Media.Brushes.White;
@@ -5741,8 +5741,8 @@ namespace Desktop_Fences
                 btnClearFilter.Click += (s, e) =>
                 {
                     cmbFilter.Text = "";
-                    if (_portalFences.ContainsKey(fence)) _portalFences[fence].ApplyFilter("");
-                    UpdateFenceProperty(fence, "FilterString", "", "Cleared filter");
+                    if (_portalContainers.ContainsKey(container)) _portalContainers[container].ApplyFilter("");
+                    UpdateContainerProperty(container, "FilterString", "", "Cleared filter");
                     filterIcon.Foreground = System.Windows.Media.Brushes.White;
                     filterIcon.BeginAnimation(UIElement.OpacityProperty, null);
                     filterIcon.Opacity = (double)SettingsManager.MenuTintValue / 100;
@@ -5775,8 +5775,8 @@ namespace Desktop_Fences
 
                     win.Loaded += (s, e) =>
                     {
-                        if (_portalFences.ContainsKey(fence))
-                            _portalFences[fence].ApplyFilter(cmbFilter.Text);
+                        if (_portalContainers.ContainsKey(container))
+                            _portalContainers[container].ApplyFilter(cmbFilter.Text);
                     };
                 }
             }
@@ -5791,21 +5791,21 @@ namespace Desktop_Fences
                 // Only run if actually editing
                 if (titletb.Visibility != Visibility.Visible) return;
 
-                string originalTitle = fence.Title.ToString();
+                string originalTitle = container.Title.ToString();
                 string newTitle = titletb.Text;
-                string finalTitle = InterCore.ProcessTitleChange(fence, newTitle, originalTitle);
+                string finalTitle = InterCore.ProcessTitleChange(container, newTitle, originalTitle);
 
                 // Update Data
-                string id = fence.Id?.ToString();
-                var liveFence = GetFenceData().FirstOrDefault(f => f.Id?.ToString() == id);
+                string id = container.Id?.ToString();
+                var liveContainer = GetContainerData().FirstOrDefault(f => f.Id?.ToString() == id);
 
-                if (liveFence != null)
+                if (liveContainer != null)
                 {
-                    if (liveFence is Newtonsoft.Json.Linq.JObject jFence)
-                        jFence["Title"] = finalTitle;
+                    if (liveContainer is Newtonsoft.Json.Linq.JObject jContainer)
+                        jContainer["Title"] = finalTitle;
                     else
-                        liveFence.Title = finalTitle;
-                    fence.Title = finalTitle;
+                        liveContainer.Title = finalTitle;
+                    container.Title = finalTitle;
                 }
 
                 // Update UI
@@ -5815,7 +5815,7 @@ namespace Desktop_Fences
                 titlelabel.Visibility = Visibility.Visible;
 
                 // Save
-                FenceDataManager.SaveFenceData();
+                ContainerDataManager.SaveContainerData();
                 win.EndKeyboardInteractiveEdit();
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Rename committed: {finalTitle}");
             };
@@ -5831,7 +5831,7 @@ namespace Desktop_Fences
                 else if (e.Key == Key.Escape)
                 {
                     // Cancel Logic
-                    titletb.Text = fence.Title.ToString();
+                    titletb.Text = container.Title.ToString();
                     titletb.Visibility = Visibility.Collapsed;
                     titlelabel.Visibility = Visibility.Visible;
                     win.EndKeyboardInteractiveEdit();
@@ -5855,21 +5855,21 @@ namespace Desktop_Fences
             {
                 if (e.Key == Key.Enter)
                 {
-                    string originalTitle = fence.Title.ToString();
+                    string originalTitle = container.Title.ToString();
                     string newTitle = titletb.Text;
-                    string finalTitle = InterCore.ProcessTitleChange(fence, newTitle, originalTitle);
+                    string finalTitle = InterCore.ProcessTitleChange(container, newTitle, originalTitle);
 
                     // Update LIVE Data
-                    string id = fence.Id?.ToString();
-                    var liveFence = GetFenceData().FirstOrDefault(f => f.Id?.ToString() == id);
+                    string id = container.Id?.ToString();
+                    var liveContainer = GetContainerData().FirstOrDefault(f => f.Id?.ToString() == id);
 
-                    if (liveFence != null)
+                    if (liveContainer != null)
                     {
-                        if (liveFence is Newtonsoft.Json.Linq.JObject jFence)
-                            jFence["Title"] = finalTitle;
+                        if (liveContainer is Newtonsoft.Json.Linq.JObject jContainer)
+                            jContainer["Title"] = finalTitle;
                         else
-                            liveFence.Title = finalTitle;
-                        fence.Title = finalTitle;
+                            liveContainer.Title = finalTitle;
+                        container.Title = finalTitle;
                     }
 
                     titlelabel.Content = finalTitle;
@@ -5877,13 +5877,13 @@ namespace Desktop_Fences
                     titletb.Visibility = Visibility.Collapsed;
                     titlelabel.Visibility = Visibility.Visible;
 
-                    FenceDataManager.SaveFenceData();
+                    ContainerDataManager.SaveContainerData();
                     win.EndKeyboardInteractiveEdit();
                 }
                 else if (e.Key == Key.Escape)
                 {
                     // ESCAPE: Cancel and Revert
-                    titletb.Text = fence.Title.ToString();
+                    titletb.Text = container.Title.ToString();
                     titletb.Visibility = Visibility.Collapsed;
                     titlelabel.Visibility = Visibility.Visible;
                     win.EndKeyboardInteractiveEdit();
@@ -5900,20 +5900,20 @@ namespace Desktop_Fences
                 // If invisible, we already handled it (e.g. via Escape)
                 if (titletb.Visibility != Visibility.Visible) return;
 
-                string originalTitle = fence.Title.ToString();
+                string originalTitle = container.Title.ToString();
                 string newTitle = titletb.Text;
-                string finalTitle = InterCore.ProcessTitleChange(fence, newTitle, originalTitle);
+                string finalTitle = InterCore.ProcessTitleChange(container, newTitle, originalTitle);
 
-                string id = fence.Id?.ToString();
-                var liveFence = GetFenceData().FirstOrDefault(f => f.Id?.ToString() == id);
+                string id = container.Id?.ToString();
+                var liveContainer = GetContainerData().FirstOrDefault(f => f.Id?.ToString() == id);
 
-                if (liveFence != null)
+                if (liveContainer != null)
                 {
-                    if (liveFence is Newtonsoft.Json.Linq.JObject jFence)
-                        jFence["Title"] = finalTitle;
+                    if (liveContainer is Newtonsoft.Json.Linq.JObject jContainer)
+                        jContainer["Title"] = finalTitle;
                     else
-                        liveFence.Title = finalTitle;
-                    fence.Title = finalTitle;
+                        liveContainer.Title = finalTitle;
+                    container.Title = finalTitle;
                 }
 
                 titlelabel.Content = finalTitle;
@@ -5921,7 +5921,7 @@ namespace Desktop_Fences
                 titletb.Visibility = Visibility.Collapsed;
                 titlelabel.Visibility = Visibility.Visible;
 
-                FenceDataManager.SaveFenceData();
+                ContainerDataManager.SaveContainerData();
                 win.EndKeyboardInteractiveEdit();
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Rename saved via LostFocus: {finalTitle}");
             };
@@ -5948,23 +5948,23 @@ namespace Desktop_Fences
 
             // TABS FEATURE: Add TabStrip
             // We delegate to the shared method to ensure consistent "Scrollable" layout on startup.
-            RefreshTabStripUI(win, fence);
+            RefreshTabStripUI(win, container);
 
-           string fenceId = win.Tag?.ToString();
-            if (string.IsNullOrEmpty(fenceId))
+           string containerId = win.Tag?.ToString();
+            if (string.IsNullOrEmpty(containerId))
             {
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation, $"Fence Id is missing for window '{win.Title}'");
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation, $"Container Id is missing for window '{win.Title}'");
                 return;
             }
-            dynamic currentFence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
-            if (currentFence == null)
+            dynamic currentContainer = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
+            if (currentContainer == null)
             {
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation, $"Fence with Id '{fenceId}' not found in FenceDataManager.FenceData");
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation, $"Container with Id '{containerId}' not found in ContainerDataManager.ContainerData");
                 return;
             }
-            bool isLocked = currentFence.IsLocked?.ToString().ToLower() == "true";
-            // Opsis: F2 renames the fence under the mouse (same inline edit as Ctrl+Click on the title).
-            RenameStarters[fenceId] = () =>
+            bool isLocked = currentContainer.IsLocked?.ToString().ToLower() == "true";
+            // Opsis: F2 renames the container under the mouse (same inline edit as Ctrl+Click on the title).
+            RenameStarters[containerId] = () =>
             {
                 var rw = FindVisualParent<NonActivatingWindow>(titlelabel);
                 if (rw == null || titletb.IsVisible) return;
@@ -5978,56 +5978,56 @@ namespace Desktop_Fences
             {
                     // Roll-up/roll-down logic (swapped from Ctrl+Click)
                     NonActivatingWindow win = FindVisualParent<NonActivatingWindow>(titlelabel);
-                    string fenceId = win?.Tag?.ToString();
-                    // DebugLog("IMMEDIATE", fenceId ?? "UNKNOWN", $"Ctrl+Click FIRST LINE - win.Height:{win?.Height ?? -1:F1}");
-                    if (string.IsNullOrEmpty(fenceId) || win == null)
+                    string containerId = win?.Tag?.ToString();
+                    // DebugLog("IMMEDIATE", containerId ?? "UNKNOWN", $"Ctrl+Click FIRST LINE - win.Height:{win?.Height ?? -1:F1}");
+                    if (string.IsNullOrEmpty(containerId) || win == null)
                     {
-                        // DebugLog("ERROR", fenceId ?? "UNKNOWN", "Missing window or fenceId in Ctrl+Click");
+                        // DebugLog("ERROR", containerId ?? "UNKNOWN", "Missing window or containerId in Ctrl+Click");
                         return;
                     }
-                    // DebugLog("EVENT", fenceId, "Ctrl+Click TRIGGERED");
-                    // DebugLogFenceState("CTRL_CLICK_START", fenceId, win);
-                    dynamic currentFence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
-                    if (currentFence == null)
+                    // DebugLog("EVENT", containerId, "Ctrl+Click TRIGGERED");
+                    // DebugLogContainerState("CTRL_CLICK_START", containerId, win);
+                    dynamic currentContainer = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
+                    if (currentContainer == null)
                     {
-                        // DebugLog("ERROR", fenceId, "Fence not found in FenceDataManager.FenceData for Ctrl+Click");
+                        // DebugLog("ERROR", containerId, "Container not found in ContainerDataManager.ContainerData for Ctrl+Click");
                         return;
                     }
-                    bool isRolled = currentFence.IsRolled?.ToString().ToLower() == "true";
-                    // Get fence data height (always accurate from SizeChanged handler)
-                    double fenceHeight = Convert.ToDouble(currentFence.Height?.ToString() ?? "130");
+                    bool isRolled = currentContainer.IsRolled?.ToString().ToLower() == "true";
+                    // Get container data height (always accurate from SizeChanged handler)
+                    double containerHeight = Convert.ToDouble(currentContainer.Height?.ToString() ?? "130");
                     double windowHeight = win.Height;
-                    // DebugLog("SYNC_CHECK", fenceId, $"Before sync - FenceHeight:{fenceHeight:F1} | WindowHeight:{windowHeight:F1} | IsRolled:{isRolled}");
+                    // DebugLog("SYNC_CHECK", containerId, $"Before sync - ContainerHeight:{containerHeight:F1} | WindowHeight:{windowHeight:F1} | IsRolled:{isRolled}");
                     if (!isRolled)
                     {
-                        // ROLLUP: Use fence data height (always current)
-                        // DebugLog("ACTION", fenceId, "Starting ROLLUP");
-                        _fencesInTransition.Add(fenceId);
-                        // DebugLog("TRANSITION", fenceId, "Added to transition state");
-                        // FINAL FIX: Use fence data height which is always accurate from SizeChanged handler
-                        double currentHeight = fenceHeight;
+                        // ROLLUP: Use container data height (always current)
+                        // DebugLog("ACTION", containerId, "Starting ROLLUP");
+                        _containersInTransition.Add(containerId);
+                        // DebugLog("TRANSITION", containerId, "Added to transition state");
+                        // FINAL FIX: Use container data height which is always accurate from SizeChanged handler
+                        double currentHeight = containerHeight;
 
                         // --- BUG FIX: The "Stuck at 28" Safeguard ---
                         // If currentHeight is suspiciously small (like the title bar height), it means the 
                         // WPF layout data is stale. We reject it and use the last known good UnrolledHeight.
                         if (currentHeight <= 35)
                         {
-                            currentHeight = Convert.ToDouble(currentFence.UnrolledHeight?.ToString() ?? "130");
+                            currentHeight = Convert.ToDouble(currentContainer.UnrolledHeight?.ToString() ?? "130");
                             if (currentHeight <= 35) currentHeight = 130; // Ultimate fallback
                         }
 
-                        // DebugLog("ROLLUP_HEIGHT_SOURCE", fenceId, $"Using fence.Height:{fenceHeight:F1} (win.Height was stale:{win.Height:F1})");
-                        // Save current fence height as UnrolledHeight
-                        IDictionary<string, object> fenceDict = currentFence as IDictionary<string, object> ?? ((JObject)currentFence).ToObject<IDictionary<string, object>>();
-                        fenceDict["UnrolledHeight"] = currentHeight;
-                        fenceDict["IsRolled"] = "true";
-                        int fenceIndex = FenceDataManager.FenceData.FindIndex(f => f.Id?.ToString() == fenceId);
-                        if (fenceIndex >= 0)
+                        // DebugLog("ROLLUP_HEIGHT_SOURCE", containerId, $"Using container.Height:{containerHeight:F1} (win.Height was stale:{win.Height:F1})");
+                        // Save current container height as UnrolledHeight
+                        IDictionary<string, object> containerDict = currentContainer as IDictionary<string, object> ?? ((JObject)currentContainer).ToObject<IDictionary<string, object>>();
+                        containerDict["UnrolledHeight"] = currentHeight;
+                        containerDict["IsRolled"] = "true";
+                        int containerIndex = ContainerDataManager.ContainerData.FindIndex(f => f.Id?.ToString() == containerId);
+                        if (containerIndex >= 0)
                         {
-                            FenceDataManager.FenceData[fenceIndex] = JObject.FromObject(fenceDict);
+                            ContainerDataManager.ContainerData[containerIndex] = JObject.FromObject(containerDict);
                         }
-                        FenceDataManager.SaveFenceData();
-                        // DebugLog("SAVE", fenceId, $"Saved ROLLUP state | UnrolledHeight:{currentHeight:F1} | IsRolled:true");
+                        ContainerDataManager.SaveContainerData();
+                        // DebugLog("SAVE", containerId, $"Saved ROLLUP state | UnrolledHeight:{currentHeight:F1} | IsRolled:true");
                         // Roll up animation - starts from current height
                         double targetHeight = SettingsManager.TitleBarHeight;   //rolled height
                         var heightAnimation = new DoubleAnimation(currentHeight, targetHeight, TimeSpan.FromSeconds(0.3))
@@ -6036,7 +6036,7 @@ namespace Desktop_Fences
                         };
                         heightAnimation.Completed += (animSender, animArgs) =>
                         {
-                            // DebugLog("ANIMATION", fenceId, "ROLLUP animation completed");
+                            // DebugLog("ANIMATION", containerId, "ROLLUP animation completed");
                             // Update WrapPanel visibility
                             var border = win.Content as Border;
                             if (border != null)
@@ -6051,43 +6051,43 @@ namespace Desktop_Fences
                                         if (wpcont != null)
                                         {
                                             wpcont.Visibility = Visibility.Collapsed;
-                                            // DebugLog("UI", fenceId, "Set WrapPanel visibility to Collapsed");
+                                            // DebugLog("UI", containerId, "Set WrapPanel visibility to Collapsed");
                                         }
                                     }
                                 }
                             }
-                            _fencesInTransition.Remove(fenceId);
+                            _containersInTransition.Remove(containerId);
 
                             // FIX: Release animation lock so manual resizes track correctly later
                             win.BeginAnimation(Window.HeightProperty, null);
                             win.Height = targetHeight;
                         };
                         win.BeginAnimation(Window.HeightProperty, heightAnimation);
-                        // DebugLog("ANIMATION", fenceId, $"Started ROLLUP animation from {currentHeight:F1} to height {targetHeight:F1}");
+                        // DebugLog("ANIMATION", containerId, $"Started ROLLUP animation from {currentHeight:F1} to height {targetHeight:F1}");
                     }
                     else
                     {
                         // ROLLDOWN: Roll down to UnrolledHeight
-                        double unrolledHeight = Convert.ToDouble(currentFence.UnrolledHeight?.ToString() ?? "130");
-                        // // DebugLog("ACTION", fenceId, $"Starting ROLLDOWN to {unrolledHeight:F1}");
-                        _fencesInTransition.Add(fenceId);
-                        // DebugLog("TRANSITION", fenceId, "Added to transition state");
-                        IDictionary<string, object> fenceDict = currentFence as IDictionary<string, object> ?? ((JObject)currentFence).ToObject<IDictionary<string, object>>();
-                        fenceDict["IsRolled"] = "false";
-                        int fenceIndex = FenceDataManager.FenceData.FindIndex(f => f.Id?.ToString() == fenceId);
-                        if (fenceIndex >= 0)
+                        double unrolledHeight = Convert.ToDouble(currentContainer.UnrolledHeight?.ToString() ?? "130");
+                        // // DebugLog("ACTION", containerId, $"Starting ROLLDOWN to {unrolledHeight:F1}");
+                        _containersInTransition.Add(containerId);
+                        // DebugLog("TRANSITION", containerId, "Added to transition state");
+                        IDictionary<string, object> containerDict = currentContainer as IDictionary<string, object> ?? ((JObject)currentContainer).ToObject<IDictionary<string, object>>();
+                        containerDict["IsRolled"] = "false";
+                        int containerIndex = ContainerDataManager.ContainerData.FindIndex(f => f.Id?.ToString() == containerId);
+                        if (containerIndex >= 0)
                         {
-                            FenceDataManager.FenceData[fenceIndex] = JObject.FromObject(fenceDict);
+                            ContainerDataManager.ContainerData[containerIndex] = JObject.FromObject(containerDict);
                         }
-                        FenceDataManager.SaveFenceData();
-                        // DebugLog("SAVE", fenceId, $"Saved ROLLDOWN state | IsRolled:false | TargetHeight:{unrolledHeight:F1}");
+                        ContainerDataManager.SaveContainerData();
+                        // DebugLog("SAVE", containerId, $"Saved ROLLDOWN state | IsRolled:false | TargetHeight:{unrolledHeight:F1}");
                         var heightAnimation = new DoubleAnimation(win.Height, unrolledHeight, TimeSpan.FromSeconds(0.3))
                         {
                             EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut }
                         };
                         heightAnimation.Completed += (animSender, animArgs) =>
                         {
-                            // DebugLog("ANIMATION", fenceId, "ROLLDOWN animation completed");
+                            // DebugLog("ANIMATION", containerId, "ROLLDOWN animation completed");
                             // Update WrapPanel visibility
                             var border = win.Content as Border;
                             if (border != null)
@@ -6102,22 +6102,22 @@ namespace Desktop_Fences
                                         if (wpcont != null)
                                         {
                                             wpcont.Visibility = Visibility.Visible;
-                                            // DebugLog("UI", fenceId, "Set WrapPanel visibility to Visible");
+                                            // DebugLog("UI", containerId, "Set WrapPanel visibility to Visible");
                                         }
                                     }
                                 }
                             }
-                            _fencesInTransition.Remove(fenceId);
+                            _containersInTransition.Remove(containerId);
 
                             // FIX: Release animation lock and force real height so SizeChanged updates the JSON properly
                             win.BeginAnimation(Window.HeightProperty, null);
                             win.Height = unrolledHeight;
                         };
                         win.BeginAnimation(Window.HeightProperty, heightAnimation);
-                        // DebugLog("ANIMATION", fenceId, $"Started ROLLDOWN animation to height {unrolledHeight:F1}");
+                        // DebugLog("ANIMATION", containerId, $"Started ROLLDOWN animation to height {unrolledHeight:F1}");
                     }
             };
-            RollToggles[fenceId] = toggleRoll;
+            RollToggles[containerId] = toggleRoll;
             EnsureHoverRollTimer();
             titlelabel.MouseDown += (sender, e) =>
             {
@@ -6137,37 +6137,37 @@ namespace Desktop_Fences
                 {
                     if ((Keyboard.Modifiers & ModifierKeys.Control) != 0)
                     {
-                        // Rename fence (swapped from double-click)
+                        // Rename container (swapped from double-click)
                         titletb.Text = titlelabel.Content.ToString();
                         titlelabel.Visibility = Visibility.Collapsed;
                         titletb.Visibility = Visibility.Visible;
                         win.BeginKeyboardInteractiveEdit(titletb);
-                        LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation, $"Focus set to title textbox for fence: {fence.Title}");
+                        LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation, $"Focus set to title textbox for container: {container.Title}");
                         e.Handled = true;
                     }
                     else
                     {
-                        string fenceId = win.Tag?.ToString();
-                        if (string.IsNullOrEmpty(fenceId))
+                        string containerId = win.Tag?.ToString();
+                        if (string.IsNullOrEmpty(containerId))
                         {
-                            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation, $"Fence Id is missing for window '{win.Title}' during MouseDown");
+                            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation, $"Container Id is missing for window '{win.Title}' during MouseDown");
                             return;
                         }
-                        dynamic currentFence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
-                        if (currentFence == null)
+                        dynamic currentContainer = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
+                        if (currentContainer == null)
                         {
-                            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation, $"Fence with Id '{fenceId}' not found in FenceDataManager.FenceData during MouseDown");
+                            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation, $"Container with Id '{containerId}' not found in ContainerDataManager.ContainerData during MouseDown");
                             return;
                         }
-                        bool isLocked = currentFence.IsLocked?.ToString().ToLower() == "true";
+                        bool isLocked = currentContainer.IsLocked?.ToString().ToLower() == "true";
                         if (!isLocked)
                         {
                             win.DragMove();
-                            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation, $"Dragging fence '{currentFence.Title}'");
+                            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation, $"Dragging container '{currentContainer.Title}'");
                         }
                         else
                         {
-                            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation, $"DragMove blocked for locked fence '{currentFence.Title}'");
+                            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation, $"DragMove blocked for locked container '{currentContainer.Title}'");
                         }
                     }
                 }
@@ -6179,28 +6179,28 @@ namespace Desktop_Fences
             {
                 if (e.Key == Key.Enter)
                 {
-                    string originalTitle = fence.Title.ToString();
+                    string originalTitle = container.Title.ToString();
                     string newTitle = titletb.Text;
 
                     // Process through InterCore for special triggers
-                    string finalTitle = InterCore.ProcessTitleChange(fence, newTitle, originalTitle);
+                    string finalTitle = InterCore.ProcessTitleChange(container, newTitle, originalTitle);
 
                     // --- FIX START: Update LIVE Data ---
                     // Get the ID to find the fresh object in the global list
-                    string id = fence.Id?.ToString();
-                    var liveFence = GetFenceData().FirstOrDefault(f => f.Id?.ToString() == id);
+                    string id = container.Id?.ToString();
+                    var liveContainer = GetContainerData().FirstOrDefault(f => f.Id?.ToString() == id);
 
-                    if (liveFence != null)
+                    if (liveContainer != null)
                     {
                         // Update the live object in the list
-                        // Handle both JObject (JSON) and ExpandoObject (New Fence)
-                        if (liveFence is Newtonsoft.Json.Linq.JObject jFence)
-                            jFence["Title"] = finalTitle;
+                        // Handle both JObject (JSON) and ExpandoObject (New Container)
+                        if (liveContainer is Newtonsoft.Json.Linq.JObject jContainer)
+                            jContainer["Title"] = finalTitle;
                         else
-                            liveFence.Title = finalTitle;
+                            liveContainer.Title = finalTitle;
 
                         // Also update the local reference just in case
-                        fence.Title = finalTitle;
+                        container.Title = finalTitle;
                     }
                     // --- FIX END ---
 
@@ -6211,16 +6211,16 @@ namespace Desktop_Fences
                     titlelabel.Visibility = Visibility.Visible;
 
                     // Save the global list which now contains the updated title
-                    FenceDataManager.SaveFenceData();
+                    ContainerDataManager.SaveContainerData();
 
                     win.ShowActivated = false;
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation, $"Exited edit mode via Enter, final title for fence: {finalTitle}");
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation, $"Exited edit mode via Enter, final title for container: {finalTitle}");
                     win.Focus();
                 }
                 else if (e.Key == Key.Escape)
                 {
                     // FIX: ESCAPE Logic (Cancel)
-                    titletb.Text = fence.Title.ToString(); // Revert text
+                    titletb.Text = container.Title.ToString(); // Revert text
                     titletb.Visibility = Visibility.Collapsed;
                     titlelabel.Visibility = Visibility.Visible;
 
@@ -6238,23 +6238,23 @@ namespace Desktop_Fences
                 // Don't save if we are cancelling (Escape key handles UI)
                 if (titletb.Visibility != Visibility.Visible) return;
 
-                string originalTitle = fence.Title.ToString();
+                string originalTitle = container.Title.ToString();
                 string newTitle = titletb.Text;
-                string finalTitle = InterCore.ProcessTitleChange(fence, newTitle, originalTitle);
+                string finalTitle = InterCore.ProcessTitleChange(container, newTitle, originalTitle);
 
-                string id = fence.Id?.ToString();
-                var liveFence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == id);
+                string id = container.Id?.ToString();
+                var liveContainer = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == id);
 
-                if (liveFence != null)
+                if (liveContainer != null)
                 {
-                    IDictionary<string, object> fenceDict = liveFence as IDictionary<string, object> ??
-                        ((JObject)liveFence).ToObject<IDictionary<string, object>>();
-                    fenceDict["Title"] = finalTitle;
+                    IDictionary<string, object> containerDict = liveContainer as IDictionary<string, object> ??
+                        ((JObject)liveContainer).ToObject<IDictionary<string, object>>();
+                    containerDict["Title"] = finalTitle;
 
-                    int index = FenceDataManager.FenceData.IndexOf(liveFence);
-                    if (index >= 0) FenceDataManager.FenceData[index] = JObject.FromObject(fenceDict);
+                    int index = ContainerDataManager.ContainerData.IndexOf(liveContainer);
+                    if (index >= 0) ContainerDataManager.ContainerData[index] = JObject.FromObject(containerDict);
 
-                    fence.Title = finalTitle;
+                    container.Title = finalTitle;
                 }
 
                 titlelabel.Content = finalTitle;
@@ -6262,7 +6262,7 @@ namespace Desktop_Fences
                 titletb.Visibility = Visibility.Collapsed;
                 titlelabel.Visibility = Visibility.Visible;
 
-                FenceDataManager.SaveFenceData();
+                ContainerDataManager.SaveContainerData();
 
                 win.ShowActivated = false;
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Rename saved via LostFocus: {finalTitle}");
@@ -6286,26 +6286,26 @@ namespace Desktop_Fences
                 Margin = new Thickness(0)
             };
 
-            // CRITICAL: Tag the panel with the Fence ID so AddIcon can find settings
+            // CRITICAL: Tag the panel with the Container ID so AddIcon can find settings
             // even before the panel is attached to the window.
-            wpcont.Tag = fence.Id?.ToString();
+            wpcont.Tag = container.Id?.ToString();
             // --- FIX END ---
 
             ScrollViewer wpcontscr = new ScrollViewer
             {
                 Content = wpcont,
-                VerticalScrollBarVisibility = SettingsManager.DisableFenceScrollbars ? ScrollBarVisibility.Hidden : ScrollBarVisibility.Auto,
-                // HorizontalScrollBarVisibility = SettingsManager.DisableFenceScrollbars ? ScrollBarVisibility.Hidden : ScrollBarVisibility.Auto
+                VerticalScrollBarVisibility = SettingsManager.DisableContainerScrollbars ? ScrollBarVisibility.Hidden : ScrollBarVisibility.Auto,
+                // HorizontalScrollBarVisibility = SettingsManager.DisableContainerScrollbars ? ScrollBarVisibility.Hidden : ScrollBarVisibility.Auto
             };
 
-            if (fence.Id != null) ContentScrollers[fence.Id.ToString()] = wpcontscr;
+            if (container.Id != null) ContentScrollers[container.Id.ToString()] = wpcontscr;
             // --- PERFORMANCE TWEAK: Hardware Acceleration & Safe UI Culling ---
-            IconManager.OptimizeFencePanel(wpcont, wpcontscr);
+            IconManager.OptimizeContainerPanel(wpcont, wpcontscr);
 
-            // Προσθήκη watermark για Portal Fences
-            if (fence.ItemsType?.ToString() == "Portal")
+            // Προσθήκη watermark για Portal Containers
+            if (container.ItemsType?.ToString() == "Portal")
             {
-                if (_options.ShowBackgroundImageOnPortalFences ?? true)
+                if (_options.ShowBackgroundImageOnPortalContainers ?? true)
                 {
                     double opacity = (SettingsManager.PortalBackgroundOpacity / 100.0);
                     wpcontscr.Background = new ImageBrush
@@ -6321,36 +6321,36 @@ namespace Desktop_Fences
 
             void InitContent()
             {
-                // 1. Handle Note fences - they don't use WrapPanel
-                if (fence.ItemsType?.ToString() == "Note")
+                // 1. Handle Note containers - they don't use WrapPanel
+                if (container.ItemsType?.ToString() == "Note")
                 {
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation, $"Creating Note fence content for '{fence.Title}'");
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation, $"Creating Note container content for '{container.Title}'");
                     dp.Children.Remove(wpcontscr); // Remove ScrollViewer
-                    TextBox noteTextBox = NoteFenceManager.CreateNoteContent(fence, dp);
+                    TextBox noteTextBox = NoteContainerManager.CreateNoteContent(container, dp);
 
-                    bool isNoteRolled = fence.IsRolled?.ToString().ToLower() == "true";
+                    bool isNoteRolled = container.IsRolled?.ToString().ToLower() == "true";
                     noteTextBox.Visibility = isNoteRolled ? Visibility.Collapsed : Visibility.Visible;
                     return;
                 }
 
-                // 2. Handle Data/Portal Fences
-                bool isRolled = fence.IsRolled?.ToString().ToLower() == "true";
+                // 2. Handle Data/Portal Containers
+                bool isRolled = container.IsRolled?.ToString().ToLower() == "true";
                 wpcont.Visibility = isRolled ? Visibility.Collapsed : Visibility.Visible;
                 wpcont.Children.Clear();
 
-                // 2a. Data Fences (The complex logic)
-                if (fence.ItemsType?.ToString() == "Data")
+                // 2a. Data Containers (The complex logic)
+                if (container.ItemsType?.ToString() == "Data")
                 {
                     JArray items = null;
-                    bool tabsEnabled = fence.TabsEnabled?.ToString().ToLower() == "true";
+                    bool tabsEnabled = container.TabsEnabled?.ToString().ToLower() == "true";
 
                     // Load Items (Tabs vs Main)
                     if (tabsEnabled)
                     {
                         try
                         {
-                            var tabs = fence.Tabs as JArray ?? new JArray();
-                            int currentTab = Convert.ToInt32(fence.CurrentTab?.ToString() ?? "0");
+                            var tabs = container.Tabs as JArray ?? new JArray();
+                            int currentTab = Convert.ToInt32(container.CurrentTab?.ToString() ?? "0");
                             if (currentTab >= 0 && currentTab < tabs.Count)
                             {
                                 var activeTab = tabs[currentTab] as JObject;
@@ -6358,14 +6358,14 @@ namespace Desktop_Fences
                             }
                             else
                             {
-                                items = fence.Items as JArray ?? new JArray();
+                                items = container.Items as JArray ?? new JArray();
                             }
                         }
-                        catch { items = fence.Items as JArray ?? new JArray(); }
+                        catch { items = container.Items as JArray ?? new JArray(); }
                     }
                     else
                     {
-                        items = fence.Items as JArray ?? new JArray();
+                        items = container.Items as JArray ?? new JArray();
                     }
 
                     if (items != null)
@@ -6377,8 +6377,8 @@ namespace Desktop_Fences
 
                         foreach (dynamic icon in sortedItems)
                         {
-                            // FIX: Pass 'fence' context for customization
-                            AddIcon(icon, wpcont, fence);
+                            // FIX: Pass 'container' context for customization
+                            AddIcon(icon, wpcont, container);
 
                             StackPanel sp = wpcont.Children[wpcont.Children.Count - 1] as StackPanel;
                             if (sp != null)
@@ -6448,18 +6448,18 @@ namespace Desktop_Fences
                                 }
 
                                 // --- 5. Attach Context Menu ---
-                                AttachIconContextMenu(sp, icon, fence, win);
+                                AttachIconContextMenu(sp, icon, container, win);
                             }
                         }
                     }
                 }
-                // 2b. Portal Fences
-                else if (fence.ItemsType?.ToString() == "Portal")
+                // 2b. Portal Containers
+                else if (container.ItemsType?.ToString() == "Portal")
                 {
                     try
                     {
-                        var portalManager = new PortalFenceManager(fence, wpcont);
-                        _portalFences[fence] = portalManager;
+                        var portalManager = new PortalContainerManager(container, wpcont);
+                        _portalContainers[container] = portalManager;
 
                         // --- NEW: Cycle Sort Mode on CTRL + Click ---
                         win.PreviewMouseLeftButtonUp += (s, e) =>
@@ -6483,9 +6483,9 @@ namespace Desktop_Fences
                     }
                     catch (Exception ex)
                     {
-                        MessageBoxesManager.ShowOKOnlyMessageBoxForm($"Failed to initialize Portal Fence: {ex.Message}", "Error");
-                        FenceDataManager.FenceData.Remove(fence);
-                        FenceDataManager.SaveFenceData();
+                        MessageBoxesManager.ShowOKOnlyMessageBoxForm($"Failed to initialize Portal Container: {ex.Message}", "Error");
+                        ContainerDataManager.ContainerData.Remove(container);
+                        ContainerDataManager.SaveContainerData();
                         win.Close();
                     }
                 }
@@ -6501,12 +6501,12 @@ namespace Desktop_Fences
                     try
                     {
                         droppedFiles = (string[])e.Data.GetData(DataFormats.FileDrop);
-                        LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceCreation,
+                        LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerCreation,
                             $"Drop handler received {droppedFiles?.Length ?? 0} files");
                     }
                     catch (Exception dataEx)
                     {
-                        LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceCreation,
+                        LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerCreation,
                             $"Error getting drop data: {dataEx.Message}");
                         return;
                     }
@@ -6514,7 +6514,7 @@ namespace Desktop_Fences
 
                     foreach (string droppedFile in droppedFiles)
                     {
-                        LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation,
+                        LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation,
                             $"Processing dropped item: '{droppedFile}'");
                         try
                         {
@@ -6532,7 +6532,7 @@ namespace Desktop_Fences
                             }
                             catch (Exception pathEx)
                             {
-                                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceCreation, $"Path validation error: {pathEx.Message}");
+                                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerCreation, $"Path validation error: {pathEx.Message}");
                                 continue;
                             }
 
@@ -6542,11 +6542,11 @@ namespace Desktop_Fences
                                 continue;
                             }
 
-                            // --- DATA FENCE LOGIC ---
+                            // --- DATA CONTAINER LOGIC ---
 
 
-                            // --- DATA FENCE LOGIC ---
-                            if (fence.ItemsType?.ToString() == "Data")
+                            // --- DATA CONTAINER LOGIC ---
+                            if (container.ItemsType?.ToString() == "Data")
                             {
                                 if (!System.IO.Directory.Exists("Shortcuts")) System.IO.Directory.CreateDirectory("Shortcuts");
                                 string baseShortcutName = System.IO.Path.Combine("Shortcuts", System.IO.Path.GetFileName(droppedFile));
@@ -6662,17 +6662,17 @@ namespace Desktop_Fences
                                 newItemDict["DisplayName"] = displayFileName;
                                 newItemDict["AlwaysRunAsAdmin"] = false;
 
-                                // TABS FEATURE: Get fresh fence data
-                                string fenceId = fence.Id?.ToString();
-                                var freshFence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
+                                // TABS FEATURE: Get fresh container data
+                                string containerId = container.Id?.ToString();
+                                var freshContainer = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
                                 JArray items = null;
-                                bool tabsEnabled = fence.TabsEnabled?.ToString().ToLower() == "true";
+                                bool tabsEnabled = container.TabsEnabled?.ToString().ToLower() == "true";
                                 bool addedToTab0 = false;
 
-                                if (tabsEnabled && freshFence != null)
+                                if (tabsEnabled && freshContainer != null)
                                 {
-                                    int currentTab = Convert.ToInt32(freshFence.CurrentTab?.ToString() ?? "0");
-                                    var tabs = freshFence.Tabs as JArray ?? new JArray();
+                                    int currentTab = Convert.ToInt32(freshContainer.CurrentTab?.ToString() ?? "0");
+                                    var tabs = freshContainer.Tabs as JArray ?? new JArray();
                                     if (currentTab >= 0 && currentTab < tabs.Count)
                                     {
                                         var activeTab = tabs[currentTab] as JObject;
@@ -6682,30 +6682,30 @@ namespace Desktop_Fences
                                             addedToTab0 = (currentTab == 0);
                                         }
                                     }
-                                    if (items == null) items = freshFence.Items as JArray ?? new JArray();
+                                    if (items == null) items = freshContainer.Items as JArray ?? new JArray();
                                 }
                                 else
                                 {
-                                    items = (freshFence ?? fence).Items as JArray ?? new JArray();
+                                    items = (freshContainer ?? container).Items as JArray ?? new JArray();
                                 }
 
                                 int nextDisplayOrder = items.Count;
                                 newItemDict["DisplayOrder"] = nextDisplayOrder;
                                 items.Add(JObject.FromObject(newItem));
 
-                                if (!string.IsNullOrEmpty(fenceId))
+                                if (!string.IsNullOrEmpty(containerId))
                                 {
-                                    if (addedToTab0) SynchronizeTab0Content(fenceId, "tab0", "add");
-                                    else if (!tabsEnabled) SynchronizeTab0Content(fenceId, "main", "add");
+                                    if (addedToTab0) SynchronizeTab0Content(containerId, "tab0", "add");
+                                    else if (!tabsEnabled) SynchronizeTab0Content(containerId, "main", "add");
                                 }
 
-                                if (freshFence != null)
+                                if (freshContainer != null)
                                 {
-                                    int fenceIndex = FenceDataManager.FenceData.FindIndex(f => f.Id?.ToString() == fenceId);
-                                    if (fenceIndex >= 0)
+                                    int containerIndex = ContainerDataManager.ContainerData.FindIndex(f => f.Id?.ToString() == containerId);
+                                    if (containerIndex >= 0)
                                     {
-                                        FenceDataManager.FenceData[fenceIndex] = freshFence;
-                                        FenceDataManager.SaveFenceData();
+                                        ContainerDataManager.ContainerData[containerIndex] = freshContainer;
+                                        ContainerDataManager.SaveContainerData();
                                     }
                                 }
 
@@ -6733,7 +6733,7 @@ namespace Desktop_Fences
                                     }
 
                                     // Attach Context Menu
-                                    AttachIconContextMenu(sp, newItem, fence, win);
+                                    AttachIconContextMenu(sp, newItem, container, win);
 
                                     DesktopOriginals.OnDropped(shortcutName, droppedFile);   // Opsis: the desktop icon moves into the container (hidden, restorable)
                                     // --- HIDDEN TWEAK: Delete Original Shortcut On Drop ---
@@ -6760,15 +6760,15 @@ namespace Desktop_Fences
 
 
 
-                            // --- PORTAL FENCE LOGIC (RESTORED) ---
-                            else if (fence.ItemsType?.ToString() == "Portal")
+                            // --- PORTAL CONTAINER LOGIC (RESTORED) ---
+                            else if (container.ItemsType?.ToString() == "Portal")
                             {
-                                IDictionary<string, object> fenceDict = fence is IDictionary<string, object> dict ? dict : ((JObject)fence).ToObject<IDictionary<string, object>>();
-                                string destinationFolder = fenceDict.ContainsKey("Path") ? fenceDict["Path"]?.ToString() : null;
+                                IDictionary<string, object> containerDict = container is IDictionary<string, object> dict ? dict : ((JObject)container).ToObject<IDictionary<string, object>>();
+                                string destinationFolder = containerDict.ContainsKey("Path") ? containerDict["Path"]?.ToString() : null;
 
                                 if (string.IsNullOrEmpty(destinationFolder))
                                 {
-                                    MessageBoxesManager.ShowOKOnlyMessageBoxForm($"No destination folder defined for this Portal Fence.", "Error");
+                                    MessageBoxesManager.ShowOKOnlyMessageBoxForm($"No destination folder defined for this Portal Container.", "Error");
                                     continue;
                                 }
                                 if (!System.IO.Directory.Exists(destinationFolder))
@@ -6802,7 +6802,7 @@ namespace Desktop_Fences
                             MessageBoxesManager.ShowOKOnlyMessageBoxForm($"Failed to add {droppedFile}: {ex.Message}", "Error");
                         }
                     }
-                    FenceDataManager.SaveFenceData();
+                    ContainerDataManager.SaveContainerData();
                 }
                 // --- URL DROP LOGIC (RESTORED) ---
                 else if (e.Data.GetDataPresent(DataFormats.Text) ||
@@ -6814,19 +6814,19 @@ namespace Desktop_Fences
                         string droppedUrl = ExtractUrlFromDropData(e.Data);
                         if (!string.IsNullOrEmpty(droppedUrl) && IsValidWebUrl(droppedUrl))
                         {
-                            if (fence.ItemsType?.ToString() == "Data")
+                            if (container.ItemsType?.ToString() == "Data")
                             {
-                                AddUrlShortcutToFence(droppedUrl, fence, wpcont);
+                                AddUrlShortcutToContainer(droppedUrl, container, wpcont);
                             }
                             else
                             {
-                                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceCreation, "URL drops not supported for Portal fences");
+                                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerCreation, "URL drops not supported for Portal containers");
                             }
                         }
                     }
                     catch (Exception urlEx)
                     {
-                        LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceCreation, $"Error processing URL drop: {urlEx.Message}");
+                        LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerCreation, $"Error processing URL drop: {urlEx.Message}");
                     }
                 }
             };
@@ -6843,31 +6843,31 @@ namespace Desktop_Fences
             }
             win.LocationChanged += (s, e) =>
             {
-                // Get current fence reference by ID to avoid stale references
-                string fenceId = win.Tag?.ToString();
-                if (string.IsNullOrEmpty(fenceId))
+                // Get current container reference by ID to avoid stale references
+                string containerId = win.Tag?.ToString();
+                if (string.IsNullOrEmpty(containerId))
                 {
-                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.FenceUpdate, $"Fence Id missing during position change for window '{win.Title}'");
+                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.ContainerUpdate, $"Container Id missing during position change for window '{win.Title}'");
                     return;
                 }
-                // Find the current fence in FenceDataManager.FenceData using ID
-                var currentFence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
-                if (currentFence != null)
+                // Find the current container in ContainerDataManager.ContainerData using ID
+                var currentContainer = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
+                if (currentContainer != null)
                 {
                     // Update position and save immediately
-                    currentFence.X = win.Left;
-                    currentFence.Y = win.Top;
-                    FenceDataManager.SaveFenceData();
-                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate, $"Position updated for fence '{currentFence.Title}' to X={win.Left}, Y={win.Top}");
+                    currentContainer.X = win.Left;
+                    currentContainer.Y = win.Top;
+                    ContainerDataManager.SaveContainerData();
+                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate, $"Position updated for container '{currentContainer.Title}' to X={win.Left}, Y={win.Top}");
                 }
                 else
                 {
-                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.FenceUpdate, $"Fence with Id '{fenceId}' not found during position change");
+                    LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.ContainerUpdate, $"Container with Id '{containerId}' not found during position change");
                 }
             };
             InitContent();
-            // Add Note fence specific context menu items after content is initialized
-            if (fence.ItemsType?.ToString() == "Note")
+            // Add Note container specific context menu items after content is initialized
+            if (container.ItemsType?.ToString() == "Note")
             {
                 // Use a small delay to ensure the TextBox is fully created and added to the visual tree
                 System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
@@ -6880,23 +6880,23 @@ namespace Desktop_Fences
                         var noteTextBox = dockPanel?.Children.OfType<TextBox>().FirstOrDefault();
                         if (noteTextBox != null)
                         {
-                            NoteFenceManager.AddNoteContextMenuItems(CnMnFenceManager, fence, noteTextBox);
-                            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation,
-                                $"Added Note context menu items for fence '{fence.Title}'");
+                            NoteContainerManager.AddNoteContextMenuItems(CnMnContainerManager, container, noteTextBox);
+                            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation,
+                                $"Added Note context menu items for container '{container.Title}'");
                         }
                         else
                         {
-                            LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceCreation,
-                                $"CRITICAL: Could not find TextBox for Note fence '{fence.Title}' - checking DockPanel children");
+                            LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerCreation,
+                                $"CRITICAL: Could not find TextBox for Note container '{container.Title}' - checking DockPanel children");
                             // Debug: Log what children actually exist
                             if (dockPanel != null)
                             {
-                                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation,
+                                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation,
                                     $"DockPanel has {dockPanel.Children.Count} children:");
                                 for (int i = 0; i < dockPanel.Children.Count; i++)
                                 {
                                     var child = dockPanel.Children[i];
-                                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceCreation,
+                                    LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerCreation,
                                         $" Child {i}: {child.GetType().Name}");
                                 }
                             }
@@ -6904,7 +6904,7 @@ namespace Desktop_Fences
                     }
                     catch (Exception ex)
                     {
-                        LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.FenceCreation,
+                        LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ContainerCreation,
                             $"Error adding Note context menu: {ex.Message}");
                     }
                 }), System.Windows.Threading.DispatcherPriority.Loaded);
@@ -6918,14 +6918,14 @@ namespace Desktop_Fences
 
 
             // Check for persistent Legendary Mode (Nikos or >:)
-            string fTitle = fence.Title?.ToString() ?? "";
+            string fTitle = container.Title?.ToString() ?? "";
             if (false)
             {
                 // Defer slightly to ensure window is loaded
                 System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
                 {
                     // We call ProcessTitleChange to trigger the visual effect
-                    InterCore.ProcessTitleChange(fence, fTitle, "");
+                    InterCore.ProcessTitleChange(container, fTitle, "");
                 }), System.Windows.Threading.DispatcherPriority.Background);
             }
             {
@@ -6933,7 +6933,7 @@ namespace Desktop_Fences
                 System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
                 {
                     // We call ProcessTitleChange with same names just to trigger the logic
-                    InterCore.ProcessTitleChange(fence, fence.Title.ToString(), "");
+                    InterCore.ProcessTitleChange(container, container.Title.ToString(), "");
                 }), System.Windows.Threading.DispatcherPriority.Background);
             }
 
@@ -6943,15 +6943,15 @@ namespace Desktop_Fences
 
 
 
-            IDictionary<string, object> fenceDict = fence is IDictionary<string, object> dict ? dict : ((JObject)fence).ToObject<IDictionary<string, object>>();
-            SnapManager.AddSnapping(win, fenceDict);
+            IDictionary<string, object> containerDict = container is IDictionary<string, object> dict ? dict : ((JObject)container).ToObject<IDictionary<string, object>>();
+            SnapManager.AddSnapping(win, containerDict);
             // Apply custom color if present, otherwise use global
-            string customColor = fence.CustomColor?.ToString();
-            Utility.ApplyTintAndColorToFence(win, string.IsNullOrEmpty(customColor) ? SettingsManager.SelectedColor : customColor);
+            string customColor = container.CustomColor?.ToString();
+            Utility.ApplyTintAndColorToContainer(win, string.IsNullOrEmpty(customColor) ? SettingsManager.SelectedColor : customColor);
             targetChecker.Start();
         }
 
-        public static void AddIcon(dynamic icon, WrapPanel wpcont, dynamic fenceContext = null)
+        public static void AddIcon(dynamic icon, WrapPanel wpcont, dynamic containerContext = null)
         {
             // 1. EXTRACT DATA
             IDictionary<string, object> iconDict = icon is IDictionary<string, object> dict
@@ -6970,30 +6970,30 @@ namespace Desktop_Fences
             }
 
             // --- STEP 1: Determine Settings Context ---
-            dynamic settings = fenceContext;
+            dynamic settings = containerContext;
             if (settings == null)
             {
                 try
                 {
                     if (wpcont.Tag != null)
                     {
-                        string fenceId = wpcont.Tag.ToString();
-                        settings = GetFenceData().FirstOrDefault(f => f.Id?.ToString() == fenceId);
+                        string containerId = wpcont.Tag.ToString();
+                        settings = GetContainerData().FirstOrDefault(f => f.Id?.ToString() == containerId);
                     }
                     if (settings == null)
                     {
                         NonActivatingWindow win = FindVisualParent<NonActivatingWindow>(wpcont);
-                        string fenceId = win?.Tag?.ToString();
-                        if (!string.IsNullOrEmpty(fenceId))
+                        string containerId = win?.Tag?.ToString();
+                        if (!string.IsNullOrEmpty(containerId))
                         {
-                            settings = GetFenceData().FirstOrDefault(f => f.Id?.ToString() == fenceId);
+                            settings = GetContainerData().FirstOrDefault(f => f.Id?.ToString() == containerId);
                         }
                     }
                 }
                 catch { }
             }
 
-            // --- NEW: Identify Fence Type (Portal vs Data) ---
+            // --- NEW: Identify Container Type (Portal vs Data) ---
             bool isPortal = false;
             if (settings != null)
             {
@@ -7403,73 +7403,73 @@ namespace Desktop_Fences
 
 
 
-        private static void CreateNewFence(string title, string itemsType, double x = 20, double y = 20, string customColor = null, string customLaunchEffect = null)
+        private static void CreateNewContainer(string title, string itemsType, double x = 20, double y = 20, string customColor = null, string customLaunchEffect = null)
         {
             // Generate random name instead of using the passed title
-            string fenceName = CoreUtilities.GenerateRandomName();
+            string containerName = CoreUtilities.GenerateRandomName();
 
-            dynamic newFence = new System.Dynamic.ExpandoObject();
-            newFence.Id = Guid.NewGuid().ToString();
-            IDictionary<string, object> newFenceDict = newFence;
-            // newFenceDict["Title"] = title;
+            dynamic newContainer = new System.Dynamic.ExpandoObject();
+            newContainer.Id = Guid.NewGuid().ToString();
+            IDictionary<string, object> newContainerDict = newContainer;
+            // newContainerDict["Title"] = title;
 
 
-            //  newFenceDict["Title"] = fenceName; // Use random name
-            //Option to set Portal fences fodler nane
-            // Only use random name for non-Portal fences
+            //  newContainerDict["Title"] = containerName; // Use random name
+            //Option to set Portal containers fodler nane
+            // Only use random name for non-Portal containers
             if (itemsType != "Portal")
             {
-                newFenceDict["Title"] = fenceName; // Use random name
+                newContainerDict["Title"] = containerName; // Use random name
             }
 
-            newFenceDict["X"] = x;
-            newFenceDict["Y"] = y;
-            newFenceDict["Width"] = 230;
-            newFenceDict["Height"] = 130;
-            newFenceDict["ItemsType"] = itemsType;
-            newFenceDict["Items"] = itemsType == "Portal" ? "" : new JArray();
-            newFenceDict["CustomColor"] = customColor; // Use passed value
-            newFenceDict["CustomLaunchEffect"] = customLaunchEffect; // Use passed value
-            newFenceDict["IsHidden"] = false; // Use passed value
-            newFenceDict["IsLocked"] = false; // Init ISLocked
+            newContainerDict["X"] = x;
+            newContainerDict["Y"] = y;
+            newContainerDict["Width"] = 230;
+            newContainerDict["Height"] = 130;
+            newContainerDict["ItemsType"] = itemsType;
+            newContainerDict["Items"] = itemsType == "Portal" ? "" : new JArray();
+            newContainerDict["CustomColor"] = customColor; // Use passed value
+            newContainerDict["CustomLaunchEffect"] = customLaunchEffect; // Use passed value
+            newContainerDict["IsHidden"] = false; // Use passed value
+            newContainerDict["IsLocked"] = false; // Init ISLocked
 
-            // Initialize ALL fence properties with defaults to match JSON structure
-            newFenceDict["IsLocked"] = "false";
-            newFenceDict["IsHidden"] = "false";
-            newFenceDict["CustomColor"] = customColor;
-            newFenceDict["CustomLaunchEffect"] = customLaunchEffect;
-            newFenceDict["IsRolled"] = "false";
-            newFenceDict["UnrolledHeight"] = 130;
-            newFenceDict["TextColor"] = null;
-            newFenceDict["BoldTitleText"] = "false";
-            newFenceDict["TitleTextColor"] = null;
-            newFenceDict["DisableTextShadow"] = "false";
-            newFenceDict["IconSize"] = "Medium";
-            newFenceDict["GrayscaleIcons"] = "false";
-            newFenceDict["IconSpacing"] = 5;
-            newFenceDict["TitleTextSize"] = "Medium";
-            newFenceDict["FenceBorderColor"] = null;
-            newFenceDict["FenceBorderThickness"] = 2;
-            // TABS FEATURE: Initialize tab properties for new fences
-            newFenceDict["TabsEnabled"] = "false";  // Default to no tabs
-            newFenceDict["CurrentTab"] = 0;         // Default to first tab
-            newFenceDict["Tabs"] = new JArray();    // Empty tabs array
+            // Initialize ALL container properties with defaults to match JSON structure
+            newContainerDict["IsLocked"] = "false";
+            newContainerDict["IsHidden"] = "false";
+            newContainerDict["CustomColor"] = customColor;
+            newContainerDict["CustomLaunchEffect"] = customLaunchEffect;
+            newContainerDict["IsRolled"] = "false";
+            newContainerDict["UnrolledHeight"] = 130;
+            newContainerDict["TextColor"] = null;
+            newContainerDict["BoldTitleText"] = "false";
+            newContainerDict["TitleTextColor"] = null;
+            newContainerDict["DisableTextShadow"] = "false";
+            newContainerDict["IconSize"] = "Medium";
+            newContainerDict["GrayscaleIcons"] = "false";
+            newContainerDict["IconSpacing"] = 5;
+            newContainerDict["TitleTextSize"] = "Medium";
+            newContainerDict["ContainerBorderColor"] = null;
+            newContainerDict["ContainerBorderThickness"] = 2;
+            // TABS FEATURE: Initialize tab properties for new containers
+            newContainerDict["TabsEnabled"] = "false";  // Default to no tabs
+            newContainerDict["CurrentTab"] = 0;         // Default to first tab
+            newContainerDict["Tabs"] = new JArray();    // Empty tabs array
 
             if (itemsType == "Portal")
                 if (itemsType == "Portal")
                 {
                     using (var dialog = new System.Windows.Forms.FolderBrowserDialog())
                     {
-                        dialog.Description = "Select the folder to monitor for this Portal Fence";
+                        dialog.Description = "Select the folder to monitor for this Portal Container";
                         if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                         {
-                            newFenceDict["Path"] = dialog.SelectedPath;
+                            newContainerDict["Path"] = dialog.SelectedPath;
 
                             // Get the folder name from the selected path
                             // should add and option to be checked for the below
-                            // Set title to folder name for Portal fences
+                            // Set title to folder name for Portal containers
                             string folderName = System.IO.Path.GetFileName(dialog.SelectedPath);
-                            newFenceDict["Title"] = folderName;
+                            newContainerDict["Title"] = folderName;
 
                         }
                         else
@@ -7478,9 +7478,9 @@ namespace Desktop_Fences
                         }
                     }
                 }
-            FenceDataManager.FenceData.Add(newFence);
-            FenceDataManager.SaveFenceData();
-            CreateFence(newFence, new TargetChecker(1000));
+            ContainerDataManager.ContainerData.Add(newContainer);
+            ContainerDataManager.SaveContainerData();
+            CreateContainer(newContainer, new TargetChecker(1000));
         }
 
 
@@ -7577,30 +7577,30 @@ namespace Desktop_Fences
 
 
 
-        private static void UpdateLockState(TextBlock lockIcon, dynamic fence, bool? forceState = null, bool saveToJson = true)
+        private static void UpdateLockState(TextBlock lockIcon, dynamic container, bool? forceState = null, bool saveToJson = true)
         {
-            // Get the actual fence from FenceDataManager.FenceData using Id to ensure correct reference
-            string fenceId = fence.Id?.ToString();
-            if (string.IsNullOrEmpty(fenceId))
+            // Get the actual container from ContainerDataManager.ContainerData using Id to ensure correct reference
+            string containerId = container.Id?.ToString();
+            if (string.IsNullOrEmpty(containerId))
             {
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceUpdate, $"Fence '{fence.Title}' has no Id, cannot update lock state");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerUpdate, $"Container '{container.Title}' has no Id, cannot update lock state");
                 return;
             }
 
-            int index = FenceDataManager.FenceData.FindIndex(f => f.Id?.ToString() == fenceId);
+            int index = ContainerDataManager.ContainerData.FindIndex(f => f.Id?.ToString() == containerId);
             if (index < 0)
             {
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceUpdate, $"Fence '{fence.Title}' not found in FenceDataManager.FenceData, cannot update lock state");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerUpdate, $"Container '{container.Title}' not found in ContainerDataManager.ContainerData, cannot update lock state");
                 return;
             }
 
-            dynamic actualFence = FenceDataManager.FenceData[index];
-            bool isLocked = forceState ?? (actualFence.IsLocked?.ToString().ToLower() == "true");
+            dynamic actualContainer = ContainerDataManager.ContainerData[index];
+            bool isLocked = forceState ?? (actualContainer.IsLocked?.ToString().ToLower() == "true");
 
             // Only update JSON if explicitly requested (e.g., during toggle, not initialization)
             if (saveToJson)
             {
-                UpdateFenceProperty(actualFence, "IsLocked", isLocked.ToString().ToLower(), $"Fence {(isLocked ? "locked" : "unlocked")}");
+                UpdateContainerProperty(actualContainer, "IsLocked", isLocked.ToString().ToLower(), $"Container {(isLocked ? "locked" : "unlocked")}");
             }
 
             // Update UI on the main thread
@@ -7611,22 +7611,22 @@ namespace Desktop_Fences
                 // Update lock icon
                 lockIcon.Foreground = isLocked ? System.Windows.Media.Brushes.DeepPink : System.Windows.Media.Brushes.White;
                 lockIcon.Text = isLocked ? "🔒" : "🔓";   // Opsis: closed / open padlock instead of the shield
-                lockIcon.ToolTip = isLocked ? "Fence is locked (click to unlock)" : "Fence is unlocked (click to lock)";
+                lockIcon.ToolTip = isLocked ? "Container is locked (click to unlock)" : "Container is unlocked (click to lock)";
 
                 // Find the NonActivatingWindow
                 NonActivatingWindow win = FindVisualParent<NonActivatingWindow>(lockIcon);
                 if (win == null)
                 {
-                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Could not find NonActivatingWindow for fence '{actualFence.Title}'");
+                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Could not find NonActivatingWindow for container '{actualContainer.Title}'");
                     return;
                 }
 
                 // Update ResizeMode
                 win.ResizeMode = isLocked ? ResizeMode.NoResize : ResizeMode.CanResizeWithGrip;
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.FenceUpdate, $"Set ResizeMode to {win.ResizeMode} for fence '{actualFence.Title}'");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ContainerUpdate, $"Set ResizeMode to {win.ResizeMode} for container '{actualContainer.Title}'");
             });
 
-            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Updated lock state for fence '{actualFence.Title}': IsLocked={isLocked}");
+            LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Updated lock state for container '{actualContainer.Title}': IsLocked={isLocked}");
         }
 
 
@@ -7659,7 +7659,7 @@ namespace Desktop_Fences
 
 
 
-        public static void EditItem(dynamic icon, dynamic fence, NonActivatingWindow win)
+        public static void EditItem(dynamic icon, dynamic container, NonActivatingWindow win)
         {
             IDictionary<string, object> iconDict = icon is IDictionary<string, object> dict ? dict : ((JObject)icon).ToObject<IDictionary<string, object>>();
             string filePath = iconDict.ContainsKey("Filename") ? (string)iconDict["Filename"] : "Unknown";
@@ -7677,7 +7677,7 @@ namespace Desktop_Fences
 
             var editWindow = new EditShortcutWindow(filePath, displayName);
 
-            // Note: The EditWindow calls 'UpdateFenceDataForIcon' internally when Save is clicked.
+            // Note: The EditWindow calls 'UpdateContainerDataForIcon' internally when Save is clicked.
             // We don't need to duplicate the saving logic here.
             if (editWindow.ShowDialog() == true)
             {
@@ -7696,7 +7696,7 @@ namespace Desktop_Fences
                 var scrollViewer = dockPanel?.Children.OfType<ScrollViewer>().FirstOrDefault();
                 if (scrollViewer != null) wpcont = scrollViewer.Content as WrapPanel;
 
-                if (wpcont == null) wpcont = FenceUtilities.FindWrapPanel(win);
+                if (wpcont == null) wpcont = ContainerUtilities.FindWrapPanel(win);
 
                 if (wpcont != null)
                 {
@@ -7710,7 +7710,7 @@ namespace Desktop_Fences
                     else
                     {
                         // Fallback: Rebuild if not found (e.g. Tab switch might have hidden it)
-                        // In most cases RefreshSingleIconComplete handles it, or a full fence refresh will catch it later.
+                        // In most cases RefreshSingleIconComplete handles it, or a full container refresh will catch it later.
                         LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.IconHandling, "StackPanel not found for immediate refresh, data is saved though.");
                     }
                 }
@@ -7943,20 +7943,20 @@ namespace Desktop_Fences
         }
 
        /// <summary>
-        /// Refresh fence using the same approach as CustomizeFenceForm
+        /// Refresh container using the same approach as CustomizeContainerForm
         /// This ensures consistent sizing and behavior
         /// </summary>
-        public static void RefreshFenceUsingFormApproach(NonActivatingWindow win, dynamic fence)
+        public static void RefreshContainerUsingFormApproach(NonActivatingWindow win, dynamic container)
         {
             try
             {
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Refreshing fence using form approach for '{fence.Title}'");
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Refreshing container using form approach for '{container.Title}'");
 
                 // Find the WrapPanel
                 var wrapPanel = FindWrapPanel(win);
                 if (wrapPanel == null)
                 {
-                    LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, "Cannot find WrapPanel for fence refresh");
+                    LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, "Cannot find WrapPanel for container refresh");
                     return;
                 }
 
@@ -7964,14 +7964,14 @@ namespace Desktop_Fences
                 wrapPanel.Children.Clear();
 
                 // TABS FEATURE: Check if tabs are enabled and load from appropriate source
-                bool tabsEnabled = fence.TabsEnabled?.ToString().ToLower() == "true";
+                bool tabsEnabled = container.TabsEnabled?.ToString().ToLower() == "true";
                 JArray items = null;
 
                 if (tabsEnabled)
                 {
                     // Load from current tab
-                    var tabs = fence.Tabs as JArray ?? new JArray();
-                    int currentTab = Convert.ToInt32(fence.CurrentTab?.ToString() ?? "0");
+                    var tabs = container.Tabs as JArray ?? new JArray();
+                    int currentTab = Convert.ToInt32(container.CurrentTab?.ToString() ?? "0");
 
                     if (currentTab >= 0 && currentTab < tabs.Count)
                     {
@@ -7981,16 +7981,16 @@ namespace Desktop_Fences
                             items = activeTab["Items"] as JArray ?? new JArray();
                             string tabName = activeTab["TabName"]?.ToString() ?? $"Tab {currentTab}";
                             LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI,
-                                $"Refreshing icons from tab '{tabName}' for fence '{fence.Title}'");
+                                $"Refreshing icons from tab '{tabName}' for container '{container.Title}'");
                         }
                     }
                 }
                 else
                 {
                     // Load from main Items array (existing behavior)
-                    items = fence.Items as JArray;
+                    items = container.Items as JArray;
                     LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI,
-                        $"Refreshing icons from main Items for fence '{fence.Title}'");
+                        $"Refreshing icons from main Items for container '{container.Title}'");
                 }
 
                 if (items != null)
@@ -8017,24 +8017,24 @@ namespace Desktop_Fences
                                 ClickEventAdder(sp, filePath, isFolder);
 
                                 // FIX: Attach the missing Context Menu
-                                AttachIconContextMenu(sp, item, fence, win);
+                                AttachIconContextMenu(sp, item, container, win);
                             }
                         }
 
                     }
 
                     LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
-                        $"Successfully refreshed {sortedItems.Count} icons for fence '{fence.Title}' using form approach");
+                        $"Successfully refreshed {sortedItems.Count} icons for container '{container.Title}' using form approach");
                 }
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, $"Error refreshing fence using form approach: {ex.Message}");
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, $"Error refreshing container using form approach: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// Helper method to find WrapPanel in fence window
+        /// Helper method to find WrapPanel in container window
         /// </summary>
         private static WrapPanel FindWrapPanel(NonActivatingWindow win)
         {
@@ -8100,9 +8100,9 @@ namespace Desktop_Fences
                 {
                     try
                     {
-                        foreach (var fence in FenceDataManager.FenceData)
+                        foreach (var container in ContainerDataManager.ContainerData)
                         {
-                            if (fence.ItemsType?.ToString() == "Data")
+                            if (container.ItemsType?.ToString() == "Data")
                             {
                                 bool CheckList(JArray list)
                                 {
@@ -8115,8 +8115,8 @@ namespace Desktop_Fences
                                     }
                                     return false;
                                 }
-                                if (CheckList(fence.Items as JArray)) { isWebLink = true; break; }
-                                var tabs = fence.Tabs as JArray;
+                                if (CheckList(container.Items as JArray)) { isWebLink = true; break; }
+                                var tabs = container.Tabs as JArray;
                                 if (tabs != null)
                                 {
                                     foreach (var tab in tabs) if (CheckList(tab["Items"] as JArray)) { isWebLink = true; goto FoundLink; }
@@ -8216,9 +8216,9 @@ namespace Desktop_Fences
                     if (newIcon == null)
                     {
                         NonActivatingWindow win = FindVisualParent<NonActivatingWindow>(sp);
-                        string fenceId = win?.Tag?.ToString();
-                        var fence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
-                        bool isPortal = fence != null && fence.ItemsType?.ToString() == "Portal";
+                        string containerId = win?.Tag?.ToString();
+                        var container = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
+                        bool isPortal = container != null && container.ItemsType?.ToString() == "Portal";
 
                         if (isPortal) newIcon = Utility.GetShellIcon(filePath, true);
                         else newIcon = new BitmapImage(new Uri("pack://application:,,,/Resources/folder-White.png"));
@@ -8299,13 +8299,13 @@ namespace Desktop_Fences
 
 
 
-        // Safety method to ensure no fences are stuck in transition state
+        // Safety method to ensure no containers are stuck in transition state
         public static void ClearAllTransitionStates()
         {
-            if (_fencesInTransition.Count > 0)
+            if (_containersInTransition.Count > 0)
             {
-                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.FenceUpdate, $"Clearing {_fencesInTransition.Count} stuck transition states");
-                _fencesInTransition.Clear();
+                LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.ContainerUpdate, $"Clearing {_containersInTransition.Count} stuck transition states");
+                _containersInTransition.Clear();
             }
         }
 
@@ -8319,7 +8319,7 @@ namespace Desktop_Fences
             _options = new
             {
                 IsSnapEnabled = SettingsManager.IsSnapEnabled,
-                ShowBackgroundImageOnPortalFences = SettingsManager.ShowBackgroundImageOnPortalFences,
+                ShowBackgroundImageOnPortalContainers = SettingsManager.ShowBackgroundImageOnPortalContainers,
                 Showintray = SettingsManager.ShowInTray,
                 EnableSounds = SettingsManager.EnableSounds,
                 TintValue = SettingsManager.TintValue,
@@ -8414,16 +8414,16 @@ namespace Desktop_Fences
                 if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
                 {
                     NonActivatingWindow win = FindVisualParent<NonActivatingWindow>(sp);
-                    string fenceId = win?.Tag?.ToString();
-                    dynamic fence = null;
-                    if (!string.IsNullOrEmpty(fenceId))
-                        fence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
+                    string containerId = win?.Tag?.ToString();
+                    dynamic container = null;
+                    if (!string.IsNullOrEmpty(containerId))
+                        container = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
 
-                    if (fence != null && fence.ItemsType?.ToString() == "Portal")
+                    if (container != null && container.ItemsType?.ToString() == "Portal")
                     {
                         if (isFolder)
                         {
-                            NavigatePortalFence(fence, path);
+                            NavigatePortalContainer(container, path);
                             e.Handled = true;
                             return;
                         }
@@ -8602,27 +8602,27 @@ namespace Desktop_Fences
             // 3. Ctrl + Click Logic (Navigation vs Drag)
             if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
             {
-                // Detect Fence Context
+                // Detect Container Context
                 NonActivatingWindow win = FindVisualParent<NonActivatingWindow>(sp);
-                string fenceId = win?.Tag?.ToString();
-                dynamic fence = null;
-                if (!string.IsNullOrEmpty(fenceId))
-                    fence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
+                string containerId = win?.Tag?.ToString();
+                dynamic container = null;
+                if (!string.IsNullOrEmpty(containerId))
+                    container = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
 
                 // --- NEW: PORTAL NAVIGATION LOGIC ---
-                if (fence != null && fence.ItemsType?.ToString() == "Portal")
+                if (container != null && container.ItemsType?.ToString() == "Portal")
                 {
                     // Only navigate if it is a Folder
                     if (isFolder)
                     {
                         LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Portal Navigation triggered for: {path}");
-                        NavigatePortalFence(fence, path);
+                        NavigatePortalContainer(container, path);
                         e.Handled = true;
                         return;
                     }
                     else
                     {
-                        // It's a file in a Portal Fence. 
+                        // It's a file in a Portal Container. 
                         // Do NOT drag (unsupported). Do NOT navigate.
                         // Future: Open With...
                         LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, "Ctrl+Click on Portal File ignored (No Drag support)");
@@ -8632,7 +8632,7 @@ namespace Desktop_Fences
                 }
                 // ------------------------------------
 
-                // DEFAULT: Data Fence Drag
+                // DEFAULT: Data Container Drag
                 IconDragDropManager.StartIconDrag(sp, e.GetPosition(sp));
                 e.Handled = true;
                 return;
@@ -8723,16 +8723,16 @@ namespace Desktop_Fences
 
 
         // --- NEW: Unified Manual Hide (Used by Tray Icon) ---
-        public static void ForceHideFences()
+        public static void ForceHideContainers()
         {
-            _areFencesAutoHidden = true;
+            _areContainersAutoHidden = true;
 
-            var fences = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>().ToList();
-            foreach (var fence in fences)
+            var containers = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>().ToList();
+            foreach (var container in containers)
             {
                 // --- ANTI-FLICKER SAFEGUARD ---
-                // Skip fences that are already hidden or currently invisible
-                if (fence.Visibility != Visibility.Visible || fence.Opacity == 0.0) continue;
+                // Skip containers that are already hidden or currently invisible
+                if (container.Visibility != Visibility.Visible || container.Opacity == 0.0) continue;
 
                 // Animate the fade out
                 var fadeOut = new System.Windows.Media.Animation.DoubleAnimation
@@ -8745,13 +8745,13 @@ namespace Desktop_Fences
                 // When the animation finishes, physically hide the window
                 fadeOut.Completed += (s, e) =>
                 {
-                    fence.Visibility = Visibility.Hidden;
+                    container.Visibility = Visibility.Hidden;
                 };
 
-                fence.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+                container.BeginAnimation(UIElement.OpacityProperty, fadeOut);
             }
 
-            LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, "Fences faded out and hidden.");
+            LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, "Containers faded out and hidden.");
         }
 
 
@@ -8780,26 +8780,26 @@ namespace Desktop_Fences
                 NonActivatingWindow win = FindVisualParent<NonActivatingWindow>(sp);
 
                 // FIX: Use ID (Tag) lookup instead of Title (Robust)
-                string fenceId = win?.Tag?.ToString();
-                dynamic fence = null;
+                string containerId = win?.Tag?.ToString();
+                dynamic container = null;
 
-                if (!string.IsNullOrEmpty(fenceId))
+                if (!string.IsNullOrEmpty(containerId))
                 {
-                    fence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
+                    container = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
                 }
 
                 // Fallback to Title only if ID lookup failed
-                if (fence == null)
+                if (container == null)
                 {
-                    fence = FenceDataManager.FenceData.FirstOrDefault(f => f.Title == win?.Title);
+                    container = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Title == win?.Title);
                 }
 
                 // FIX: Read LIVE Global Setting directly from SettingsManager
                 // This bypasses the stale _options cache.
                 LaunchEffectsManager.LaunchEffect effect = SettingsManager.LaunchEffect;
 
-                // Check for Fence-Specific Override
-                string customEffect = fence?.CustomLaunchEffect?.ToString();
+                // Check for Container-Specific Override
+                string customEffect = container?.CustomLaunchEffect?.ToString();
                 if (!string.IsNullOrEmpty(customEffect))
                 {
                     try
@@ -8884,15 +8884,15 @@ namespace Desktop_Fences
                 bool alwaysRunAsDifferentUser = false;
                 try
                 {
-                    if (fence != null && fence.ItemsType?.ToString() == "Data")
+                    if (container != null && container.ItemsType?.ToString() == "Data")
                     {
-                        var items = fence.Items as JArray ?? new JArray();
-                        bool tabsEnabled = fence.TabsEnabled?.ToString().ToLower() == "true";
+                        var items = container.Items as JArray ?? new JArray();
+                        bool tabsEnabled = container.TabsEnabled?.ToString().ToLower() == "true";
 
                         if (tabsEnabled)
                         {
-                            var tabs = fence.Tabs as JArray ?? new JArray();
-                            int currentTabIndex = Convert.ToInt32(fence.CurrentTab?.ToString() ?? "0");
+                            var tabs = container.Tabs as JArray ?? new JArray();
+                            int currentTabIndex = Convert.ToInt32(container.CurrentTab?.ToString() ?? "0");
                             if (currentTabIndex >= 0 && currentTabIndex < tabs.Count)
                             {
                                 var currentTab = tabs[currentTabIndex] as JObject;
@@ -9118,14 +9118,14 @@ namespace Desktop_Fences
                 LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI,
                     $"Refreshing click handlers for edited shortcut: {shortcutPath}");
 
-                // Find all fence windows and locate the icon
+                // Find all container windows and locate the icon
                 var windows = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>();
                 bool iconFound = false;
 
                 foreach (var window in windows)
                 {
                     // Find the WrapPanel containing icons
-                    var wrapPanel = FenceUtilities.FindWrapPanel(window);
+                    var wrapPanel = ContainerUtilities.FindWrapPanel(window);
 
                     if (wrapPanel == null) continue;
 
@@ -9305,7 +9305,7 @@ namespace Desktop_Fences
 
                 // 6. Re-attach Events and Update Data
                 ClickEventAdder(iconPanel, shortcutPath, isFolder, freshArguments);
-                UpdateFenceDataForIcon(shortcutPath, newDisplayName, parentWindow);
+                UpdateContainerDataForIcon(shortcutPath, newDisplayName, parentWindow);
 
                 LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.UI, $"Complete icon refresh successful for: {shortcutPath}");
             }
@@ -9314,21 +9314,21 @@ namespace Desktop_Fences
                 LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, $"Error in complete icon refresh: {ex.Message}");
             }
         }
-        // Updates fence JSON data after icon refresh
+        // Updates container JSON data after icon refresh
 
 
-        // Updates fence JSON data after icon refresh
-        private static void UpdateFenceDataForIcon(string shortcutPath, string newDisplayName, NonActivatingWindow parentWindow)
+        // Updates container JSON data after icon refresh
+        private static void UpdateContainerDataForIcon(string shortcutPath, string newDisplayName, NonActivatingWindow parentWindow)
         {
             try
             {
                 if (string.IsNullOrEmpty(newDisplayName)) return;
 
-                string fenceId = parentWindow.Tag?.ToString();
-                if (string.IsNullOrEmpty(fenceId)) return;
+                string containerId = parentWindow.Tag?.ToString();
+                if (string.IsNullOrEmpty(containerId)) return;
 
-                var fence = FenceDataManager.FenceData.FirstOrDefault(f => f.Id?.ToString() == fenceId);
-                if (fence == null) return;
+                var container = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == containerId);
+                if (container == null) return;
 
                 // FIX: Search for the item in BOTH Main Items and ALL Tabs
                 bool found = false;
@@ -9351,10 +9351,10 @@ namespace Desktop_Fences
                 }
 
                 // 1. Check Main Items
-                if (SearchList(fence.Items as JArray)) found = true;
+                if (SearchList(container.Items as JArray)) found = true;
 
                 // 2. Check Tabs (Always check tabs to keep Tab 0 and Main Items completely synced)
-                var tabs = fence.Tabs as JArray;
+                var tabs = container.Tabs as JArray;
                 if (tabs != null)
                 {
                     foreach (var tab in tabs)
@@ -9369,7 +9369,7 @@ namespace Desktop_Fences
 
                 if (found)
                 {
-                    FenceDataManager.SaveFenceData();
+                    ContainerDataManager.SaveContainerData();
                     LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.UI, $"Updated JSON DisplayName for: {shortcutPath}");
                 }
                 else
@@ -9379,7 +9379,7 @@ namespace Desktop_Fences
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, $"Error updating fence JSON: {ex.Message}");
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, $"Error updating container JSON: {ex.Message}");
             }
         }
 
@@ -9452,33 +9452,33 @@ namespace Desktop_Fences
             }
         }
 
-        public static void OnResizingStarted(NonActivatingWindow fence)
+        public static void OnResizingStarted(NonActivatingWindow container)
         {
             if (SettingsManager.EnableDimensionSnap)
             {
-                fence.SizeChanged += UpdateSizeFeedback;
-                ShowSizeFeedback(fence.Width, fence.Height);
+                container.SizeChanged += UpdateSizeFeedback;
+                ShowSizeFeedback(container.Width, container.Height);
             }
         }
 
-        public static void OnResizingEnded(NonActivatingWindow fence)
+        public static void OnResizingEnded(NonActivatingWindow container)
         {
             if (SettingsManager.EnableDimensionSnap)
             {
-                fence.SizeChanged -= UpdateSizeFeedback;
+                container.SizeChanged -= UpdateSizeFeedback;
 
-                double snappedWidth = Math.Round(fence.Width / 10.0) * 10;
-                double snappedHeight = Math.Round(fence.Height / 10.0) * 10;
+                double snappedWidth = Math.Round(container.Width / 10.0) * 10;
+                double snappedHeight = Math.Round(container.Height / 10.0) * 10;
 
-                fence.Width = snappedWidth;
-                fence.Height = snappedHeight;
+                container.Width = snappedWidth;
+                container.Height = snappedHeight;
 
-                dynamic fenceData = GetFenceData().FirstOrDefault(f => f.Title == fence.Title);
-                if (fenceData != null)
+                dynamic containerData = GetContainerData().FirstOrDefault(f => f.Title == container.Title);
+                if (containerData != null)
                 {
-                    fenceData.Width = snappedWidth;
-                    fenceData.Height = snappedHeight;
-                    FenceDataManager.SaveFenceData();
+                    containerData.Width = snappedWidth;
+                    containerData.Height = snappedHeight;
+                    ContainerDataManager.SaveContainerData();
                 }
 
                 // Show one last time. The unified timer in ShowSizeFeedback will clean it up automatically.
@@ -9491,17 +9491,17 @@ namespace Desktop_Fences
 
 
         // --- HELPER: Efficient Dead Shortcut Check using Cached States ---
-        private static bool HasDeadShortcuts(dynamic fence)
+        private static bool HasDeadShortcuts(dynamic container)
         {
             try
             {
-                // Only Data fences track dead shortcuts
-                if (fence.ItemsType?.ToString() != "Data") return false;
+                // Only Data containers track dead shortcuts
+                if (container.ItemsType?.ToString() != "Data") return false;
 
-                bool tabsEnabled = fence.TabsEnabled?.ToString().ToLower() == "true";
+                bool tabsEnabled = container.TabsEnabled?.ToString().ToLower() == "true";
                 if (tabsEnabled)
                 {
-                    var tabs = fence.Tabs as JArray;
+                    var tabs = container.Tabs as JArray;
                     if (tabs != null)
                     {
                         foreach (var tab in tabs)
@@ -9513,7 +9513,7 @@ namespace Desktop_Fences
                 }
                 else
                 {
-                    var items = fence.Items as JArray;
+                    var items = container.Items as JArray;
                     if (items != null && CheckItemsForDead(items)) return true;
                 }
             }
@@ -9548,7 +9548,7 @@ namespace Desktop_Fences
 
 
 
-        // Add this static method inside your FenceManager class
+        // Add this static method inside your ContainerManager class
         private static IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
             const int WM_GETMINMAXINFO = 0x0024;
@@ -9597,15 +9597,15 @@ namespace Desktop_Fences
 
         private static void UpdateSizeFeedback(object sender, SizeChangedEventArgs e)
         {
-            var fence = sender as NonActivatingWindow;
-            if (fence != null)
+            var container = sender as NonActivatingWindow;
+            if (container != null)
             {
                 // --- BUG FIX: Ignore programmatic animations ---
-                // Do not show the resizing indicator if the fence is just rolling up or down
-                string fenceId = fence.Tag?.ToString();
-                if (!string.IsNullOrEmpty(fenceId) && _fencesInTransition.Contains(fenceId)) return;
+                // Do not show the resizing indicator if the container is just rolling up or down
+                string containerId = container.Tag?.ToString();
+                if (!string.IsNullOrEmpty(containerId) && _containersInTransition.Contains(containerId)) return;
 
-                ShowSizeFeedback(fence.Width, fence.Height);
+                ShowSizeFeedback(container.Width, container.Height);
             }
         }
 

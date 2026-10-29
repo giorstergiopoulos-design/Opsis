@@ -59,7 +59,7 @@ namespace MotionDesk.Services
                 Directory.CreateDirectory(Path.GetDirectoryName(OptionsPath)!);
                 AtomicFile.WriteAllText(OptionsPath, o.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { RotatingLogger.Write("Fences options write failed: " + ex.Message); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { RotatingLogger.Write("DeskContainers options write failed: " + ex.Message); }
         }
 
         public static void Set(string key, bool v) => Save(o => o[key] = v);

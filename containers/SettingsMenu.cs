@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Controls;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     // Opsis: ALL DeskContainers settings live in the three-bars menu of every container (Settings > General / Appearance / Tools / Profiles /
     // Hotkeys / Smart desktop / Logging). They used to be cards on the Opsis DeskZones page. Every entry writes the engine's options through
@@ -14,12 +14,14 @@ namespace Desktop_Fences
         private static readonly string[] MenuIcons = { "⋯", "☰", "≣", "𓃑" };
         private static readonly string[] Modifiers = { "Control", "Alt", "Shift", "Control, Alt", "Control, Shift", "Alt, Shift", "Control, Alt, Shift", "Win" };
         private static readonly string[] LogLevels = { "Debug", "Info", "Warn", "Error" };
-        private static readonly string[] LogCategories = { "General", "FenceCreation", "FenceUpdate", "UI", "IconHandling", "ImportExport", "Settings", "BackgroundValidation" };
+        private static readonly string[] LogCategories = { "General", "ContainerCreation", "ContainerUpdate", "UI", "IconHandling", "ImportExport", "Settings", "BackgroundValidation" };
 
         private static string L(string key, string en) => Loc.K(key, en);
 
         private static void Save() { try { SettingsManager.SaveSettings(); } catch { } }
-        private static void SafeAfter(Action after) { try { after?.Invoke(); } catch (Exception ex) { LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, "Settings menu action failed: " + ex.Message); } }
+        /// <summary>Set by the self-test: apply-callbacks (window reloads, hotkey re-registration...) are skipped, only the persistence is checked.</summary>
+        internal static bool SuppressSideEffects;
+        private static void SafeAfter(Action after) { if (SuppressSideEffects) return; try { after?.Invoke(); } catch (Exception ex) { LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.UI, "Settings menu action failed: " + ex.Message); } }
 
         private static void Toggle(ItemCollection parent, ContextMenu owner, string key, string en, Func<bool> get, Action<bool> set, Action after = null)
         {
@@ -97,25 +99,25 @@ namespace Desktop_Fences
             Toggle(general.Items, owner, "DCM.DimSnap", "Dimension snap", () => SettingsManager.EnableDimensionSnap, v => SettingsManager.EnableDimensionSnap = v);
             Toggle(general.Items, owner, "DCM.RecycleBin", "Use the Recycle Bin on Portal containers", () => SettingsManager.UseRecycleBin, v => SettingsManager.UseRecycleBin = v);
             Toggle(general.Items, owner, "DCM.ContextMenu", "Show \"New DeskContainer\" in the desktop menu", () => SettingsManager.EnableContextMenu, v => SettingsManager.EnableContextMenu = v, () => RegistryHelper.ToggleContextMenu(SettingsManager.EnableContextMenu));
-            Toggle(general.Items, owner, "DCM.AutoHide", "Auto-hide after inactivity", () => SettingsManager.AutoHideFences, v => SettingsManager.AutoHideFences = v, () => FenceManager.ResetAutoHideTimer());
-            Choice(general.Items, owner, "DCM.IdleTime", "Idle time before hiding", new[] { 15, 30, 60, 120, 300 }.Select(v => (string.Format(L("DCM.Seconds", "{0} seconds"), v), v)), () => SettingsManager.AutoHideTime, v => SettingsManager.AutoHideTime = v, () => FenceManager.ResetAutoHideTimer());
+            Toggle(general.Items, owner, "DCM.AutoHide", "Auto-hide after inactivity", () => SettingsManager.AutoHideContainers, v => SettingsManager.AutoHideContainers = v, () => ContainerManager.ResetAutoHideTimer());
+            Choice(general.Items, owner, "DCM.IdleTime", "Idle time before hiding", new[] { 15, 30, 60, 120, 300 }.Select(v => (string.Format(L("DCM.Seconds", "{0} seconds"), v), v)), () => SettingsManager.AutoHideTime, v => SettingsManager.AutoHideTime = v, () => ContainerManager.ResetAutoHideTimer());
             root.Items.Add(general);
 
             // ---- Appearance
             var look = new MenuItem { Header = L("DCM.Appearance", "Appearance") };
-            Toggle(look.Items, owner, "DCM.Watermark", "Watermark on Portal containers", () => SettingsManager.ShowBackgroundImageOnPortalFences, v => SettingsManager.ShowBackgroundImageOnPortalFences = v, () => TrayManager.reloadAllFences());
-            Toggle(look.Items, owner, "DCM.NoScrollbars", "Hide scrollbars", () => SettingsManager.DisableFenceScrollbars, v => SettingsManager.DisableFenceScrollbars = v, () => TrayManager.reloadAllFences());
+            Toggle(look.Items, owner, "DCM.Watermark", "Watermark on Portal containers", () => SettingsManager.ShowBackgroundImageOnPortalContainers, v => SettingsManager.ShowBackgroundImageOnPortalContainers = v, () => TrayManager.reloadAllContainers());
+            Toggle(look.Items, owner, "DCM.NoScrollbars", "Hide scrollbars", () => SettingsManager.DisableContainerScrollbars, v => SettingsManager.DisableContainerScrollbars = v, () => TrayManager.reloadAllContainers());
             Toggle(look.Items, owner, "DCM.Sounds", "Sounds", () => SettingsManager.EnableSounds, v => SettingsManager.EnableSounds = v);
-            Toggle(look.Items, owner, "DCM.Chameleon", "Chameleon (colour from the wallpaper)", () => SettingsManager.EnableChameleonMode, v => SettingsManager.EnableChameleonMode = v, () => Utility.UpdateFenceVisuals());
+            Toggle(look.Items, owner, "DCM.Chameleon", "Chameleon (colour from the wallpaper)", () => SettingsManager.EnableChameleonMode, v => SettingsManager.EnableChameleonMode = v, () => Utility.UpdateContainerVisuals());
             Toggle(look.Items, owner, "DCM.AutoRoll", "Auto roll-up (expand on hover)", () => SettingsManager.AutoRollUpOnHover, v => SettingsManager.AutoRollUpOnHover = v);
-            Choice(look.Items, owner, "DCM.Tint", "Container tint", Steps(0, 100, 10, "DCM.Percent", "{0}%"), () => SettingsManager.TintValue / 10 * 10, v => SettingsManager.TintValue = v, () => Utility.UpdateFenceVisuals());
-            Choice(look.Items, owner, "DCM.MenuTint", "Menu icon opacity", Steps(0, 100, 10, "DCM.Percent", "{0}%"), () => SettingsManager.MenuTintValue / 10 * 10, v => SettingsManager.MenuTintValue = v, () => Utility.UpdateFenceVisuals());
-            Choice(look.Items, owner, "DCM.Colour", "Colour", Colors.Select(c => (L("DCM.Color." + c, c), c)), () => SettingsManager.SelectedColor, v => SettingsManager.SelectedColor = v, () => Utility.UpdateFenceVisuals());
-            Choice(look.Items, owner, "DCM.TitleColour", "Title bar colour", new[] { "Auto" }.Concat(Colors).Select(c => (c == "Auto" ? L("DCM.Auto", "Auto") : L("DCM.Color." + c, c), c)), () => SettingsManager.TitleBarColor, v => SettingsManager.TitleBarColor = v, () => Utility.UpdateFenceVisuals());
-            Choice(look.Items, owner, "DCM.TitleOpacity", "Title bar opacity", Steps(0, 100, 10, "DCM.Percent", "{0}%"), () => SettingsManager.TitleBarOpacity / 10 * 10, v => SettingsManager.TitleBarOpacity = v, () => Utility.UpdateFenceVisuals());
-            Choice(look.Items, owner, "DCM.TitleHeight", "Title bar height", new[] { 24, 28, 32, 40, 48, 64 }.Select(v => ($"{v} px", v)), () => SettingsManager.TitleBarHeight, v => SettingsManager.TitleBarHeight = v, () => TrayManager.reloadAllFences());
+            Choice(look.Items, owner, "DCM.Tint", "Container tint", Steps(0, 100, 10, "DCM.Percent", "{0}%"), () => SettingsManager.TintValue / 10 * 10, v => SettingsManager.TintValue = v, () => Utility.UpdateContainerVisuals());
+            Choice(look.Items, owner, "DCM.MenuTint", "Menu icon opacity", Steps(0, 100, 10, "DCM.Percent", "{0}%"), () => SettingsManager.MenuTintValue / 10 * 10, v => SettingsManager.MenuTintValue = v, () => Utility.UpdateContainerVisuals());
+            Choice(look.Items, owner, "DCM.Colour", "Colour", Colors.Select(c => (L("DCM.Color." + c, c), c)), () => SettingsManager.SelectedColor, v => SettingsManager.SelectedColor = v, () => Utility.UpdateContainerVisuals());
+            Choice(look.Items, owner, "DCM.TitleColour", "Title bar colour", new[] { "Auto" }.Concat(Colors).Select(c => (c == "Auto" ? L("DCM.Auto", "Auto") : L("DCM.Color." + c, c), c)), () => SettingsManager.TitleBarColor, v => SettingsManager.TitleBarColor = v, () => Utility.UpdateContainerVisuals());
+            Choice(look.Items, owner, "DCM.TitleOpacity", "Title bar opacity", Steps(0, 100, 10, "DCM.Percent", "{0}%"), () => SettingsManager.TitleBarOpacity / 10 * 10, v => SettingsManager.TitleBarOpacity = v, () => Utility.UpdateContainerVisuals());
+            Choice(look.Items, owner, "DCM.TitleHeight", "Title bar height", new[] { 24, 28, 32, 40, 48, 64 }.Select(v => ($"{v} px", v)), () => SettingsManager.TitleBarHeight, v => SettingsManager.TitleBarHeight = v, () => TrayManager.reloadAllContainers());
             Choice(look.Items, owner, "DCM.LaunchEffect", "Launch effect", Enum.GetValues(typeof(LaunchEffectsManager.LaunchEffect)).Cast<LaunchEffectsManager.LaunchEffect>().Select(e => (L("DCM.Effect." + e, e.ToString()), e)), () => SettingsManager.LaunchEffect, v => SettingsManager.LaunchEffect = v);
-            Choice(look.Items, owner, "DCM.MenuIcon", "Menu icon", MenuIcons.Select((g, i) => (g, i)), () => SettingsManager.MenuIcon, v => SettingsManager.MenuIcon = v, () => TrayManager.reloadAllFences());
+            Choice(look.Items, owner, "DCM.MenuIcon", "Menu icon", MenuIcons.Select((g, i) => (g, i)), () => SettingsManager.MenuIcon, v => SettingsManager.MenuIcon = v, () => TrayManager.reloadAllContainers());
             root.Items.Add(look);
 
             // ---- Tools
@@ -125,11 +127,11 @@ namespace Desktop_Fences
             Command(tools.Items, "DCM.OpenBackups", "Open the backups folder", () => BackupManager.OpenBackupsFolder());
             Toggle(tools.Items, owner, "DCM.AutoBackup", "Automatic daily backup", () => SettingsManager.EnableAutoBackup, v => SettingsManager.EnableAutoBackup = v);
             tools.Items.Add(new Separator());
-            Command(tools.Items, "DCM.ScreenBound", "Bring containers back on screen", () => FenceManager.ForceRepositionAllFences());
+            Command(tools.Items, "DCM.ScreenBound", "Bring containers back on screen", () => ContainerManager.ForceRepositionAllContainers());
             Command(tools.Items, "DCM.ResetStyles", "Reset appearance", () =>
             {
                 if (System.Windows.MessageBox.Show(L("DCM.ConfirmResetStyles", "Reset all visual customizations of the containers?"), L("DCM.Title", "Opsis DeskContainers"), System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question) == System.Windows.MessageBoxResult.Yes)
-                    FenceManager.ResetAllCustomizations();
+                    ContainerManager.ResetAllCustomizations();
             });
             Command(tools.Items, "DCM.ClearData", "Delete all DeskContainers data...", () => OptionsFormManager.PerformFullFactoryReset());
             root.Items.Add(tools);
@@ -146,7 +148,7 @@ namespace Desktop_Fences
             HotkeyGroup(keys.Items, owner, "DCM.HkProfiles", "Profile switching: direct [0-9]", () => SettingsManager.EnableProfileHotkeys, v => SettingsManager.EnableProfileHotkeys = v, () => SettingsManager.ProfileSwitchModifier, v => SettingsManager.ProfileSwitchModifier = v, null, null);
             HotkeyGroup(keys.Items, owner, "DCM.HkPrev", "Previous profile", () => SettingsManager.EnableProfileHotkeys, v => SettingsManager.EnableProfileHotkeys = v, () => SettingsManager.ProfilePrevModifier, v => SettingsManager.ProfilePrevModifier = v, () => SettingsManager.ProfilePrevKey, v => SettingsManager.ProfilePrevKey = v);
             HotkeyGroup(keys.Items, owner, "DCM.HkNext", "Next profile", () => SettingsManager.EnableProfileHotkeys, v => SettingsManager.EnableProfileHotkeys = v, () => SettingsManager.ProfileNextModifier, v => SettingsManager.ProfileNextModifier = v, () => SettingsManager.ProfileNextKey, v => SettingsManager.ProfileNextKey = v);
-            HotkeyGroup(keys.Items, owner, "DCM.HkFocus", "Focus a container", () => SettingsManager.EnableFocusFenceHotkey, v => SettingsManager.EnableFocusFenceHotkey = v, () => SettingsManager.FocusFenceModifier, v => SettingsManager.FocusFenceModifier = v, () => SettingsManager.FocusFenceKey, v => SettingsManager.FocusFenceKey = v);
+            HotkeyGroup(keys.Items, owner, "DCM.HkFocus", "Focus a container", () => SettingsManager.EnableFocusContainerHotkey, v => SettingsManager.EnableFocusContainerHotkey = v, () => SettingsManager.FocusContainerModifier, v => SettingsManager.FocusContainerModifier = v, () => SettingsManager.FocusContainerKey, v => SettingsManager.FocusContainerKey = v);
             HotkeyGroup(keys.Items, owner, "DCM.HkSpot", "Spot Search", () => SettingsManager.EnableSpotSearchHotkey, v => SettingsManager.EnableSpotSearchHotkey = v, () => SettingsManager.SpotSearchModifier, v => SettingsManager.SpotSearchModifier = v, () => SettingsManager.SpotSearchKey, v => SettingsManager.SpotSearchKey = v);
             root.Items.Add(keys);
 

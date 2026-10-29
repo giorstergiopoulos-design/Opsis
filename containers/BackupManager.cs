@@ -12,10 +12,10 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Effects;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     /// <summary>
-    /// Manages backup operations for Desktop Fences data, including the fences configuration file
+    /// Manages backup operations for Opsis DeskContainers data, including the containers configuration file
     /// and associated shortcut files. Backups are stored in timestamped folders for easy recovery.
     /// Refactored to centralize all backup/restore functionality and support Multi-Profile.
     /// </summary>
@@ -28,18 +28,18 @@ namespace Desktop_Fences
         private static readonly Dictionary<string, Thickness> _originalBorderThicknesses = new Dictionary<string, Thickness>();
         private static readonly Dictionary<string, Effect> _originalEffects = new Dictionary<string, Effect>();
 
-        // Manage last deleted fence restoration
+        // Manage last deleted container restoration
         private static string _lastDeletedFolderPath;
-        private static dynamic _lastDeletedFence;
+        private static dynamic _lastDeletedContainer;
         private static bool _isRestoreAvailable;
         private static System.Windows.Threading.DispatcherTimer _autoBackupTimer;
         #endregion
 
         #region Public Properties
-        // Gets whether a restore operation is available for the last deleted fence
+        // Gets whether a restore operation is available for the last deleted container
         public static bool IsRestoreAvailable => _isRestoreAvailable;
 
-        // Gets the path to the last deleted fence backup folder
+        // Gets the path to the last deleted container backup folder
         public static string LastDeletedFolderPath => _lastDeletedFolderPath;
         #endregion
 
@@ -90,18 +90,18 @@ namespace Desktop_Fences
 
         #region Restore Operations
 
-        public static void RestoreLastDeletedFence()
+        public static void RestoreLastDeletedContainer()
         {
             try
             {
-                if (!_isRestoreAvailable || string.IsNullOrEmpty(_lastDeletedFolderPath) || _lastDeletedFence == null)
+                if (!_isRestoreAvailable || string.IsNullOrEmpty(_lastDeletedFolderPath) || _lastDeletedContainer == null)
                 {
-                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ImportExport, "No fence available to restore");
-                    MessageBoxesManager.ShowOKOnlyMessageBoxForm("No fence to restore", "Restore");
+                    LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ImportExport, "No container available to restore");
+                    MessageBoxesManager.ShowOKOnlyMessageBoxForm("No container to restore", "Restore");
                     return;
                 }
 
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ImportExport, $"Restoring last deleted fence: {_lastDeletedFence.Title}");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ImportExport, $"Restoring last deleted container: {_lastDeletedContainer.Title}");
 
                 // Restore shortcuts if they exist
                 if (Directory.Exists(_lastDeletedFolderPath))
@@ -125,61 +125,61 @@ namespace Desktop_Fences
                     }
                 }
 
-                // Restore fence data to the main fence collection
-                var fenceData = FenceManager.GetFenceData();
-                fenceData.Add(_lastDeletedFence);
-                FenceDataManager.SaveFenceData();
+                // Restore container data to the main container collection
+                var containerData = ContainerManager.GetContainerData();
+                containerData.Add(_lastDeletedContainer);
+                ContainerDataManager.SaveContainerData();
 
-                // Create the fence UI
-                FenceManager.CreateFence(_lastDeletedFence, new TargetChecker(1000));
+                // Create the container UI
+                ContainerManager.CreateContainer(_lastDeletedContainer, new TargetChecker(1000));
 
                 // Clear backup state
-                _lastDeletedFence = null;
+                _lastDeletedContainer = null;
                 _isRestoreAvailable = false;
 
                 // Update heart context menus to reflect restored state
-                FenceManager.UpdateAllHeartContextMenus();
+                ContainerManager.UpdateAllHeartContextMenus();
 
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ImportExport, "Last deleted fence restored successfully");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ImportExport, "Last deleted container restored successfully");
             }
             catch (Exception ex)
             {
-                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ImportExport, $"Error restoring last deleted fence: {ex.Message}");
-                MessageBoxesManager.ShowOKOnlyMessageBoxForm($"Error restoring fence: {ex.Message}", "Restore Error");
+                LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ImportExport, $"Error restoring last deleted container: {ex.Message}");
+                MessageBoxesManager.ShowOKOnlyMessageBoxForm($"Error restoring container: {ex.Message}", "Restore Error");
             }
         }
         #endregion
 
-        #region Fence Export/Import Operations
+        #region Container Export/Import Operations
 
-        public static void ExportFence(dynamic fence)
+        public static void ExportContainer(dynamic container)
         {
             try
             {
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ImportExport, $"Starting export of fence: {fence.Title}");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ImportExport, $"Starting export of container: {container.Title}");
 
-                string exeDir = Desktop_Fences.DataRoot.Dir;
-                string fenceTitle = fence.Title.ToString();
+                string exeDir = OpsisContainers.DataRoot.Dir;
+                string containerTitle = container.Title.ToString();
 
                 // Sanitize folder name
                 foreach (char c in Path.GetInvalidFileNameChars())
                 {
-                    fenceTitle = fenceTitle.Replace(c, '_');
+                    containerTitle = containerTitle.Replace(c, '_');
                 }
 
                 // --- BUG FIX: Windows prohibits trailing spaces and dots in folder names ---
-                fenceTitle = fenceTitle.TrimEnd(' ', '.');
+                containerTitle = containerTitle.TrimEnd(' ', '.');
 
                 // Fallback in case the name was completely stripped
-                if (string.IsNullOrWhiteSpace(fenceTitle))
+                if (string.IsNullOrWhiteSpace(containerTitle))
                 {
-                    fenceTitle = "ExportedFence_" + Guid.NewGuid().ToString().Substring(0, 8);
+                    containerTitle = "ExportedContainer_" + Guid.NewGuid().ToString().Substring(0, 8);
                 }
                 // ---------------------------------------------------------------------------
 
                 // Exports go to GLOBAL "Exports" folder (shared between profiles)
-                string exportFolder = Path.Combine(exeDir, "Exports", fenceTitle);
-                string fencePath = Path.Combine(exeDir, "Exports", $"{fenceTitle}.fence");
+                string exportFolder = Path.Combine(exeDir, "Exports", containerTitle);
+                string containerPath = Path.Combine(exeDir, "Exports", $"{containerTitle}.container");
 
                 // Ensure exports directory exists
                 string exportsDir = Path.Combine(exeDir, "Exports");
@@ -187,16 +187,16 @@ namespace Desktop_Fences
 
                 // Cleanup previous runs
                 if (Directory.Exists(exportFolder)) Directory.Delete(exportFolder, true);
-                if (File.Exists(fencePath)) File.Delete(fencePath);
+                if (File.Exists(containerPath)) File.Delete(containerPath);
 
                 Directory.CreateDirectory(exportFolder);
 
                 // 1. Save Metadata
-                string fenceJson = JsonConvert.SerializeObject(fence, Formatting.Indented);
-                File.WriteAllText(Path.Combine(exportFolder, "fence.json"), fenceJson);
+                string containerJson = JsonConvert.SerializeObject(container, Formatting.Indented);
+                File.WriteAllText(Path.Combine(exportFolder, "container.json"), containerJson);
 
                 // 2. Copy Shortcuts (TAB-AWARE FIX)
-                if (fence.ItemsType?.ToString() == "Data")
+                if (container.ItemsType?.ToString() == "Data")
                 {
                     string shortcutsDestDir = Path.Combine(exportFolder, "Shortcuts");
                     Directory.CreateDirectory(shortcutsDestDir);
@@ -231,14 +231,14 @@ namespace Desktop_Fences
                     }
 
                     // A. Copy Main Items
-                    var mainItems = fence.Items as JArray;
+                    var mainItems = container.Items as JArray;
                     if (mainItems != null) CopyItems(mainItems);
 
                     // B. Copy Tab Items (The Fix)
-                    bool tabsEnabled = fence.TabsEnabled?.ToString().ToLower() == "true";
+                    bool tabsEnabled = container.TabsEnabled?.ToString().ToLower() == "true";
                     if (tabsEnabled)
                     {
-                        var tabs = fence.Tabs as JArray;
+                        var tabs = container.Tabs as JArray;
                         if (tabs != null)
                         {
                             foreach (var tab in tabs)
@@ -253,11 +253,11 @@ namespace Desktop_Fences
                 }
 
                 // 3. Zip It
-                ZipFile.CreateFromDirectory(exportFolder, fencePath);
+                ZipFile.CreateFromDirectory(exportFolder, containerPath);
                 Directory.Delete(exportFolder, true);
 
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ImportExport, $"Fence exported successfully: {fencePath}");
-                MessageBoxesManager.ShowOKOnlyMessageBoxForm($"Fence exported to:\n{fencePath}", "Export Successful");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ImportExport, $"Container exported successfully: {containerPath}");
+                MessageBoxesManager.ShowOKOnlyMessageBoxForm($"Container exported to:\n{containerPath}", "Export Successful");
             }
             catch (Exception ex)
             {
@@ -266,21 +266,21 @@ namespace Desktop_Fences
             }
         }
 
-        public static void ImportFence()
+        public static void ImportContainer()
         {
             try
             {
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ImportExport, "Starting fence import process");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ImportExport, "Starting container import process");
 
-                string exeDir = Desktop_Fences.DataRoot.Dir;
+                string exeDir = OpsisContainers.DataRoot.Dir;
                 string exportsDir = Path.Combine(exeDir, "Exports");
 
                 var openDialog = new Microsoft.Win32.OpenFileDialog
                 {
-                    Filter = "Fence Files|*.fence",
-                    DefaultExt = ".fence",
+                    Filter = "Container Files|*.container",
+                    DefaultExt = ".container",
                     InitialDirectory = Directory.Exists(exportsDir) ? exportsDir : exeDir,
-                    Title = Loc.T("Select Fence Export File")
+                    Title = Loc.T("Select Container Export File")
                 };
 
                 if (openDialog.ShowDialog() != true) return;
@@ -293,19 +293,20 @@ namespace Desktop_Fences
                 {
                     ZipFile.ExtractToDirectory(selectedFile, tempDir);
 
-                    string fenceJsonPath = Path.Combine(tempDir, "fence.json");
-                    if (!File.Exists(fenceJsonPath)) throw new FileNotFoundException("Invalid export: missing fence.json");
+                    string containerJsonPath = Path.Combine(tempDir, "container.json");
+                    if (!File.Exists(containerJsonPath) && File.Exists(Path.Combine(tempDir, "fence.json"))) containerJsonPath = Path.Combine(tempDir, "fence.json");   // export made by an earlier build
+                    if (!File.Exists(containerJsonPath)) throw new FileNotFoundException("Invalid export: missing container.json");
 
-                    string jsonContent = File.ReadAllText(fenceJsonPath);
-                    dynamic importedFence = JsonConvert.DeserializeObject<JObject>(jsonContent);
-                    if (importedFence == null) throw new InvalidDataException("Invalid JSON data");
+                    string jsonContent = LegacyNames.MigrateKeys(File.ReadAllText(containerJsonPath));
+                    dynamic importedContainer = JsonConvert.DeserializeObject<JObject>(jsonContent);
+                    if (importedContainer == null) throw new InvalidDataException("Invalid JSON data");
 
                     // New ID to avoid conflicts
                     string newId = Guid.NewGuid().ToString();
-                    importedFence["Id"] = newId;
+                    importedContainer["Id"] = newId;
 
                     // Handle Shortcuts (TAB-AWARE FIX)
-                    if (importedFence.ItemsType?.ToString() == "Data")
+                    if (importedContainer.ItemsType?.ToString() == "Data")
                     {
                         string sourceShortcuts = Path.Combine(tempDir, "Shortcuts");
 
@@ -349,10 +350,10 @@ namespace Desktop_Fences
                                 }
 
                                 // 1. Update Main Items
-                                UpdateReferences(importedFence.Items as JArray);
+                                UpdateReferences(importedContainer.Items as JArray);
 
                                 // 2. Update Tab Items (The Fix)
-                                var tabs = importedFence.Tabs as JArray;
+                                var tabs = importedContainer.Tabs as JArray;
                                 if (tabs != null)
                                 {
                                     foreach (var tab in tabs)
@@ -365,12 +366,12 @@ namespace Desktop_Fences
                     }
 
                     // Add and Create
-                    var fenceData = FenceManager.GetFenceData();
-                    fenceData.Add(importedFence);
-                    FenceManager.CreateFence(importedFence, new TargetChecker(1000));
-                    FenceDataManager.SaveFenceData();
+                    var containerData = ContainerManager.GetContainerData();
+                    containerData.Add(importedContainer);
+                    ContainerManager.CreateContainer(importedContainer, new TargetChecker(1000));
+                    ContainerDataManager.SaveContainerData();
 
-                    MessageBoxesManager.ShowOKOnlyMessageBoxForm("Fence imported successfully!", "Import Complete");
+                    MessageBoxesManager.ShowOKOnlyMessageBoxForm("Container imported successfully!", "Import Complete");
                 }
                 finally
                 {
@@ -380,7 +381,7 @@ namespace Desktop_Fences
             catch (Exception ex)
             {
                 LogManager.Log(LogManager.LogLevel.Error, LogManager.LogCategory.ImportExport, $"Import failed: {ex.Message}");
-                MessageBoxesManager.ShowOKOnlyMessageBoxForm($"Failed to import fence: {ex.Message}", "Import Error");
+                MessageBoxesManager.ShowOKOnlyMessageBoxForm($"Failed to import container: {ex.Message}", "Import Error");
             }
         }
 
@@ -388,14 +389,14 @@ namespace Desktop_Fences
 
         #region Deletion Backup Management
 
-        public static void BackupDeletedFence(dynamic fence)
+        public static void BackupDeletedContainer(dynamic container)
         {
             try
             {
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ImportExport, $"Creating deletion backup for fence: {fence.Title}");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ImportExport, $"Creating deletion backup for container: {container.Title}");
 
                 // FIX: Use Profile Path
-                _lastDeletedFolderPath = ProfileManager.GetProfileFilePath("Last Fence Deleted");
+                _lastDeletedFolderPath = ProfileManager.GetProfileFilePath("Last Container Deleted");
 
                 if (!Directory.Exists(_lastDeletedFolderPath))
                 {
@@ -408,11 +409,11 @@ namespace Desktop_Fences
                     File.Delete(file);
                 }
 
-                _lastDeletedFence = fence;
+                _lastDeletedContainer = container;
                 _isRestoreAvailable = true;
 
-                // Backup shortcuts for Data fences
-                if (fence.ItemsType?.ToString() == "Data")
+                // Backup shortcuts for Data containers
+                if (container.ItemsType?.ToString() == "Data")
                 {
                     int backedUpShortcuts = 0;
 
@@ -442,14 +443,14 @@ namespace Desktop_Fences
                     }
 
                     // 1. Backup Main Items
-                    var mainItems = fence.Items as JArray;
+                    var mainItems = container.Items as JArray;
                     if (mainItems != null) BackupItems(mainItems);
 
                     // 2. Backup Tab Items
-                    bool tabsEnabled = fence.TabsEnabled?.ToString().ToLower() == "true";
+                    bool tabsEnabled = container.TabsEnabled?.ToString().ToLower() == "true";
                     if (tabsEnabled)
                     {
-                        var tabs = fence.Tabs as JArray;
+                        var tabs = container.Tabs as JArray;
                         if (tabs != null)
                         {
                             foreach (var tab in tabs)
@@ -461,10 +462,11 @@ namespace Desktop_Fences
                     }
                 }
 
-                string fenceJsonPath = Path.Combine(_lastDeletedFolderPath, "fence.json");
-                File.WriteAllText(fenceJsonPath, JsonConvert.SerializeObject(fence, Formatting.Indented));
+                string containerJsonPath = Path.Combine(_lastDeletedFolderPath, "container.json");
+                if (!File.Exists(containerJsonPath) && File.Exists(Path.Combine(_lastDeletedFolderPath, "fence.json"))) containerJsonPath = Path.Combine(_lastDeletedFolderPath, "fence.json");
+                File.WriteAllText(containerJsonPath, JsonConvert.SerializeObject(container, Formatting.Indented));
 
-                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ImportExport, $"Deletion backup completed for fence '{fence.Title}'");
+                LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ImportExport, $"Deletion backup completed for container '{container.Title}'");
             }
             catch (Exception ex)
             {
@@ -476,7 +478,7 @@ namespace Desktop_Fences
         {
             try
             {
-                _lastDeletedFolderPath = ProfileManager.GetProfileFilePath("Last Fence Deleted");
+                _lastDeletedFolderPath = ProfileManager.GetProfileFilePath("Last Container Deleted");
 
                 if (Directory.Exists(_lastDeletedFolderPath))
                 {
@@ -491,8 +493,8 @@ namespace Desktop_Fences
                 }
 
                 _isRestoreAvailable = false;
-                _lastDeletedFence = null;
-                FenceManager.UpdateAllHeartContextMenus();
+                _lastDeletedContainer = null;
+                ContainerManager.UpdateAllHeartContextMenus();
             }
             catch (Exception ex)
             {
@@ -592,7 +594,7 @@ namespace Desktop_Fences
             try
             {
                 // SOURCE: Profile Directory (Dynamic)
-                string jsonFilePath = ProfileManager.GetProfileFilePath("fences.json");
+                string jsonFilePath = ProfileManager.GetProfileFilePath("containers.json");
                 string optionsFilePath = ProfileManager.GetProfileFilePath("options.json");
                 string shortcutsFolderPath = ProfileManager.GetProfileFilePath("Shortcuts");
 
@@ -606,8 +608,8 @@ namespace Desktop_Fences
                 }
                 Directory.CreateDirectory(backupFolderPath);
 
-                // 1. Copy fences.json
-                string backupJsonFilePath = Path.Combine(backupFolderPath, "fences.json");
+                // 1. Copy containers.json
+                string backupJsonFilePath = Path.Combine(backupFolderPath, "containers.json");
                 if (File.Exists(jsonFilePath))
                 {
                     File.Copy(jsonFilePath, backupJsonFilePath, true);
@@ -651,10 +653,11 @@ namespace Desktop_Fences
             {
                 LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.ImportExport, $"Starting restore from backup: {backupFolder}");
 
-                string backupFencesPath = Path.Combine(backupFolder, "fences.json");
+                string backupContainersPath = Path.Combine(backupFolder, "containers.json");
+                if (!File.Exists(backupContainersPath) && File.Exists(Path.Combine(backupFolder, "fences.json"))) backupContainersPath = Path.Combine(backupFolder, "fences.json");   // backup made by an earlier build
                 string backupShortcutsPath = Path.Combine(backupFolder, "Shortcuts");
 
-                if (!File.Exists(backupFencesPath) || !Directory.Exists(backupShortcutsPath))
+                if (!File.Exists(backupContainersPath) || !Directory.Exists(backupShortcutsPath))
                 {
                     string errorMsg = "Invalid backup folder - missing required files.";
                     MessageBoxesManager.ShowOKOnlyMessageBoxForm(errorMsg, "Restore Error");
@@ -689,13 +692,13 @@ namespace Desktop_Fences
                 }
 
                 // 3. Clear & Copy Data
-                string currentFencesPath = ProfileManager.GetProfileFilePath("fences.json");
+                string currentContainersPath = ProfileManager.GetProfileFilePath("containers.json");
                 string currentShortcutsPath = ProfileManager.GetProfileFilePath("Shortcuts");
 
-                var fenceData = FenceManager.GetFenceData();
-                fenceData?.Clear();
+                var containerData = ContainerManager.GetContainerData();
+                containerData?.Clear();
 
-                File.Copy(backupFencesPath, currentFencesPath, true);
+                File.Copy(backupContainersPath, currentContainersPath, true);
 
                 if (Directory.Exists(currentShortcutsPath))
                 {

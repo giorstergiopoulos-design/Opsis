@@ -10,7 +10,7 @@ using System.Windows.Media;
 using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     public static class OptionsFormManager
     {
@@ -214,17 +214,17 @@ namespace Desktop_Fences
             // CreateCheckBox(c, "Start with Windows", "StartWithWindows", TrayManager.IsStartWithWindows);
             CreateSectionHeader(c, "Selections", _userAccentColor);
             CreateCheckBox(c, "Single Click to Launch", "SingleClickToLaunch", SettingsManager.SingleClickToLaunch);
-            CreateCheckBox(c, "Enable Snap Near Fences", "EnableSnapNearFences", SettingsManager.IsSnapEnabled);
+            CreateCheckBox(c, "Enable Snap Near Containers", "EnableSnapNearContainers", SettingsManager.IsSnapEnabled);
             CreateCheckBox(c, "Enable Dimension Snap", "EnableDimensionSnap", SettingsManager.EnableDimensionSnap);
             CreateCheckBox(c, "Enable Tray Icon", "EnableTrayIcon", SettingsManager.ShowInTray);
-            CreateCheckBox(c, "Use Recycle Bin on Portal Fences 'Delete item' command", "UseRecycleBin", SettingsManager.UseRecycleBin);
+            CreateCheckBox(c, "Use Recycle Bin on Portal Containers 'Delete item' command", "UseRecycleBin", SettingsManager.UseRecycleBin);
 
             // NEW: Context Menu Option
-            CreateCheckBox(c, "Show 'New Fence' in Desktop Context Menu", "EnableContextMenu", SettingsManager.EnableContextMenu);
+            CreateCheckBox(c, "Show 'New Container' in Desktop Context Menu", "EnableContextMenu", SettingsManager.EnableContextMenu);
 
             // --- NEW: Auto-Hide Options ---
-            CreateSectionHeader(c, "Auto-Hide Fences", _userAccentColor);
-            CreateCheckBox(c, "Auto hide fences", "AutoHideFences", SettingsManager.AutoHideFences);
+            CreateSectionHeader(c, "Auto-Hide Containers", _userAccentColor);
+            CreateCheckBox(c, "Auto hide containers", "AutoHideContainers", SettingsManager.AutoHideContainers);
             // FIX: Pass 300 as the explicit max for this specific slider
             CreateSliderControl(c, "Auto hide time (sec)", "AutoHideTimeSlider", SettingsManager.AutoHideTime, 300);
 
@@ -239,20 +239,20 @@ namespace Desktop_Fences
             TabItem t = new TabItem();
             StackPanel c = new StackPanel();
             CreateSectionHeader(c, "Choices", ColorStyle);
-            CreateCheckBox(c, "Enable Portal Fences Watermark", "EnablePortalWatermark", SettingsManager.ShowBackgroundImageOnPortalFences);
-            var n = CreateCheckBoxReturn(c, "Enable Note Fences Watermark (Coming Soon)", "EnableNoteWatermark", false);
+            CreateCheckBox(c, "Enable Portal Containers Watermark", "EnablePortalWatermark", SettingsManager.ShowBackgroundImageOnPortalContainers);
+            var n = CreateCheckBoxReturn(c, "Enable Note Containers Watermark (Coming Soon)", "EnableNoteWatermark", false);
             n.IsEnabled = false; n.Foreground = Brushes.Gray;
-            CreateCheckBox(c, "Disable Fence Scrollbars", "DisableFenceScrollbars", SettingsManager.DisableFenceScrollbars);
+            CreateCheckBox(c, "Disable Container Scrollbars", "DisableContainerScrollbars", SettingsManager.DisableContainerScrollbars);
             CreateCheckBox(c, "Enable Sounds", "EnableSounds", SettingsManager.EnableSounds);
 
             CreateSectionHeader(c, "Appearance", ColorStyle);
 
             // --- CHAMELEON TOGGLE ---
             var chamCb = CreateCheckBoxReturn(c, "Enable Chameleon Mode (Auto-match Wallpaper Color)", "EnableChameleon", SettingsManager.EnableChameleonMode);
-            chamCb.ToolTip = Loc.T("Fences will automatically change color to blend perfectly with your desktop background.");
+            chamCb.ToolTip = Loc.T("Containers will automatically change color to blend perfectly with your desktop background.");
 
-            CreateCheckBox(c, "Auto roll-up (fences roll up when the mouse leaves and expand on hover)", "AutoRollUpOnHover", SettingsManager.AutoRollUpOnHover);
-            CreateSliderControl(c, "Fence Tint", "TintSlider", SettingsManager.TintValue);
+            CreateCheckBox(c, "Auto roll-up (containers roll up when the mouse leaves and expand on hover)", "AutoRollUpOnHover", SettingsManager.AutoRollUpOnHover);
+            CreateSliderControl(c, "Container Tint", "TintSlider", SettingsManager.TintValue);
             CreateSliderControl(c, "Menu Tint", "MenuTintSlider", SettingsManager.MenuTintValue);
             CreateColorComboBox(c);
             CreateTitleBarColorComboBox(c);
@@ -299,7 +299,7 @@ namespace Desktop_Fences
             Color darkPink = Color.FromRgb(199, 21, 133); // MediumVioletRed
             CreateSectionHeader(c, "Maintenance", darkPink);
 
-            Button btnBound = CreateStyledButton("Screen Bound Fences", darkPink);
+            Button btnBound = CreateStyledButton("Screen Bound Containers", darkPink);
             btnBound.Width = 255;
             btnBound.Height = 45;
             btnBound.Margin = new Thickness(0, 0, 0, 15);
@@ -313,15 +313,15 @@ namespace Desktop_Fences
                 btnBound.Click += (s, e) =>
                 {
                     // This calls the wrapper that handles the variable flipping
-                    FenceManager.ForceRepositionAllFences();
+                    ContainerManager.ForceRepositionAllContainers();
 
-                    MessageBoxesManager.ShowOKOnlyMessageBoxForm("All fences have been checked and moved within valid screen bounds.", "Success");
+                    MessageBoxesManager.ShowOKOnlyMessageBoxForm("All containers have been checked and moved within valid screen bounds.", "Success");
                 };
             }
             else
             {
                 btnBound.Opacity = 0.90;
-                btnBound.ToolTip = Loc.T("Auto-reposition is active (Hidden Setting). Fences are already managed automatically.");
+                btnBound.ToolTip = Loc.T("Auto-reposition is active (Hidden Setting). Containers are already managed automatically.");
             }
 
             c.Children.Add(btnBound);
@@ -331,7 +331,7 @@ namespace Desktop_Fences
             CreateSectionHeader(c, "Reset", Colors.Red);
             Button r1 = CreateStyledButton("Reset Styles", Color.FromRgb(108, 117, 125));
             r1.Width = 255; r1.Height = 45; r1.Margin = new Thickness(0, 0, 0, 15);
-            r1.Click += (s, e) => { if (MessageBoxesManager.ShowCustomYesNoMessageBox("Reset all visual customizations?", "Reset")) { FenceManager.ResetAllCustomizations(); _optionsWindow?.Close(); } };
+            r1.Click += (s, e) => { if (MessageBoxesManager.ShowCustomYesNoMessageBox("Reset all visual customizations?", "Reset")) { ContainerManager.ResetAllCustomizations(); _optionsWindow?.Close(); } };
 
             Button r2 = CreateStyledButton("Clear All Data", Color.FromRgb(220, 53, 69));
             r2.Width = 255; r2.Height = 45;
@@ -420,8 +420,8 @@ namespace Desktop_Fences
 
             CreateSectionHeader(c, "Utilities", ColorHotkeys);
 
-            CheckBox cbFocus = CreateCheckBoxReturn(c, "Enable Focus Fence Hotkey", "EnableFocusFenceHotkey", SettingsManager.EnableFocusFenceHotkey);
-            Grid gFocus = CreateHotkeyEditor(c, "Focus Fence", "FocusFence", SettingsManager.FocusFenceModifier, SettingsManager.FocusFenceKey, true);
+            CheckBox cbFocus = CreateCheckBoxReturn(c, "Enable Focus Container Hotkey", "EnableFocusContainerHotkey", SettingsManager.EnableFocusContainerHotkey);
+            Grid gFocus = CreateHotkeyEditor(c, "Focus Container", "FocusContainer", SettingsManager.FocusContainerModifier, SettingsManager.FocusContainerKey, true);
             gFocus.IsEnabled = cbFocus.IsChecked == true;
             cbFocus.Click += (s, e) => gFocus.IsEnabled = cbFocus.IsChecked == true;
 
@@ -542,7 +542,7 @@ namespace Desktop_Fences
 
             TextBlock infoText = new TextBlock
             {
-                Text = Loc.T("Note: Auto-Organize continuously monitors your Desktop for new files. When a file matches an enabled rule's conditions, it is automatically and physically moved to your target Portal Fence or Folder. Use this to keep your Desktop permanently clean and automatically route downloads to their proper locations."),
+                Text = Loc.T("Note: Auto-Organize continuously monitors your Desktop for new files. When a file matches an enabled rule's conditions, it is automatically and physically moved to your target Portal Container or Folder. Use this to keep your Desktop permanently clean and automatically route downloads to their proper locations."),
                 FontStyle = FontStyles.Italic,
                 Foreground = Brushes.Gray,
                 Margin = new Thickness(15, 20, 0, 0),
@@ -623,7 +623,7 @@ namespace Desktop_Fences
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) });
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
             g.Children.Add(new TextBlock { Text = Loc.T("Title Bar"), FontSize = 13, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 0, 10, 0) });
-            ComboBox cb = new ComboBox { Name = "TitleBarColorComboBox", Height = 25, FontSize = 13, VerticalAlignment = VerticalAlignment.Center, ToolTip = Loc.T("Auto = a darker shade of the fence colour") };
+            ComboBox cb = new ComboBox { Name = "TitleBarColorComboBox", Height = 25, FontSize = 13, VerticalAlignment = VerticalAlignment.Center, ToolTip = Loc.T("Auto = a darker shade of the container colour") };
             foreach (string c in new[] { "Auto", "Black", "Gray", "White", "Beige", "Green", "Purple", "Fuchsia", "Yellow", "Orange", "Red", "Blue", "Bismark", "Teal" }) cb.Items.Add(c);
             cb.SelectedItem = SettingsManager.TitleBarColor;
             if (cb.SelectedItem == null) cb.SelectedIndex = 0;
@@ -688,7 +688,7 @@ namespace Desktop_Fences
         {
             try
             {
-                bool tempPortalImageState = SettingsManager.ShowBackgroundImageOnPortalFences;
+                bool tempPortalImageState = SettingsManager.ShowBackgroundImageOnPortalContainers;
                 bool newPortalWatermarkState = false;
                 bool newShowInTrayState = false;
 
@@ -700,7 +700,7 @@ namespace Desktop_Fences
                     {
                         if (cb.Name == "StartWithWindows" && cb.IsChecked != TrayManager.IsStartWithWindows) TrayManager.Instance?.ToggleStartWithWindows(cb.IsChecked == true);
                         if (cb.Name == "SingleClickToLaunch") SettingsManager.SingleClickToLaunch = cb.IsChecked == true;
-                        if (cb.Name == "EnableSnapNearFences") SettingsManager.IsSnapEnabled = cb.IsChecked == true;
+                        if (cb.Name == "EnableSnapNearContainers") SettingsManager.IsSnapEnabled = cb.IsChecked == true;
                         if (cb.Name == "EnableDimensionSnap") SettingsManager.EnableDimensionSnap = cb.IsChecked == true;
                         if (cb.Name == "UseRecycleBin") SettingsManager.UseRecycleBin = cb.IsChecked == true;
                         if (cb.Name == "EnableTrayIcon")
@@ -722,10 +722,10 @@ namespace Desktop_Fences
                         }
 
                         // NEW: Auto-Hide Options
-                        if (cb.Name == "AutoHideFences")
+                        if (cb.Name == "AutoHideContainers")
                         {
-                            SettingsManager.AutoHideFences = cb.IsChecked == true;
-                            FenceManager.ResetAutoHideTimer();
+                            SettingsManager.AutoHideContainers = cb.IsChecked == true;
+                            ContainerManager.ResetAutoHideTimer();
                         }
                     }
                     else if (child is Grid g)
@@ -734,7 +734,7 @@ namespace Desktop_Fences
                         if (autoHideTime != null)
                         {
                             SettingsManager.AutoHideTime = (int)autoHideTime.Value;
-                            FenceManager.ResetAutoHideTimer();
+                            ContainerManager.ResetAutoHideTimer();
                         }
                     }
 
@@ -756,8 +756,8 @@ namespace Desktop_Fences
                     {
                         if (cb.Name == "EnableChameleon") SettingsManager.EnableChameleonMode = cb.IsChecked == true;
                         if (cb.Name == "AutoRollUpOnHover") SettingsManager.AutoRollUpOnHover = cb.IsChecked == true;
-                        if (cb.Name == "EnablePortalWatermark") { newPortalWatermarkState = cb.IsChecked == true; SettingsManager.ShowBackgroundImageOnPortalFences = newPortalWatermarkState; }
-                        if (cb.Name == "DisableFenceScrollbars") SettingsManager.DisableFenceScrollbars = cb.IsChecked == true;
+                        if (cb.Name == "EnablePortalWatermark") { newPortalWatermarkState = cb.IsChecked == true; SettingsManager.ShowBackgroundImageOnPortalContainers = newPortalWatermarkState; }
+                        if (cb.Name == "DisableContainerScrollbars") SettingsManager.DisableContainerScrollbars = cb.IsChecked == true;
                         if (cb.Name == "EnableSounds") SettingsManager.EnableSounds = cb.IsChecked == true;
                     }
                     else if (child is Grid g)
@@ -788,7 +788,7 @@ namespace Desktop_Fences
                     if (child is CheckBox hotkeyCb)
                     {
                         if (hotkeyCb.Name == "EnableProfileHotkeys" && SettingsManager.EnableProfileHotkeys != (hotkeyCb.IsChecked == true)) { SettingsManager.EnableProfileHotkeys = hotkeyCb.IsChecked == true; hotkeysChanged = true; }
-                        if (hotkeyCb.Name == "EnableFocusFenceHotkey" && SettingsManager.EnableFocusFenceHotkey != (hotkeyCb.IsChecked == true)) { SettingsManager.EnableFocusFenceHotkey = hotkeyCb.IsChecked == true; hotkeysChanged = true; }
+                        if (hotkeyCb.Name == "EnableFocusContainerHotkey" && SettingsManager.EnableFocusContainerHotkey != (hotkeyCb.IsChecked == true)) { SettingsManager.EnableFocusContainerHotkey = hotkeyCb.IsChecked == true; hotkeysChanged = true; }
                         if (hotkeyCb.Name == "EnableSpotSearchHotkey" && SettingsManager.EnableSpotSearchHotkey != (hotkeyCb.IsChecked == true)) { SettingsManager.EnableSpotSearchHotkey = hotkeyCb.IsChecked == true; hotkeysChanged = true; }
                     }
 
@@ -826,7 +826,7 @@ namespace Desktop_Fences
                             if (prefix == "ProfSwitch") { if (SettingsManager.ProfileSwitchModifier != modString) { SettingsManager.ProfileSwitchModifier = modString; hotkeysChanged = true; } }
                             if (prefix == "ProfPrev") { if (SettingsManager.ProfilePrevModifier != modString || SettingsManager.ProfilePrevKey != key) { SettingsManager.ProfilePrevModifier = modString; SettingsManager.ProfilePrevKey = key; hotkeysChanged = true; } }
                             if (prefix == "ProfNext") { if (SettingsManager.ProfileNextModifier != modString || SettingsManager.ProfileNextKey != key) { SettingsManager.ProfileNextModifier = modString; SettingsManager.ProfileNextKey = key; hotkeysChanged = true; } }
-                            if (prefix == "FocusFence") { if (SettingsManager.FocusFenceModifier != modString || SettingsManager.FocusFenceKey != key) { SettingsManager.FocusFenceModifier = modString; SettingsManager.FocusFenceKey = key; hotkeysChanged = true; } }
+                            if (prefix == "FocusContainer") { if (SettingsManager.FocusContainerModifier != modString || SettingsManager.FocusContainerKey != key) { SettingsManager.FocusContainerModifier = modString; SettingsManager.FocusContainerKey = key; hotkeysChanged = true; } }
                             if (prefix == "SpotSearch") { if (SettingsManager.SpotSearchModifier != modString || SettingsManager.SpotSearchKey != key) { SettingsManager.SpotSearchModifier = modString; SettingsManager.SpotSearchKey = key; hotkeysChanged = true; } }
                         }
                     }
@@ -837,7 +837,7 @@ namespace Desktop_Fences
                     // Propagate the new hotkeys across all existing profiles
                     SettingsManager.BroadcastHotkeysToAllProfiles();
 
-                    MessageBoxesManager.ShowOKOnlyMessageBoxForm("Global Hotkey changes have been saved and applied to all profiles.\n\nPlease restart Desktop Fences to activate the new shortcuts.", "Restart Required");
+                    MessageBoxesManager.ShowOKOnlyMessageBoxForm("Global Hotkey changes have been saved and applied to all profiles.\n\nPlease restart Opsis DeskContainers to activate the new shortcuts.", "Restart Required");
                 }
 
                 // 5. Smart Desktop (Auto-Organize)
@@ -910,9 +910,9 @@ namespace Desktop_Fences
                 SettingsManager.SetEnabledLogCategories(newEnabledCategories);
                 LogManager.Log(LogManager.LogLevel.Info, LogManager.LogCategory.Settings, "Options saved successfully");
 
-                if (tempPortalImageState != newPortalWatermarkState) TrayManager.reloadAllFences();
+                if (tempPortalImageState != newPortalWatermarkState) TrayManager.reloadAllContainers();
                 TrayManager.Instance?.UpdateTrayIcon();
-                Utility.UpdateFenceVisuals();
+                Utility.UpdateContainerVisuals();
 
                 _optionsWindow?.Close();
             }
@@ -953,7 +953,7 @@ namespace Desktop_Fences
                     {
                         BackupManager.RestoreFromBackup(d.SelectedPath);
                         _optionsWindow?.Close();
-                        TrayManager.reloadAllFences();
+                        TrayManager.reloadAllContainers();
                     }
                 }
             }
@@ -972,7 +972,7 @@ namespace Desktop_Fences
         {
             try
             {
-                string p = System.IO.Path.Combine(Desktop_Fences.DataRoot.Dir, "Desktop_Fences.log");
+                string p = System.IO.Path.Combine(OpsisContainers.DataRoot.Dir, "OpsisContainers.log");
                 if (System.IO.File.Exists(p)) Process.Start(new ProcessStartInfo { FileName = p, UseShellExecute = true });
                 else MessageBoxesManager.ShowOKOnlyMessageBoxForm("Log file not found.", "Information");
             }
@@ -981,7 +981,7 @@ namespace Desktop_Fences
 
         internal static void PerformFullFactoryReset()
         {
-            if (MessageBoxesManager.ShowCustomYesNoMessageBox("WARNING: This will delete ALL fences, shortcuts, and settings for the CURRENT PROFILE!\n\nAre you sure you want to proceed?", "Factory Reset"))
+            if (MessageBoxesManager.ShowCustomYesNoMessageBox("WARNING: This will delete ALL containers, shortcuts, and settings for the CURRENT PROFILE!\n\nAre you sure you want to proceed?", "Factory Reset"))
             {
                 try
                 {
@@ -991,7 +991,7 @@ namespace Desktop_Fences
 
                     // 2. Wipe Profile-Specific Folders
                     // FIX: Use ProfileManager.GetProfileFilePath to target the active profile
-                    foreach (string f in new[] { "Temp Shortcuts", "Shortcuts", "Last Fence Deleted", "CopiedItem" })
+                    foreach (string f in new[] { "Temp Shortcuts", "Shortcuts", "Last Container Deleted", "CopiedItem" })
                     {
                         string p = ProfileManager.GetProfileFilePath(f);
                         if (System.IO.Directory.Exists(p))
@@ -1006,7 +1006,7 @@ namespace Desktop_Fences
                     }
 
                     // 3. Wipe Profile-Specific Config Files
-                    string fj = ProfileManager.GetProfileFilePath("fences.json");
+                    string fj = ProfileManager.GetProfileFilePath("containers.json");
                     if (System.IO.File.Exists(fj)) System.IO.File.Delete(fj);
 
                     string oj = ProfileManager.GetProfileFilePath("options.json");
@@ -1014,7 +1014,7 @@ namespace Desktop_Fences
 
                     // 4. Reload to apply the "Empty" state
                     SettingsManager.LoadSettings();
-                    FenceManager.ReloadFences();
+                    ContainerManager.ReloadContainers();
                     _optionsWindow?.Close();
                 }
                 catch (Exception ex)

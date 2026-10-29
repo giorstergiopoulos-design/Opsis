@@ -9,11 +9,11 @@ using System.Windows.Media;
 using System.Windows.Media.Effects;
 using IWshRuntimeLibrary;
 
-namespace Desktop_Fences
+namespace OpsisContainers
 {
     /// <summary>
-    /// Comprehensive utilities for Desktop Fences+ application
-    /// Consolidates all utility methods from FenceManager, IconManager, PortalFenceManager, and FenceUtilities
+    /// Comprehensive utilities for Opsis DeskContainers+ application
+    /// Consolidates all utility methods from ContainerManager, IconManager, PortalContainerManager, and ContainerUtilities
     /// Organized by functional categories with clear regions for maintainability
     /// </summary>
     public static class CoreUtilities
@@ -65,7 +65,7 @@ namespace Desktop_Fences
 
         /// <summary>
         /// Safe directory existence check with Unicode support
-        /// Used by: Folder validation, portal fence operations
+        /// Used by: Folder validation, portal container operations
         /// Category: Directory Validation
         /// Moved from: FilePathUtilities.SafeDirectoryExists
         /// </summary>
@@ -85,9 +85,9 @@ namespace Desktop_Fences
 
         /// <summary>
         /// Detects if a file is temporary and should be filtered out
-        /// Used by: PortalFenceManager for file watching, general file operations
+        /// Used by: PortalContainerManager for file watching, general file operations
         /// Category: File Filtering
-        /// Moved from: PortalFenceManager.IsTemporaryFile
+        /// Moved from: PortalContainerManager.IsTemporaryFile
         /// </summary>
         public static bool IsTemporaryFile(string filePath)
         {
@@ -192,9 +192,9 @@ namespace Desktop_Fences
         #region Web Link Validation - URL and Web Shortcut Processing
         /// <summary>
         /// Detects if a file is a web link shortcut (.url or .lnk pointing to web)
-        /// Used by: FenceManager for processing dropped web links
+        /// Used by: ContainerManager for processing dropped web links
         /// Category: Link Validation
-        /// Moved from: FenceManager.IsWebLinkShortcut
+        /// Moved from: ContainerManager.IsWebLinkShortcut
         /// </summary>
         public static bool IsWebLinkShortcut(string filePath)
         {
@@ -233,9 +233,9 @@ namespace Desktop_Fences
 
         /// <summary>
         /// Extracts web URL from .url or .lnk files
-        /// Used by: FenceManager for web link processing
+        /// Used by: ContainerManager for web link processing
         /// Category: Link Processing
-        /// Moved from: FenceManager.ExtractWebUrlFromFile
+        /// Moved from: ContainerManager.ExtractWebUrlFromFile
         /// </summary>
         public static string ExtractWebUrlFromFile(string filePath)
         {
@@ -279,9 +279,9 @@ namespace Desktop_Fences
 
         /// <summary>
         /// Extracts URL from .url file format
-        /// Used by: FenceManager.AddIcon for web links
+        /// Used by: ContainerManager.AddIcon for web links
         /// Category: File Processing
-        /// Moved from: FenceUtilities.ExtractUrlFromFile
+        /// Moved from: ContainerUtilities.ExtractUrlFromFile
         /// </summary>
         public static string ExtractUrlFromFile(string urlFilePath)
         {
@@ -342,7 +342,7 @@ namespace Desktop_Fences
 
         /// <summary>
         /// Validates that a name is suitable for file/folder operations
-        /// Used by: Fence naming, file operations
+        /// Used by: Container naming, file operations
         /// Category: Name Validation
         /// </summary>
         public static bool IsValidName(string name)
@@ -357,7 +357,7 @@ namespace Desktop_Fences
 
         /// <summary>
         /// Checks if a path contains Unicode characters that may need special handling
-        /// Used by: FenceManager, shortcut operations
+        /// Used by: ContainerManager, shortcut operations
         /// Category: Path Analysis
         /// Moved from: FilePathUtilities.ContainsUnicodeCharacters
         /// </summary>
@@ -419,7 +419,7 @@ namespace Desktop_Fences
 
         /// <summary>
         /// Gets default icon spacing value with validation
-        /// Used by: Icon layout, fence spacing calculations
+        /// Used by: Icon layout, container spacing calculations
         /// Category: Layout Utilities
         /// </summary>
         public static int GetDefaultIconSpacing()
@@ -455,8 +455,8 @@ namespace Desktop_Fences
         }
         #endregion
 
-        #region Random Name Generation - Fence Naming Utilities
-        // Adjectives for random fence name generation
+        #region Random Name Generation - Container Naming Utilities
+        // Adjectives for random container name generation
         private static readonly string[] adjectives = {
             "High", "Low", "Tiny", "Vast", "Wide", "Slim", "Flat", "Bold", "Cold", "Warm",
             "Soft", "Hard", "Dark", "Pale", "Fast", "Slow", "Deep", "Tall", "Short", "Bent",
@@ -464,7 +464,7 @@ namespace Desktop_Fences
             "Rough", "Smooth", "Brave", "Fierce", "Plain", "Worn", "Dry", "Damp", "Strong", "Weak"
         };
 
-        // Places for random fence name generation
+        // Places for random container name generation
         private static readonly string[] places = {
             "Bay", "Hill", "Lake", "Cove", "Peak", "Reef", "Dune", "Glen", "Moor", "Vale",
             "Rock", "Shore", "Bank", "Ford", "Cape", "Crag", "Marsh", "Pond", "Cliff", "Wood",
@@ -472,12 +472,12 @@ namespace Desktop_Fences
         };
 
         /// <summary>
-        /// Generates a random fence name using adjective + place pattern
-        /// Used by: FenceManager.CreateNewFence for default naming
+        /// Generates a random container name using adjective + place pattern
+        /// Used by: ContainerManager.CreateNewContainer for default naming
         /// Category: Name Generation
-        /// Moved from: FenceUtilities.GenerateRandomFenceName
+        /// Moved from: ContainerUtilities.GenerateRandomContainerName
         /// </summary>
-        public static string GenerateRandomFenceName()
+        public static string GenerateRandomContainerName()
         {
             Random random = new Random();
             string adjective = adjectives[random.Next(adjectives.Length)];
@@ -487,9 +487,9 @@ namespace Desktop_Fences
 
         /// <summary>
         /// Generates a random name using adjective + place pattern (legacy compatibility)
-        /// Used by: FenceManager, FenceDataManager (existing calls)
+        /// Used by: ContainerManager, ContainerDataManager (existing calls)
         /// Category: Name Generation
-        /// Moved from: FenceUtilities.GenerateRandomName
+        /// Moved from: ContainerUtilities.GenerateRandomName
         /// </summary>
         public static string GenerateRandomName()
         {
@@ -500,20 +500,20 @@ namespace Desktop_Fences
         }
 
         /// <summary>
-        /// Generates a unique fence name by checking against existing names
-        /// Used by: Fence creation to avoid duplicates
+        /// Generates a unique container name by checking against existing names
+        /// Used by: Container creation to avoid duplicates
         /// Category: Name Generation
         /// </summary>
-        public static string GenerateUniqueFenceName()
+        public static string GenerateUniqueContainerName()
         {
-            string baseName = GenerateRandomFenceName();
+            string baseName = GenerateRandomContainerName();
             string uniqueName = baseName;
             int counter = 1;
 
-            // Check against existing fence names
+            // Check against existing container names
             try
             {
-                var existingNames = FenceDataManager.FenceData
+                var existingNames = ContainerDataManager.ContainerData
                     .Select(f => f.Title?.ToString())
                     .Where(name => !string.IsNullOrEmpty(name))
                     .ToList();
@@ -527,7 +527,7 @@ namespace Desktop_Fences
             catch (Exception ex)
             {
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.General,
-                    $"Error checking unique fence name: {ex.Message}");
+                    $"Error checking unique container name: {ex.Message}");
             }
 
             return uniqueName;
@@ -589,11 +589,11 @@ namespace Desktop_Fences
 
         #region Configuration Validation - Settings and Default Values
         /// <summary>
-        /// Validates fence color values with fallback defaults
-        /// Used by: Fence creation, settings validation
+        /// Validates container color values with fallback defaults
+        /// Used by: Container creation, settings validation
         /// Category: Configuration Validation
         /// </summary>
-        public static string ValidateFenceColor(string colorValue, string defaultColor = "#FF1E1E1E")
+        public static string ValidateContainerColor(string colorValue, string defaultColor = "#FF1E1E1E")
         {
             if (string.IsNullOrEmpty(colorValue))
                 return defaultColor;
