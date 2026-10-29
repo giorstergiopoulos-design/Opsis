@@ -88,7 +88,9 @@ namespace MotionDesk.Widgets
             if (wantGpu)
             {
                 var g = MotionDesk.Services.GpuMonitorService.Instance.GetSnapshot();
-                gpu = new { name = g.Name, load = g.LoadPercent, temperature = g.TemperatureC, memoryUsedMb = g.MemoryUsedMb };
+                var all = MotionDesk.Services.GpuMonitorService.Instance.GetAllSnapshots();
+                gpu = new { name = g.Name, load = g.LoadPercent, temperature = g.TemperatureC, memoryUsedMb = g.MemoryUsedMb,
+                            all = all.Select(a => new { name = a.Name, load = a.LoadPercent, temperature = a.TemperatureC, memoryUsedMb = a.MemoryUsedMb }) };
             }
             double total = m.TotalMemoryMb, avail = m.AvailableMemoryMb;
             return JsonSerializer.Serialize(new
@@ -146,7 +148,9 @@ namespace MotionDesk.Widgets
                 waveStyle = settings.WaveStyle,
                 pageUri,
                 elements = settings.Elements.Where(e => e.Enabled).Select(e => new { id = e.Id, scale = Math.Clamp(e.Scale, 40, 250) }),
-                elSide = settings.ElementsSide == "Right" ? "Right" : "Left",
+                elSide = settings.ElementsSide is "Right" or "Center" ? settings.ElementsSide : "Left",
+                elClockTheme = settings.ElementsClockTheme,
+                elBarColor = settings.ElementsBarColor,
                 elVAlign = settings.ElementsVAlign is "Top" or "Bottom" ? settings.ElementsVAlign : "Center",
                 elAccent = settings.ElementsAccent,
                 elCard = settings.ElementsCard,
@@ -360,6 +364,8 @@ namespace MotionDesk.Widgets
         // Wallpaper elements: the widget pieces (clock, CPU, memory, ...) the user shows on top of ANY wallpaper mode, see wallpaper/elements.js.
         public List<WallpaperElement> Elements { get; set; } = new();
         public string ElementsAccent { get; set; } = "#00d2ff";
+        public string ElementsClockTheme { get; set; } = "Classic";   // Classic | Minimal | Neon | Mono | Retro (same names as the desktop clock widget)
+        public string ElementsBarColor { get; set; } = "";            // "" = same as the accent colour
         public bool ElementsCard { get; set; } = true;          // frosted card behind every element
         public string ElementsSide { get; set; } = "Left";      // Left | Right: the elements are stacked in a column on that edge of the screen
         public string ElementsVAlign { get; set; } = "Center";  // Top | Center | Bottom

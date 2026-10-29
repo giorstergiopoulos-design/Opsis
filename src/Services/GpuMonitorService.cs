@@ -65,6 +65,15 @@ namespace MotionDesk.Services
 
         public GpuSnapshot GetSnapshot() => GetSnapshot(0);
 
+        /// <summary>Every graphics adapter (dedicated first, integrated last), e.g. for the wallpaper GPU element which lists them all.</summary>
+        public System.Collections.Generic.List<GpuSnapshot> GetAllSnapshots()
+        {
+            var list = new System.Collections.Generic.List<GpuSnapshot>();
+            int n = Math.Max(1, Count);
+            for (int i = 0; i < n; i++) { var s = GetSnapshot(i); if (s.Available) list.Add(s); }
+            return list;
+        }
+
         /// <summary>Snapshot of the adapter at <paramref name="index"/> (wraps around, so a stored index stays valid when an adapter disappears).</summary>
         public GpuSnapshot GetSnapshot(int index)
         {

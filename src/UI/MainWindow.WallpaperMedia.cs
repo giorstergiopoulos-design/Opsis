@@ -302,8 +302,9 @@ namespace MotionDesk.UI
             var place = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 0, 0, 8) };
             place.Controls.Add(new Label { Text = L("Show on the", "Εμφάνιση στη"), AutoSize = true, Font = UiTheme.FontBody, ForeColor = UiTheme.TextSecondary, Margin = new Padding(0, 8, 6, 0) });
             var side = new FlatComboBox { Width = 180, Margin = new Padding(0, 0, 14, 0) };
-            side.SetItems(new[] { L("Left side", "Αριστερή πλευρά"), L("Right side", "Δεξιά πλευρά") }, settings.ElementsSide == "Right" ? L("Right side", "Δεξιά πλευρά") : L("Left side", "Αριστερή πλευρά"));
-            side.SelectedIndexChanged += (_, _) => Commit(s => s.ElementsSide = side.SelectedIndex == 1 ? "Right" : "Left");
+            string[] sNames = { L("Left side", "Αριστερή πλευρά"), L("Right side", "Δεξιά πλευρά"), L("Centre", "Κέντρο") };
+            side.SetItems(sNames, settings.ElementsSide == "Right" ? sNames[1] : settings.ElementsSide == "Center" ? sNames[2] : sNames[0]);
+            side.SelectedIndexChanged += (_, _) => Commit(s => s.ElementsSide = side.SelectedIndex == 1 ? "Right" : side.SelectedIndex == 2 ? "Center" : "Left");
             var valign = new FlatComboBox { Width = 130 };
             string[] vNames = { L("Top", "Πάνω"), L("Middle", "Μέση"), L("Bottom", "Κάτω") };
             valign.SetItems(vNames, settings.ElementsVAlign == "Top" ? vNames[0] : settings.ElementsVAlign == "Bottom" ? vNames[2] : vNames[1]);
@@ -349,6 +350,31 @@ namespace MotionDesk.UI
             opt.Controls.Add(new Label { Text = L("Accent colour", "Χρώμα έμφασης"), AutoSize = true, Font = UiTheme.FontBody, ForeColor = UiTheme.TextSecondary, Margin = new Padding(0, 8, 6, 0) });
             opt.Controls.Add(accent);
             panel.Controls.Add(opt);
+
+            // clock theme and bar colour (same theme names as the desktop clock widget)
+            var look = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 0, 0, 10) };
+            look.Controls.Add(new Label { Text = L("Clock theme", "Θέμα ρολογιού"), AutoSize = true, Font = UiTheme.FontBody, ForeColor = UiTheme.TextSecondary, Margin = new Padding(0, 8, 6, 0) });
+            var clockTheme = new FlatComboBox { Width = 130, Margin = new Padding(0, 0, 14, 0) };
+            string[] themes = { "Classic", "Minimal", "Neon", "Mono", "Retro" };
+            clockTheme.SetItems(themes, Array.IndexOf(themes, settings.ElementsClockTheme) >= 0 ? settings.ElementsClockTheme : "Classic");
+            clockTheme.SelectedIndexChanged += (_, _) => Commit(s => s.ElementsClockTheme = themes[Math.Clamp(clockTheme.SelectedIndex, 0, themes.Length - 1)]);
+            var barColor = new Button { Width = 60, Height = 26, FlatStyle = FlatStyle.Flat, Margin = new Padding(0, 2, 8, 0), Cursor = Cursors.Hand, TabStop = false };
+            barColor.BackColor = string.IsNullOrEmpty(settings.ElementsBarColor) ? accent.BackColor : Parse(settings.ElementsBarColor);
+            barColor.FlatAppearance.BorderColor = UiTheme.Border;
+            barColor.Click += (_, _) =>
+            {
+                using var dlg = new ColorDialog { FullOpen = true, Color = barColor.BackColor };
+                if (dlg.ShowDialog(this) != DialogResult.OK) return;
+                barColor.BackColor = dlg.Color;
+                Commit(s => s.ElementsBarColor = $"#{dlg.Color.R:X2}{dlg.Color.G:X2}{dlg.Color.B:X2}");
+            };
+            var barReset = new Button { Text = L("Same as accent", "Ίδιο με την έμφαση"), AutoSize = true, FlatStyle = FlatStyle.Flat, Font = UiTheme.FontBody, ForeColor = UiTheme.TextSecondary, Cursor = Cursors.Hand, Margin = new Padding(0, 0, 0, 0) };
+            barReset.FlatAppearance.BorderColor = UiTheme.Border;
+            barReset.Click += (_, _) => { barColor.BackColor = accent.BackColor; Commit(s => s.ElementsBarColor = ""); };
+            look.Controls.Add(clockTheme);
+            look.Controls.Add(new Label { Text = L("Bar colour", "Χρώμα μπαρών"), AutoSize = true, Font = UiTheme.FontBody, ForeColor = UiTheme.TextSecondary, Margin = new Padding(0, 8, 6, 0) });
+            look.Controls.Add(barColor); look.Controls.Add(barReset);
+            panel.Controls.Add(look);
         }
 
         // ---- Discord Rich Presence (Settings page) ---------------------------------------------------------------------------------------------

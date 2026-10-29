@@ -21,6 +21,10 @@
     .elBar{height:6px;border-radius:4px;background:rgba(255,255,255,.16);overflow:hidden;margin-top:8px}
     .elBar>i{display:block;height:100%;width:0;background:var(--a);transition:width .8s ease}
     .elRow{display:flex;justify-content:space-between;gap:16px;font-size:13px;margin-top:6px;font-variant-numeric:tabular-nums}
+    .elBar>i{background:var(--b,var(--a))}
+    #elements.center{left:0;right:0;align-items:center;align-content:center;justify-content:center}
+    .elGpu+.elGpu{margin-top:10px}
+    .el svg.elClock{display:block;width:100%;height:auto;margin:0 auto}
     .elDisk{margin-top:9px;font-size:12px}.elDisk b{font-weight:600}
     canvas.elCv{display:block}
     `;
@@ -32,12 +36,25 @@
     const fmtRate = k => k >= 1024 ? (k / 1024).toFixed(1) + ' MB/s' : k.toFixed(0) + ' KB/s';
     const fmtGb = mb => (mb / 1024).toFixed(mb >= 10240 ? 0 : 1) + ' GB';
 
+    // Clock themes (same names as the desktop clock widget): which ticks are drawn and how thick/coloured the hands are.
+    function clockTicks(e, theme) {
+        const g = $q(e, 'ticks'); let s = '';
+        const minimal = theme === 'Minimal', retro = theme === 'Retro', mono = theme === 'Mono', neon = theme === 'Neon';
+        for (let i = 0; i < 12; i++) { if (minimal && i % 3) continue; s += '<line y1="-84" y2="' + (i % 3 ? -76 : -70) + '" stroke="' + (retro ? 'var(--a)' : '#fff') + '" stroke-width="' + ((i % 3 ? 2 : 3) * (retro ? 1.5 : 1)) + '" transform="rotate(' + i * 30 + ')"/>'; }
+        g.innerHTML = s;
+        const hand = (k, w) => { const n = $q(e, k); n.setAttribute('stroke-width', w); n.setAttribute('stroke', neon || retro ? 'var(--a)' : '#fff'); n.style.filter = neon ? 'drop-shadow(0 0 4px var(--a))' : ''; };
+        const wScale = minimal ? .7 : retro ? 1.3 : 1;
+        hand('h', 6 * wScale); hand('m', 4 * wScale);
+        const sec = $q(e, 's'); sec.style.display = minimal ? 'none' : ''; sec.setAttribute('stroke', mono ? 'rgba(255,255,255,.6)' : 'var(--a)');
+    }
+
     const defs = {
         analog: {
-            html: '<svg data-k="svg" width="170" height="170" viewBox="-100 -100 200 200"><circle r="92" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2"/>' +
+            html: '<svg class="elClock" data-k="svg" viewBox="-100 -100 200 200"><circle r="92" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2"/>' +
                   '<g data-k="ticks"></g><line data-k="h" y2="-48" stroke="#fff" stroke-width="6" stroke-linecap="round"/><line data-k="m" y2="-70" stroke="#fff" stroke-width="4" stroke-linecap="round"/>' +
                   '<line data-k="s" y2="-78" stroke="var(--a)" stroke-width="2" stroke-linecap="round"/><circle r="5" fill="var(--a)"/></svg>',
-            init(e) { const g = $q(e, 'ticks'); let s = ''; for (let i = 0; i < 12; i++) s += '<line y1="-84" y2="' + (i % 3 ? -76 : -70) + '" stroke="#fff" stroke-width="' + (i % 3 ? 2 : 3) + '" transform="rotate(' + i * 30 + ')"/>'; g.innerHTML = s; },
+            init(e) { clockTicks(e, 'Classic'); },
+            theme(e, t) { if (e.dataset.ct === t) return; e.dataset.ct = t; clockTicks(e, t); },
             tick(e) { const d = new Date(), s = d.getSeconds() + d.getMilliseconds() / 1000, m = d.getMinutes() + s / 60, h = (d.getHours() % 12) + m / 60;
                 $q(e, 'h').setAttribute('transform', 'rotate(' + h * 30 + ')'); $q(e, 'm').setAttribute('transform', 'rotate(' + m * 6 + ')'); $q(e, 's').setAttribute('transform', 'rotate(' + s * 6 + ')'); }
         },
@@ -51,9 +68,14 @@
         },
         gpu: {
             needsGpu: true,
-            html: '<div class="elT" data-k="n">GPU</div><div class="elBig" data-k="v">–</div><div class="elBar"><i data-k="b"></i></div><div class="elSub" data-k="s"></div>',
-            upd(e, d) { const g = d.gpu; if (!g || g.load == null) { setText(e, 'v', 'n/a'); return; } setText(e, 'n', (g.name || 'GPU').slice(0, 28));
-                setText(e, 'v', g.load.toFixed(0) + ' %'); setBar(e, 'b', g.load); setText(e, 's', (g.temperature != null ? g.temperature.toFixed(0) + ' °C' : '') + (g.memoryUsedMb != null ? '  ·  ' + fmtGb(g.memoryUsedMb) : '')); }
+            html: '<div data-k="list"></div>',
+            // EVERY graphics adapter (dedicated and integrated) is listed, one block each - the wallpaper cannot be clicked, so there are no arrows to flip through them
+            upd(e, d) { const list = (d.gpu && d.gpu.all && d.gpu.all.length) ? d.gpu.all : (d.gpu ? [d.gpu] : []); const box = $q(e, 'list');
+                if (!list.length) { box.textContent = 'n/a'; return; }
+                const sig = list.length; if (box.dataset.n != sig) { box.dataset.n = sig; box.innerHTML = list.map(() => '<div class="elGpu"><div class="elT" data-k="n">GPU</div><div class="elBig" data-k="v">–</div><div class="elBar"><i data-k="b"></i></div><div class="elSub" data-k="s"></div></div>').join(''); }
+                [...box.children].forEach((c, i) => { const g = list[i]; const q = k => c.querySelector('[data-k="' + k + '"]'); const set = (k, t) => { const n = q(k); if (n && n.textContent !== t) n.textContent = t; };
+                    set('n', (g.name || 'GPU').slice(0, 28)); if (g.load == null) { set('v', 'n/a'); return; }
+                    set('v', g.load.toFixed(0) + ' %'); q('b').style.width = Math.max(0, Math.min(100, g.load)) + '%'; set('s', (g.temperature != null ? g.temperature.toFixed(0) + ' °C' : '') + (g.memoryUsedMb != null ? '  ·  ' + fmtGb(g.memoryUsedMb) : '')); }); }
         },
         network: {
             html: '<div class="elT">Network</div><div class="elRow"><span>↓</span><b data-k="d">–</b></div><div class="elRow"><span>↑</span><b data-k="u">–</b></div>',
@@ -107,7 +129,7 @@
         const list = (c.elements || []).filter(x => defs[x.id]);
         const want = new Map(list.map(x => [x.id, x]));
         for (const [id, e] of [...active]) if (!want.has(id)) { e.remove(); active.delete(id); }
-        root.className = c.elSide === 'Right' ? 'right' : 'left';
+        root.className = c.elSide === 'Right' ? 'right' : c.elSide === 'Center' ? 'center' : 'left';
         root.style.justifyContent = c.elVAlign === 'Top' ? 'flex-start' : c.elVAlign === 'Bottom' ? 'flex-end' : 'center';
         for (const x of list) {
             let e = active.get(x.id);
@@ -116,7 +138,8 @@
                 if (defs[x.id].init) defs[x.id].init(e);
             }
             root.appendChild(e);                       // keeps the catalog order (appending an existing node just moves it)
-            e.style.setProperty('--s', (x.scale || 100) / 100); e.style.setProperty('--a', c.elAccent || '#00d2ff');
+            e.style.setProperty('--s', (x.scale || 100) / 100); e.style.setProperty('--a', c.elAccent || '#00d2ff'); if (c.elBarColor) e.style.setProperty('--b', c.elBarColor); else e.style.removeProperty('--b');
+            if (defs[x.id].theme) defs[x.id].theme(e, c.elClockTheme || 'Classic');
             e.classList.toggle('card', !!c.elCard);
         }
         clearTimers();
