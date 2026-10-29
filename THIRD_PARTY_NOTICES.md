@@ -5,7 +5,7 @@
 Opsis 2.2.0 bundles the Desktop Fences + source code (https://github.com/limbo666/DesktopFences, WPF, version 2.6.6.234)
 under `containers/` as the separate companion app `OpsisContainers.exe`, which provides the DeskContainers. Changes made for Opsis:
 retargeted to .NET 10, the COM shortcut interop replaced by a late-bound shim (`WshShim.cs`), all data moved to
-`%AppData%Opsiscontainers` (`DataRoot.cs`), the upstream update/news check and branding removed, every user-visible name changed to
+`%AppData%\Opsis\containers` (`DataRoot.cs`), the upstream update/news check and branding removed, every user-visible name changed to
 "DeskContainer(s)", the settings moved into the container menu, the tray icon removed (Opsis owns the single tray icon),
 and the process exits together with Opsis. Data of earlier builds is migrated automatically (`LegacyNames.cs`).
 

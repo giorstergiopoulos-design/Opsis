@@ -576,11 +576,30 @@ begin
   end;
 end;
 
-// The Fences engine (containers\OpsisContainers.exe) keeps its files locked while it runs: stop it before files are replaced.
+// Earlier builds were installed per user (%LocalAppData%\Programs\Opsis, HKCU uninstall entry). 2.2.0 installs machine-wide into Program Files:
+// remove the per-user copy first (its settings live in %AppData%\Opsis and are kept) so there are no duplicate shortcuts, autostart entries or tray icons.
+procedure RemovePerUserInstall;
+var
+  Key, Cmd, Exe: String;
+  ResultCode: Integer;
+begin
+  Key := 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{A9E8F765-1234-4567-89AB-CDEF01234567}_is1';
+  if RegQueryStringValue(HKCU, Key, 'UninstallString', Cmd) then
+  begin
+    Exe := RemoveQuotes(Cmd);
+    if FileExists(Exe) then
+      Exec(Exe, '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  end;
+  RegDeleteValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Run', 'Opsis');
+  RegDeleteValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Run', 'MotionDesk Studio');
+end;
+
+// The DeskContainers engine (containers\OpsisContainers.exe) keeps its files locked while it runs: stop it before files are replaced.
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   ResultCode: Integer;
 begin
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM OpsisContainers.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  RemovePerUserInstall;
   Result := '';
 end;
