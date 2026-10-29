@@ -790,9 +790,16 @@ namespace MotionDesk.Widgets
 
             var analogHost = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent, Visible = false };
             var analog = new AnalogClockControl { Dock = DockStyle.Fill };
-            var dateLabelAnalog = new GlassLabel { Dock = DockStyle.Bottom, Height = 22, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9), ForeColor = UiTheme.TextSecondary, BackColor = Color.Transparent };
+            var dateLabelAnalog = new GlassLabel { Dock = DockStyle.None, Height = 22, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9), ForeColor = UiTheme.TextSecondary, BackColor = Color.Transparent };
+            // The face is centred in the WHOLE widget area (same free space above and below); the date sits over the reserved strip at the bottom
+            // instead of docking under the control, which used to push the face 11 px above the centre.
+            analog.ReserveBottom = 22;
             analogHost.Controls.Add(analog);
             analogHost.Controls.Add(dateLabelAnalog);
+            dateLabelAnalog.BringToFront();
+            void PlaceAnalogDate() => dateLabelAnalog.SetBounds(0, Math.Max(0, analogHost.ClientSize.Height - 22), analogHost.ClientSize.Width, 22);
+            analogHost.Resize += (_, _) => PlaceAnalogDate();
+            PlaceAnalogDate();
 
             panel.Controls.Add(digitalHost);
             panel.Controls.Add(analogHost);
@@ -1491,6 +1498,11 @@ namespace MotionDesk.Widgets
     internal sealed class AnalogClockControl : Control
     {
         public string Theme { get; set; } = "Classic";
+        /// <summary>Height of a strip at the bottom (the date) that the face keeps clear of on BOTH sides, so the face stays centred.</summary>
+        public int ReserveBottom { get; set; }
+
+        /// <summary>Diameter of the face for a control of this size (pure, for tests).</summary>
+        internal static int FaceSize(int width, int height, int reserveBottom) => Math.Min(width, height - 2 * reserveBottom) - 12;
 
         public AnalogClockControl()
         {
@@ -1503,8 +1515,8 @@ namespace MotionDesk.Widgets
             g.SmoothingMode = SmoothingMode.AntiAlias;
             using (var bg = new SolidBrush(UiTheme.SurfaceGlass)) g.FillRectangle(bg, ClientRectangle);
 
-            int size = Math.Min(Width, Height) - 12;
-            if (size < 20) return;
+            int size = FaceSize(Width, Height, ReserveBottom);
+            if (size < 20) { size = Math.Min(Width, Height) - 12; if (size < 20) return; }     // too small for the reserved strip: use the whole area
             var center = new PointF(Width / 2f, Height / 2f);
             float radius = size / 2f;
             bool minimal = Theme == "Minimal";
