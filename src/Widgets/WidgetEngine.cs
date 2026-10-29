@@ -1038,7 +1038,7 @@ namespace MotionDesk.Widgets
             LayoutDiskArea();
 
             var drives = new List<DriveInfo>();
-            int index = 0;
+            int index = Math.Max(0, AppSettings.Load().DiskWidgetIndex);
 
             void Render()
             {
@@ -1065,8 +1065,9 @@ namespace MotionDesk.Widgets
                 Render();
             }
 
-            prevBtn.Click += (_, _) => { index--; Render(); };
-            nextBtn.Click += (_, _) => { index++; Render(); };
+            void RememberDisk() { try { var a = AppSettings.Load(); a.DiskWidgetIndex = index; a.Save(); } catch { } }
+            prevBtn.Click += (_, _) => { index--; Render(); RememberDisk(); };
+            nextBtn.Click += (_, _) => { index++; Render(); RememberDisk(); };
             prevBtn.MouseEnter += (_, _) => prevBtn.ForeColor = UiTheme.AccentCyan;
             prevBtn.MouseLeave += (_, _) => prevBtn.ForeColor = UiTheme.TextSecondary;
             nextBtn.MouseEnter += (_, _) => nextBtn.ForeColor = UiTheme.AccentCyan;
@@ -1151,7 +1152,16 @@ namespace MotionDesk.Widgets
             // σχεδιάζει μπάρα-μετρητή δίπλα σε κάθε γραμμή (CPU/RAM/Δίκτυο/GPU), bold/έγχρωμο
             // κείμενο τιμών.
             values.Visible = false;
-            var rows = new SystemMonitorRowsControl { Dock = DockStyle.Fill };
+            bool gpuReady = false;
+            var rows = new SystemMonitorRowsControl { Dock = DockStyle.Fill, GpuIndex = Math.Max(0, AppSettings.Load().SystemMonitorGpuIndex) };
+            // ‹ › on the GPU tile switch between the graphics adapters (dedicated + integrated); the choice is remembered
+            rows.GpuStep += step =>
+            {
+                if (rows.GpuCount < 2) return;
+                rows.GpuIndex = ((rows.GpuIndex + step) % rows.GpuCount + rows.GpuCount) % rows.GpuCount;
+                try { var a = AppSettings.Load(); a.SystemMonitorGpuIndex = rows.GpuIndex; a.Save(); } catch { }
+                if (gpuReady) { var s = GpuMonitorService.Instance.GetSnapshot(rows.GpuIndex); rows.SetGpu(s.Available ? s.LoadPercent : null, s.Available ? (s.TemperatureC.HasValue ? $"{s.TemperatureC:0}°C" : "—") : LocalizationManager.T("WidgetText.GpuNA"), s.Available ? s.Name : null); }
+            };
             panel.Controls.Add(rows);
             rows.BringToFront();
 
@@ -1163,7 +1173,6 @@ namespace MotionDesk.Widgets
             // μπλοκαρισμένο UI thread σταματά να αντλεί το message pump). Γίνεται τώρα "ζέσταμα"
             // σε background thread πριν καν χρειαστεί· μέχρι να ολοκληρωθεί, η γραμμή GPU απλά
             // δείχνει "μη διαθέσιμο" για ένα-δύο tick του timer αντί να μπλοκάρει οτιδήποτε.
-            bool gpuReady = false;
             _ = System.Threading.Tasks.Task.Run(() =>
             {
                 GpuMonitorService.Instance.GetSnapshot();
@@ -1180,9 +1189,11 @@ namespace MotionDesk.Widgets
                 rows.SetNetwork(net.NetworkDownKbps, net.NetworkUpKbps);
                 if (gpuReady)
                 {
-                    var gpu = GpuMonitorService.Instance.GetSnapshot();
+                    var gpu = GpuMonitorService.Instance.GetSnapshot(rows.GpuIndex);
+                    rows.GpuCount = gpu.Count;
                     rows.SetGpu(gpu.Available ? gpu.LoadPercent : null,
-                        gpu.Available ? $"{(gpu.TemperatureC.HasValue ? $"{gpu.TemperatureC:0}°C" : "—")}" : LocalizationManager.T("WidgetText.GpuNA"));
+                        gpu.Available ? $"{(gpu.TemperatureC.HasValue ? $"{gpu.TemperatureC:0}°C" : "—")}" : LocalizationManager.T("WidgetText.GpuNA"),
+                        gpu.Available ? gpu.Name : null);
                 }
                 else rows.SetGpu(null, LocalizationManager.T("WidgetText.GpuLoading"));
             }
@@ -2050,7 +2061,28 @@ namespace MotionDesk.Widgets
             _netH.Push(_netPeak > 0 ? Math.Max(downKbps, upKbps) / _netPeak : 0);
             Invalidate();
         }
-        public void SetGpu(double? pct, string sub) { _gpuPct = pct; _gpuSub = sub; _gpuH.Push((pct ?? 0) / 100.0); Invalidate(); }
+        private string? _gpuName;
+        private RectangleF _gpuPrevRect, _gpuNextRect;
+        public int GpuIndex { get; set; }
+        public int GpuCount { get; set; }
+        public event Action<int>? GpuStep;
+        public void SetGpu(double? pct, string sub, string? name = null) { _gpuPct = pct; _gpuSub = sub; _gpuName = name; _gpuH.Push((pct ?? 0) / 100.0); Invalidate(); }
+
+        protected override void OnMouseDown(MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left && GpuCount > 1)
+            {
+                if (_gpuPrevRect.Contains(e.Location)) { GpuStep?.Invoke(-1); return; }
+                if (_gpuNextRect.Contains(e.Location)) { GpuStep?.Invoke(1); return; }
+            }
+            base.OnMouseDown(e);
+        }
+
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            Cursor = GpuCount > 1 && (_gpuPrevRect.Contains(e.Location) || _gpuNextRect.Contains(e.Location)) ? Cursors.Hand : Cursors.Default;
+            base.OnMouseMove(e);
+        }
 
         private static Color Identity(double pct, Color c) => pct > 90 ? Color.FromArgb(235, 76, 66) : c;
 
@@ -2076,13 +2108,25 @@ namespace MotionDesk.Widgets
                 ("CPU", $"{_cpuPct:0}%", "", _cpuH, UiTheme.AccentCyan, _cpuPct),
                 ("RAM", $"{_ramPct:0}%", _ramSub, _ramH, UiTheme.AccentBlue, _ramPct),
                 (LocalizationManager.T("WidgetText.NetLabel"), Rate(Math.Max(_netDown, _netUp)), $"↓ {Rate(_netDown)}   ↑ {Rate(_netUp)}", _netH, Color.FromArgb(180, 120, 235), 0),
-                ("GPU", _gpuPct.HasValue ? $"{_gpuPct:0}%" : "—", _gpuSub, _gpuH, Color.FromArgb(240, 150, 60), _gpuPct ?? 0),
+                (GpuCount > 1 ? $"GPU {GpuIndex % GpuCount + 1}/{GpuCount}" : "GPU", _gpuPct.HasValue ? $"{_gpuPct:0}%" : "—", string.IsNullOrEmpty(_gpuName) ? _gpuSub : _gpuSub + "  " + _gpuName, _gpuH, Color.FromArgb(240, 150, 60), _gpuPct ?? 0),
             };
             for (int i = 0; i < tiles.Length; i++)
             {
                 int cx = grid ? i % 2 : 0, cy = grid ? i / 2 : i;
                 var r = new RectangleF(pad + cx * (tw + gap), pad + cy * (th + gap), tw, th);
                 DrawTile(g, r, tiles[i].Label, tiles[i].Value, tiles[i].Sub, tiles[i].H, Identity(tiles[i].Pct, tiles[i].C));
+                if (i == 3 && GpuCount > 1 && r.Width >= 90 && r.Height >= 34)
+                {
+                    float s = Math.Min(20f, r.Height * 0.4f);
+                    _gpuNextRect = new RectangleF(r.Right - s - 4, r.Y + 4, s, s);
+                    _gpuPrevRect = new RectangleF(_gpuNextRect.X - s - 2, r.Y + 4, s, s);
+                    using var af = new Font("Segoe UI Symbol", Math.Max(7f, s * 0.5f), FontStyle.Bold);
+                    using var ab = new SolidBrush(UiTheme.TextSecondary);
+                    using var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                    g.DrawString("◀", af, ab, _gpuPrevRect, sf);
+                    g.DrawString("▶", af, ab, _gpuNextRect, sf);
+                }
+                else if (i == 3) { _gpuPrevRect = _gpuNextRect = RectangleF.Empty; }
             }
         }
 

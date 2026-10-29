@@ -12,6 +12,7 @@ namespace MotionDesk.Services
         public double? CoreVoltage { get; set; }
         public double? MemoryUsedMb { get; set; }
         public bool Available { get; set; }
+        public int Count { get; set; }
     }
 
     // Πραγματικά sensor data GPU (φόρτος/θερμοκρασία/τάση πυρήνα) μέσω LibreHardwareMonitorLib
@@ -47,18 +48,36 @@ namespace MotionDesk.Services
             catch { _computer = null; _opened = false; }
         }
 
-        public GpuSnapshot GetSnapshot()
+        /// <summary>Number of graphics adapters found (dedicated AND integrated).</summary>
+        public int Count
+        {
+            get
+            {
+                try { lock (_sync) return _opened && _computer != null ? Adapters(_computer.Hardware.Select(h => (h.HardwareType, h.Name))).Count : 0; }
+                catch { return 0; }
+            }
+        }
+
+        /// <summary>Dedicated adapters (NVIDIA/AMD) first, then integrated (Intel), each group in the order the driver reports them. Pure, so it can be tested.</summary>
+        public static System.Collections.Generic.List<(HardwareType Type, string Name)> Adapters(System.Collections.Generic.IEnumerable<(HardwareType Type, string Name)> all) =>
+            all.Where(h => h.Type is HardwareType.GpuNvidia or HardwareType.GpuAmd or HardwareType.GpuIntel)
+               .Select((h, i) => (h, i)).OrderBy(x => x.h.Type == HardwareType.GpuIntel ? 1 : 0).ThenBy(x => x.i).Select(x => x.h).ToList();
+
+        public GpuSnapshot GetSnapshot() => GetSnapshot(0);
+
+        /// <summary>Snapshot of the adapter at <paramref name="index"/> (wraps around, so a stored index stays valid when an adapter disappears).</summary>
+        public GpuSnapshot GetSnapshot(int index)
         {
             var snap = new GpuSnapshot();
             if (!_opened || _computer == null) return snap;
             try
             {
                 lock (_sync) _computer.Accept(_visitor);
-                var gpu = _computer.Hardware.FirstOrDefault(h =>
-                    h.HardwareType == HardwareType.GpuNvidia ||
-                    h.HardwareType == HardwareType.GpuAmd ||
-                    h.HardwareType == HardwareType.GpuIntel);
-                if (gpu == null) return snap;
+                var gpus = _computer.Hardware.Where(h => h.HardwareType is HardwareType.GpuNvidia or HardwareType.GpuAmd or HardwareType.GpuIntel)
+                    .Select((h, i) => (h, i)).OrderBy(x => x.h.HardwareType == HardwareType.GpuIntel ? 1 : 0).ThenBy(x => x.i).Select(x => x.h).ToList();
+                if (gpus.Count == 0) return snap;
+                snap.Count = gpus.Count;
+                var gpu = gpus[((index % gpus.Count) + gpus.Count) % gpus.Count];
 
                 snap.Name = gpu.Name;
                 snap.Available = true;

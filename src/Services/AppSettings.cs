@@ -104,6 +104,9 @@ namespace MotionDesk.Services
         // "Audio Enhancement" preset (βλ. AudioSpectrumService.Presets) — κοινό ανάμεσα στο
         // πλωτό widget και στη σελίδα "Audio Enhancement" της εφαρμογής, ώστε να δείχνουν το ίδιο.
         public string AudioEnhancementPreset { get; set; } = "Flat";
+        // 2.2.1: which graphics adapter the System Monitor widget shows (dedicated + integrated are both listed; arrows switch) and which disk the Disk widget shows.
+        public int SystemMonitorGpuIndex { get; set; } = 0;
+        public int DiskWidgetIndex { get; set; } = 0;
 
         // Fences-style διπλό-κλικ σε κενό σημείο της επιφάνειας εργασίας για απόκρυψη/επαναφορά
         // εικονιδίων (DesktopIconVisibilityEngine) — υπήρχε ήδη ο μηχανισμός αλλά ήταν πάντα
