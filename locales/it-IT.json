@@ -656,5 +656,7 @@
   "DCM.LogLevel": "Livello",
   "DCM.LogCategories": "Categorie",
   "DCM.OpenLog": "Apri il file di registro",
-  "DCM.OpenOpsis": "Impostazioni di Opsis…"
+  "DCM.OpenOpsis": "Impostazioni di Opsis…",
+  "Plugin.TrustTitle": "Plugin non verificato",
+  "Plugin.TrustBody": "Il plugin «{0}» si trova in una cartella che qualsiasi programma eseguito con il tuo account può modificare e vuole caricarsi in Opsis ed eseguire codice.\n\nCartella: {1}\nImpronta del contenuto (SHA-256): {2}…\n\nProcedi solo se lo hai installato tu da una fonte attendibile. Caricarlo?"
 }

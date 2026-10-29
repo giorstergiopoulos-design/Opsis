@@ -291,7 +291,7 @@ namespace OpsisContainers
 
                 try
                 {
-                    ZipFile.ExtractToDirectory(selectedFile, tempDir);
+                    SafeZip.Extract(selectedFile, tempDir);   // validated: entries stay inside tempDir, size and count limits
 
                     string containerJsonPath = Path.Combine(tempDir, "container.json");
                     if (!File.Exists(containerJsonPath) && File.Exists(Path.Combine(tempDir, "fence.json"))) containerJsonPath = Path.Combine(tempDir, "fence.json");   // export made by an earlier build

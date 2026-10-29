@@ -26,6 +26,7 @@ namespace MotionDesk.Widgets
         public static void Sync(Form host, string path, string args, bool paused)
         {
             if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) { Stop(); return; }
+            if (MotionDesk.Services.SafeLaunch.Reject(path, requireExe: true) is { } why) { MotionDesk.Services.AttachLog.Write("application wallpaper refused: " + why); Stop(); return; }
             if (Running && _path == path)
             {
                 SetPaused(paused);

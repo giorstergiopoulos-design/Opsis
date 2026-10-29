@@ -2516,7 +2516,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                     case "AudioEnhancement": NavigateTo("AudioEnhancement"); break;
                     case string pluginId when pluginId.StartsWith("plugin:", StringComparison.Ordinal): NavigateTo(pluginId); break;
                     case string appId when appId.StartsWith("app:", StringComparison.Ordinal):
-                        if (appByLabel.TryGetValue(appId[4..], out var appPath))
+                        if (appByLabel.TryGetValue(appId[4..], out var appPath) && MotionDesk.Services.SafeLaunch.IsAllowed(appPath))
                             try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(appPath) { UseShellExecute = true }); } catch (Exception) { }
                         break;
                     case "EnableWallpaper": WallpaperHostEngine.Instance.Enable(); break;

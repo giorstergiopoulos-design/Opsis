@@ -656,5 +656,7 @@
   "DCM.LogLevel": "Düzey",
   "DCM.LogCategories": "Kategoriler",
   "DCM.OpenLog": "Günlük dosyasını aç",
-  "DCM.OpenOpsis": "Opsis ayarları…"
+  "DCM.OpenOpsis": "Opsis ayarları…",
+  "Plugin.TrustTitle": "Doğrulanmamış eklenti",
+  "Plugin.TrustBody": "«{0}» eklentisi, hesabınızla çalışan herhangi bir programın değiştirebileceği bir klasörde ve Opsis içine yüklenip kod çalıştırmak istiyor.\n\nKlasör: {1}\nİçerik parmak izi (SHA-256): {2}…\n\nYalnızca kendiniz güvendiğiniz bir kaynaktan yüklediyseniz devam edin. Yüklensin mi?"
 }

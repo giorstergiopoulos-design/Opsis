@@ -656,5 +656,7 @@
   "DCM.LogLevel": "级别",
   "DCM.LogCategories": "类别",
   "DCM.OpenLog": "打开日志文件",
-  "DCM.OpenOpsis": "Opsis 设置…"
+  "DCM.OpenOpsis": "Opsis 设置…",
+  "Plugin.TrustTitle": "未验证的插件",
+  "Plugin.TrustBody": "插件“{0}”位于任何以你的账户运行的程序都能修改的文件夹中,并且想加载到 Opsis 内运行代码。\n\n文件夹:{1}\n内容指纹(SHA-256):{2}…\n\n只有在你自己从可信来源安装它时才继续。是否加载?"
 }

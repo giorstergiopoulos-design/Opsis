@@ -656,5 +656,7 @@
   "DCM.LogLevel": "Niveau",
   "DCM.LogCategories": "Catégories",
   "DCM.OpenLog": "Ouvrir le fichier journal",
-  "DCM.OpenOpsis": "Paramètres d’Opsis…"
+  "DCM.OpenOpsis": "Paramètres d’Opsis…",
+  "Plugin.TrustTitle": "Plugin non vérifié",
+  "Plugin.TrustBody": "Le plugin « {0} » se trouve dans un dossier que tout programme exécuté sous votre compte peut modifier, et il veut se charger dans Opsis et exécuter du code.\n\nDossier : {1}\nEmpreinte du contenu (SHA-256) : {2}…\n\nNe continuez que si vous l’avez installé vous-même depuis une source fiable. Le charger ?"
 }

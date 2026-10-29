@@ -535,7 +535,9 @@ namespace MotionDesk.Widgets
         {
             try
             {
-                var psi = new ProcessStartInfo(it.Pinned ? it.Key : (it.Target ?? it.Key)) { UseShellExecute = true };
+                string target = it.Pinned ? it.Key : (it.Target ?? it.Key);
+                if (MotionDesk.Services.SafeLaunch.Reject(target) is { } why) { MotionDesk.Services.AttachLog.Write("dock launch refused: " + why + " (" + target + ")"); return; }
+                var psi = new ProcessStartInfo(target) { UseShellExecute = true };
                 if (admin) psi.Verb = "runas";
                 Process.Start(psi);
                 it.Entrance = 0.6; StartAnim();

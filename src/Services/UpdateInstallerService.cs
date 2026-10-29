@@ -79,20 +79,45 @@ namespace MotionDesk.Services
             return (path, actual);
         }
 
-        // Ξεκινάει έναν κρυφό PowerShell helper που περιμένει το Opsis να κλείσει, ξαναελέγχει το
-        // hash, τρέχει το setup σιωπηλά (/CLOSEAPPLICATIONS κλείνει ό,τι κρατάει ακόμα το AppMutex,
-        // βλ. installer.iss), και το ξανανοίγει αν πέτυχε. Ο καλών πρέπει να τερματίσει τη
-        // διεργασία αμέσως μετά (ίδιο μοτίβο με το ήδη δουλεμένο OpsisNewsCrawler).
+        /// <summary>
+        /// Opens the downloaded setup so that NOBODY can change or delete it afterwards (FileShare.Read), and checks its SHA-256 from that very handle.
+        /// The setup runs elevated (installer in Program Files), so a gap between "hash checked" and "file executed" would let any user-level process
+        /// swap it (TOCTOU). The returned stream must stay open until the setup process has been created (the running image is then write-protected).
+        /// Throws InvalidDataException when the hash does not match (the stream is closed first).
+        /// </summary>
+        internal static FileStream OpenVerified(string setupPath, string sha256)
+        {
+            var fs = new FileStream(setupPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            try
+            {
+                using var sha = SHA256.Create();
+                var actual = Convert.ToHexString(sha.ComputeHash(fs)).ToLowerInvariant();
+                if (!string.Equals(actual, sha256, StringComparison.OrdinalIgnoreCase)) throw new InvalidDataException("hash-mismatch");
+                fs.Position = 0;
+                return fs;
+            }
+            catch { fs.Dispose(); throw; }
+        }
+
+        // Verifies the setup through a locked handle and starts it right away (silent; /CLOSEAPPLICATIONS lets the installer close Opsis through its
+        // AppMutex, see installer.iss) - the lock is released only after the process exists. A small hidden PowerShell helper then waits for the setup
+        // to finish and starts Opsis again when it succeeded; it plays no part in the integrity check. The caller terminates this process right after.
         public static void LaunchAfterExit(string setupPath, string sha256)
         {
             static string Q(string s) => "'" + s.Replace("'", "''") + "'";
             var exe = Environment.ProcessPath ?? "";
+            using var locked = OpenVerified(setupPath, sha256);
+            var setup = Process.Start(new ProcessStartInfo(setupPath)
+            {
+                Arguments = "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS",
+                UseShellExecute = true,                       // lets the installer's manifest ask for elevation (UAC)
+                WorkingDirectory = Path.GetDirectoryName(setupPath)!
+            });
+            if (setup == null) return;
             var script = new StringBuilder()
-                .AppendLine("$ErrorActionPreference = 'Stop'")
-                .AppendLine($"try {{ Wait-Process -Id {Environment.ProcessId} -Timeout 120 -ErrorAction SilentlyContinue }} catch {{ }}")
-                .AppendLine($"if ((Get-FileHash -LiteralPath {Q(setupPath)} -Algorithm SHA256).Hash.ToLowerInvariant() -ne {Q(sha256)}) {{ exit 2 }}")
-                .AppendLine($"$p = Start-Process -FilePath {Q(setupPath)} -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/CLOSEAPPLICATIONS' -Wait -PassThru")
-                .AppendLine($"if ($p.ExitCode -eq 0 -and (Test-Path -LiteralPath {Q(exe)})) {{ Start-Process -FilePath {Q(exe)} }}")
+                .AppendLine("$ErrorActionPreference = 'SilentlyContinue'")
+                .AppendLine($"try {{ Wait-Process -Id {setup.Id} -Timeout 900 }} catch {{ }}")
+                .AppendLine($"if (Test-Path -LiteralPath {Q(exe)}) {{ Start-Process -FilePath {Q(exe)} }}")
                 .ToString();
             Process.Start(new ProcessStartInfo("powershell.exe")
             {

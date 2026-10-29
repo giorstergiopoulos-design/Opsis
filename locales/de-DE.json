@@ -656,5 +656,7 @@
   "DCM.LogLevel": "Stufe",
   "DCM.LogCategories": "Kategorien",
   "DCM.OpenLog": "Protokolldatei öffnen",
-  "DCM.OpenOpsis": "Opsis-Einstellungen…"
+  "DCM.OpenOpsis": "Opsis-Einstellungen…",
+  "Plugin.TrustTitle": "Nicht verifiziertes Plugin",
+  "Plugin.TrustBody": "Das Plugin „{0}“ liegt in einem Ordner, den jedes unter Ihrem Konto laufende Programm ändern kann, und möchte in Opsis geladen werden und Code ausführen.\n\nOrdner: {1}\nInhalts-Fingerabdruck (SHA-256): {2}…\n\nFahren Sie nur fort, wenn Sie es selbst aus einer vertrauenswürdigen Quelle installiert haben. Laden?"
 }

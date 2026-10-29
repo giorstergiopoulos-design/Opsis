@@ -656,5 +656,7 @@
   "DCM.LogLevel": "수준",
   "DCM.LogCategories": "범주",
   "DCM.OpenLog": "로그 파일 열기",
-  "DCM.OpenOpsis": "Opsis 설정…"
+  "DCM.OpenOpsis": "Opsis 설정…",
+  "Plugin.TrustTitle": "확인되지 않은 플러그인",
+  "Plugin.TrustBody": "플러그인 \"{0}\"이(가) 내 계정으로 실행되는 어떤 프로그램도 바꿀 수 있는 폴더에 있으며 Opsis 안에 로드되어 코드를 실행하려고 합니다.\n\n폴더: {1}\n콘텐츠 지문(SHA-256): {2}…\n\n신뢰할 수 있는 출처에서 직접 설치한 경우에만 계속하세요. 로드할까요?"
 }

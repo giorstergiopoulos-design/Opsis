@@ -86,8 +86,8 @@ namespace MotionDesk.Services
 
         private static bool ExtractZip(string archivePath, string destDir)
         {
-            try { ZipFile.ExtractToDirectory(archivePath, destDir, overwriteFiles: true); return true; }
-            catch { return false; }
+            try { SafeZip.Extract(archivePath, destDir); return true; }
+            catch (Exception ex) { RotatingLogger.Write("zip extraction refused: " + ex.Message); return false; }
         }
 
         private static bool ExtractSevenZip(string archivePath, string destDir)

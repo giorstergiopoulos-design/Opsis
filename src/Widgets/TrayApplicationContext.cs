@@ -44,6 +44,10 @@ namespace MotionDesk.Widgets
 
             // Plugin (π.χ. News Crawler): ξεκινούν πριν χτιστεί το μενού ώστε να προσθέσουν τα δικά τους στοιχεία.
             PluginHost.Instance.NavigationRequested += key => ShowMainWindow("plugin:" + key);
+            // Plugins from user-writable folders run code inside Opsis: ask once, show the content hash, remember the approval (plugin-trust.json).
+            PluginHost.Instance.TrustPrompt = req => MessageBox.Show(
+                string.Format(LocalizationManager.T("Plugin.TrustBody"), req.Name, req.Folder, req.Sha256.Substring(0, 16)),
+                LocalizationManager.T("Plugin.TrustTitle"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) == DialogResult.Yes;
             if (!safeMode) PluginHost.Instance.StartAll();
 
             // Δημιουργία Context Menu για το Tray Icon — ομαδοποιημένο σε: παράθυρο, DeskZones,

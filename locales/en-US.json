@@ -750,5 +750,7 @@
   "DCM.LogLevel": "Level",
   "DCM.LogCategories": "Categories",
   "DCM.OpenLog": "Open the log file",
-  "DCM.OpenOpsis": "Opsis settings…"
+  "DCM.OpenOpsis": "Opsis settings…",
+  "Plugin.TrustTitle": "Unverified plugin",
+  "Plugin.TrustBody": "The plugin \"{0}\" is in a folder that any program running as you can change, and it wants to load inside Opsis and run code.\n\nFolder: {1}\nContent fingerprint (SHA-256): {2}…\n\nContinue only if you installed it yourself from a source you trust. Load it?"
 }

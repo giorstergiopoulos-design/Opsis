@@ -36,6 +36,10 @@ namespace MotionDesk.Services
         private readonly List<Loaded> _plugins = new();
         private bool _started;
 
+        /// <summary>Asked (on the UI thread) before an UNTRUSTED plugin folder is loaded for the first time; returning false skips it. Default: deny.</summary>
+        public Func<PluginTrustRequest, bool> TrustPrompt { get; set; } = _ => false;
+        private PluginTrust.Store? _trustStore;
+
         public IReadOnlyList<IOpsisNewsCrawlerPlugin> Plugins => _plugins.Select(p => p.Plugin).ToList();
 
         // Ζητήθηκε ρητά: ξεχωριστό κουμπί ενεργοποίησης/απενεργοποίησης ΓΙΑ ΚΑΘΕ plugin (π.χ. το
@@ -110,9 +114,13 @@ namespace MotionDesk.Services
             SweepPendingRemovals();
             if (!AppSettings.Load().PluginsEnabled) return;
 
-            foreach (var folder in EnumerateCandidateFolders())
+            foreach (var (folder, trustedRoot) in EnumerateCandidateFolders())
             {
-                try { LoadFolder(folder); }
+                try
+                {
+                    if (!trustedRoot && !IsFolderApproved(folder)) continue;
+                    LoadFolder(folder);
+                }
                 catch (Exception ex) { Log($"Failed to load '{folder}': {ex}"); }
             }
 
@@ -253,26 +261,44 @@ namespace MotionDesk.Services
 
         // ---- discovery & loading ---------------------------------------------------------------
 
-        private static IEnumerable<string> EnumerateCandidateFolders()
+        // A folder of an untrusted root (user-writable) is loaded only after the user approved its exact content (see PluginTrust).
+        private bool IsFolderApproved(string folder)
         {
-            var roots = new List<string>
+            try
             {
-                Path.Combine(AppContext.BaseDirectory, "plugins"),
-                Path.Combine(AppPaths.AppDataFolder, "plugins")
+                string name = Path.GetFileName(folder), hash = PluginTrust.HashFolder(folder);
+                _trustStore ??= new PluginTrust.Store(Path.Combine(AppPaths.AppDataFolder, "plugin-trust.json"));
+                if (_trustStore.IsApproved(name, hash)) return true;
+                if (TrustPrompt(new PluginTrustRequest(name, folder, hash))) { _trustStore.Approve(name, hash); Log($"Plugin '{name}' approved by the user (sha256 {hash})."); return true; }
+                Log($"Plugin '{name}' in '{folder}' skipped: not in the user-writable-folder allow-list (sha256 {hash}).");
+                return false;
+            }
+            catch (Exception ex) { Log($"Plugin '{folder}' skipped: trust check failed: {ex.Message}"); return false; }
+        }
+
+        private static IEnumerable<(string Folder, bool TrustedRoot)> EnumerateCandidateFolders()
+        {
+            // The install directory is trusted only when it is itself protected (Program Files); a per-user install or a dev build is not.
+            string installPlugins = Path.Combine(AppContext.BaseDirectory, "plugins");
+            bool installTrusted = PluginTrust.IsUnderProtectedInstall(AppContext.BaseDirectory);
+            var roots = new List<(string Path, bool Trusted)>
+            {
+                (installPlugins, installTrusted),
+                (Path.Combine(AppPaths.AppDataFolder, "plugins"), false)
             };
             try
             {
                 using var key = Registry.CurrentUser.OpenSubKey(@"Software\Opsis\PluginPaths");
                 if (key != null)
                     foreach (var name in key.GetValueNames())
-                        if (key.GetValue(name) is string path && path.Length > 0) roots.Add(path);
+                        if (key.GetValue(name) is string path && path.Length > 0) roots.Add((path, false));
             }
             catch (Exception) { }
 
-            foreach (var root in roots.Distinct(StringComparer.OrdinalIgnoreCase))
+            foreach (var (root, trusted) in roots.GroupBy(r => r.Path, StringComparer.OrdinalIgnoreCase).Select(g => g.First()))
             {
                 if (!Directory.Exists(root)) continue;
-                foreach (var dir in Directory.EnumerateDirectories(root)) yield return dir;
+                foreach (var dir in Directory.EnumerateDirectories(root)) yield return (dir, trusted);
             }
         }
 

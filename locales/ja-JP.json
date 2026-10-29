@@ -656,5 +656,7 @@
   "DCM.LogLevel": "レベル",
   "DCM.LogCategories": "カテゴリ",
   "DCM.OpenLog": "ログファイルを開く",
-  "DCM.OpenOpsis": "Opsis の設定…"
+  "DCM.OpenOpsis": "Opsis の設定…",
+  "Plugin.TrustTitle": "未検証のプラグイン",
+  "Plugin.TrustBody": "プラグイン「{0}」は、あなたのアカウントで動くどのプログラムでも変更できるフォルダーにあり、Opsis 内に読み込まれてコードを実行しようとしています。\n\nフォルダー: {1}\n内容のフィンガープリント(SHA-256): {2}…\n\n信頼できる入手元から自分でインストールした場合のみ続行してください。読み込みますか?"
 }
