@@ -1,0 +1,7 @@
+ORIGINALS SELF-TEST: fail=0
+OK    dropping hides the desktop original
+OK    saving with the item still in a container keeps it hidden (even if the current directory changed)
+OK    deleting the container (RestoreFor) shows the original
+OK    saving after the container is gone (Reconcile) shows the original
+OK    engine exit / factory reset (ShowAll) shows the original
+OK    restoring an original that was recreated does not fail

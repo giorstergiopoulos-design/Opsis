@@ -1150,7 +1150,10 @@ namespace OpsisContainers
 
                     BackupManager.BackupDeletedContainer(container);
 
+                    DesktopOriginals.RestoreFor(Newtonsoft.Json.Linq.JToken.FromObject((object)container));   // the desktop icons come back, whatever happens next
+                    string deletedId = container.Id?.ToString();
                     ContainerDataManager.ContainerData.Remove(container);
+                    if (deletedId != null) ContainerDataManager.ContainerData.RemoveAll(f => f.Id?.ToString() == deletedId);   // by Id: reference equality can miss
                     _heartTextBlocks.Remove(container);
 
                     // --- BUG FIX: Avoid JObject HashCode Mutation ---

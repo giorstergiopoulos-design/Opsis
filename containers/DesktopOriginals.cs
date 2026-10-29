@@ -26,13 +26,30 @@ namespace OpsisContainers
             try { File.WriteAllText(MapPath, JsonConvert.SerializeObject(map, Formatting.Indented)); } catch { }
         }
 
+        /// <summary>Full path of an item file. Items store "Shortcuts-subfolder" relative to the profile folder; resolving it against the CURRENT directory broke the map as soon as a file dialog
+        /// changed that directory (the icon then never came back when its container was deleted), so it is always resolved against the profile folder.</summary>
+        internal static string Full(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return path;
+            return Path.GetFullPath(Path.IsPathRooted(path) ? path : Path.Combine(ProfileManager.CurrentProfileDir, path));
+        }
+
+        /// <summary>The desktop folders whose items may be hidden (overridable for tests: OPSIS_DESKTOP_DIR).</summary>
+        private static IEnumerable<string> DesktopDirs()
+        {
+            string o = Environment.GetEnvironmentVariable("OPSIS_DESKTOP_DIR");
+            if (!string.IsNullOrEmpty(o)) { yield return o; yield break; }
+            yield return Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+            yield return Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory);
+        }
+
         private static bool IsDirectlyOnDesktop(string path)
         {
             try
             {
                 string dir = Path.GetDirectoryName(Path.GetFullPath(path));
-                return string.Equals(dir, Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(dir, Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory), StringComparison.OrdinalIgnoreCase);
+                foreach (var d in DesktopDirs()) if (string.Equals(dir, Path.TrimEndingDirectorySeparator(Path.GetFullPath(d)), StringComparison.OrdinalIgnoreCase)) return true;
+                return false;
             }
             catch { return false; }
         }
@@ -46,11 +63,37 @@ namespace OpsisContainers
                 if ((attrs & FileAttributes.Hidden) != 0) return;                  // already hidden by the user: leave it alone
                 File.SetAttributes(originalPath, attrs | FileAttributes.Hidden);
                 var map = Load();
-                map[Path.GetFullPath(shortcutFilename)] = originalPath;
+                map[Full(shortcutFilename)] = originalPath;
                 Save(map);
                 NotifyShell();
             }
             catch (Exception ex) { LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.IconHandling, "Could not hide desktop original: " + ex.Message); }
+        }
+
+        /// <summary>Gives the desktop originals of every item of this container back to the desktop right now (used when the container is deleted, whatever else happens to the data).</summary>
+        public static void RestoreFor(Newtonsoft.Json.Linq.JToken container)
+        {
+            try
+            {
+                var map = Load();
+                if (map.Count == 0 || container == null) return;
+                var files = new List<string>();
+                foreach (var arr in new[] { container["Items"] as JArray }.Concat((container["Tabs"] as JArray ?? new JArray()).Select(t => t["Items"] as JArray)))
+                    if (arr != null) foreach (var i in arr) { var fn = i["Filename"]?.ToString(); if (!string.IsNullOrEmpty(fn)) { try { files.Add(Full(fn)); } catch { } } }
+                bool changed = false;
+                foreach (var f in files.Distinct(StringComparer.OrdinalIgnoreCase))
+                {
+                    if (!map.TryGetValue(f, out var orig)) continue;
+                    Unhide(orig); map.Remove(f); changed = true;
+                }
+                if (changed) { Save(map); NotifyShell(); }
+            }
+            catch { }
+        }
+
+        private static void Unhide(string path)
+        {
+            try { if (File.Exists(path) || Directory.Exists(path)) File.SetAttributes(path, File.GetAttributes(path) & ~FileAttributes.Hidden); } catch { }
         }
 
         /// <summary>Called on every save: originals whose shortcut is no longer in any container are shown on the desktop again.</summary>
@@ -64,7 +107,7 @@ namespace OpsisContainers
                 foreach (var f in containers)
                 {
                     foreach (var arr in new[] { f["Items"] as JArray }.Concat((f["Tabs"] as JArray ?? new JArray()).Select(t => t["Items"] as JArray)))
-                        if (arr != null) foreach (var i in arr) { var fn = i["Filename"]?.ToString(); if (!string.IsNullOrEmpty(fn)) { try { present.Add(Path.GetFullPath(fn)); } catch { } } }
+                        if (arr != null) foreach (var i in arr) { var fn = i["Filename"]?.ToString(); if (!string.IsNullOrEmpty(fn)) { try { present.Add(Full(fn)); } catch { } } }
                 }
                 bool changed = false;
                 foreach (var kv in map.ToList())

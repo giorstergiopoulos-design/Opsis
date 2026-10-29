@@ -59,6 +59,14 @@ namespace OpsisContainers
                 return;
             }
 
+            int origTest = Array.FindIndex(e.Args, a => a.Equals("--selftest-originals", StringComparison.OrdinalIgnoreCase));
+            if (origTest >= 0 && origTest + 1 < e.Args.Length)
+            {
+                Environment.ExitCode = OriginalsSelfTest.Run(e.Args[origTest + 1]);
+                Shutdown(Environment.ExitCode);
+                return;
+            }
+
             int selfTest = Array.FindIndex(e.Args, a => a.Equals("--selftest-settings", StringComparison.OrdinalIgnoreCase));
             if (selfTest >= 0 && selfTest + 1 < e.Args.Length)
             {

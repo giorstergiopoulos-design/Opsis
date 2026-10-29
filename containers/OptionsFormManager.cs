@@ -989,6 +989,8 @@ namespace OpsisContainers
                     string ts = DateTime.Now.ToString("yyMMddHHmm");
                     BackupManager.CreateBackup($"{ts}_backup_reset", silent: true);
 
+                    DesktopOriginals.ShowAll();          // the desktop icons hidden because they were in a container come back before the data is wiped
+
                     // 2. Wipe Profile-Specific Folders
                     // FIX: Use ProfileManager.GetProfileFilePath to target the active profile
                     foreach (string f in new[] { "Temp Shortcuts", "Shortcuts", "Last Container Deleted", "CopiedItem" })
