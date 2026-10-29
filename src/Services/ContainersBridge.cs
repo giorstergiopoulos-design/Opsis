@@ -67,7 +67,8 @@ namespace MotionDesk.Services
         public static void Set(string key, string v) => Save(o => o[key] = v);
         public static void SetStrings(string key, IEnumerable<string> v) => Save(o => o[key] = new JsonArray(v.Select(s => (JsonNode?)JsonValue.Create(s)).ToArray()));
 
-        public sealed record EngineState(string Profile, string[] Profiles, bool Automation, bool AutoOrganize, string[] Hidden);
+        public sealed record ContainerInfo(string Id, string Title, string Type);
+        public sealed record EngineState(string Profile, string[] Profiles, bool Automation, bool AutoOrganize, string[] Hidden, ContainerInfo[] Containers);
 
         /// <summary>State published by the engine (bridgestate.json): profiles, switches, hidden containers. Empty state when the engine has not written it yet.</summary>
         public static EngineState ReadState()
@@ -77,11 +78,12 @@ namespace MotionDesk.Services
                 if (JsonNode.Parse(File.ReadAllText(Path.Combine(BridgeDir, "state.json"))) is JsonObject o)
                 {
                     string[] Arr(string k) => (o[k] as JsonArray)?.Select(x => x?.ToString() ?? "").Where(x => x.Length > 0).ToArray() ?? Array.Empty<string>();
-                    return new EngineState(o["profile"]?.ToString() ?? "Default", Arr("profiles"), o["automation"]?.GetValue<bool>() ?? false, o["autoOrganize"]?.GetValue<bool>() ?? false, Arr("hidden"));
+                    return new EngineState(o["profile"]?.ToString() ?? "Default", Arr("profiles"), o["automation"]?.GetValue<bool>() ?? false, o["autoOrganize"]?.GetValue<bool>() ?? false, Arr("hidden"),
+                        (o["containers"] as JsonArray)?.Select(x => new ContainerInfo(x?["id"]?.ToString() ?? "", x?["title"]?.ToString() ?? "", x?["type"]?.ToString() ?? "Data")).Where(c => c.Id.Length > 0).ToArray() ?? Array.Empty<ContainerInfo>());
                 }
             }
             catch (Exception) { }
-            return new EngineState("Default", Array.Empty<string>(), false, false, Array.Empty<string>());
+            return new EngineState("Default", Array.Empty<string>(), false, false, Array.Empty<string>(), Array.Empty<ContainerInfo>());
         }
 
         public static void Command(string name)

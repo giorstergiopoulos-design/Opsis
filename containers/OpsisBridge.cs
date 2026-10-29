@@ -124,6 +124,7 @@ namespace OpsisContainers
                     case "profile": ProfileManager.SwitchToProfile(arg); ProfileManager.SetManualBaseProfile(arg); TrayManager.Instance?.UpdateProfilesMenu(); return;
                     case "create-profile": if (ProfileManager.CreateProfile(arg)) TrayManager.Instance?.UpdateProfilesMenu(); return;
                     case "show-hidden": TrayManager.ShowHiddenContainerByTitle(arg); return;
+                    case "delete-container": ContainerManager.DeleteContainerById(arg); PublishState(); return;
                 }
             }
             switch (cmd)
@@ -165,6 +166,7 @@ namespace OpsisContainers
                     automation = SettingsManager.EnableProfileAutomation,
                     autoOrganize = SettingsManager.EnableAutoOrganize,
                     hidden = TrayManager.HiddenTitles(),
+                    containers = ContainerDataManager.ContainerData.Select(c => new { id = (string)(c.Id?.ToString() ?? ""), title = (string)(c.Title?.ToString() ?? ""), type = (string)(c.ItemsType?.ToString() ?? "Data") }).ToArray(),
                 };
                 string tmp = Path.Combine(BridgeDir, "state.json.tmp"), dst = Path.Combine(BridgeDir, "state.json");
                 File.WriteAllText(tmp, System.Text.Json.JsonSerializer.Serialize(state));

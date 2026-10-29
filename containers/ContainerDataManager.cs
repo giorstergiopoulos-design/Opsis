@@ -191,6 +191,7 @@ namespace OpsisContainers
                 string formattedJson = JsonConvert.SerializeObject(serializedData, Formatting.Indented);
                 File.WriteAllText(_jsonFilePath, formattedJson);
                 DesktopOriginals.Reconcile(serializedData);          // Opsis: desktop icons whose item left every container come back
+                OpsisBridge.PublishState();                          // the Opsis window lists the containers
 
                 LogManager.Log(LogManager.LogLevel.Debug, LogManager.LogCategory.Settings,
                     $"Saved containers.json with consistent formatting for {serializedData.Count} containers");

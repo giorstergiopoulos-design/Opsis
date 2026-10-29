@@ -152,6 +152,47 @@ namespace OpsisContainers
         }
 
         // Opsis: create a container from the Opsis settings page (near the top-left of the primary screen, cascading).
+        /// <summary>Deletes a container and gives its desktop icons back to the desktop. The one place every way of deleting goes through (menu, Opsis window button).</summary>
+        internal static void DeleteContainerCore(dynamic container)
+        {
+            if (SettingsManager.ExportShortcutsOnContainerDeletion && container.ItemsType?.ToString() == "Data")
+            {
+                ExportAllIconsToDesktop(container, false);
+            }
+
+            BackupManager.BackupDeletedContainer(container);
+
+            DesktopOriginals.RestoreFor(Newtonsoft.Json.Linq.JToken.FromObject((object)container));   // the desktop icons come back, whatever happens next
+            string deletedId = container.Id?.ToString();
+            ContainerDataManager.ContainerData.Remove(container);
+            if (deletedId != null) ContainerDataManager.ContainerData.RemoveAll(f => f.Id?.ToString() == deletedId);   // by Id: reference equality can miss
+
+            // --- BUG FIX: Avoid JObject HashCode Mutation ---
+            var targetPortal = _portalContainers.FirstOrDefault(kvp => kvp.Key?.Id?.ToString() == container.Id?.ToString());
+            if (targetPortal.Value != null)
+            {
+                targetPortal.Value.Dispose();
+                _portalContainers.Remove(targetPortal.Key);
+            }
+
+            ContainerDataManager.SaveContainerData();
+
+            var windows = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>();
+            var win = windows.FirstOrDefault(w => w.Tag?.ToString() == container.Id?.ToString());
+            if (win != null) win.Close();
+
+            UpdateAllHeartContextMenus();
+        }
+
+        /// <summary>Delete by Id (Opsis window button). The user confirmed in the Opsis window already.</summary>
+        internal static bool DeleteContainerById(string id)
+        {
+            var c = ContainerDataManager.ContainerData.FirstOrDefault(f => f.Id?.ToString() == id);
+            if (c == null) return false;
+            DeleteContainerCore(c);
+            return true;
+        }
+
         public static void CreateNewContainerAt(string itemsType)
         {
             int n = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>().Count();
@@ -1141,37 +1182,7 @@ namespace OpsisContainers
             deleteThisContainer.Click += (s, e) =>
             {
                 bool result = MessageBoxesManager.ShowCustomMessageBoxForm();
-                if (result == true)
-                {
-                    if (SettingsManager.ExportShortcutsOnContainerDeletion && container.ItemsType?.ToString() == "Data")
-                    {
-                        ExportAllIconsToDesktop(container, false);
-                    }
-
-                    BackupManager.BackupDeletedContainer(container);
-
-                    DesktopOriginals.RestoreFor(Newtonsoft.Json.Linq.JToken.FromObject((object)container));   // the desktop icons come back, whatever happens next
-                    string deletedId = container.Id?.ToString();
-                    ContainerDataManager.ContainerData.Remove(container);
-                    if (deletedId != null) ContainerDataManager.ContainerData.RemoveAll(f => f.Id?.ToString() == deletedId);   // by Id: reference equality can miss
-                    _heartTextBlocks.Remove(container);
-
-                    // --- BUG FIX: Avoid JObject HashCode Mutation ---
-                    var targetPortal = _portalContainers.FirstOrDefault(kvp => kvp.Key?.Id?.ToString() == container.Id?.ToString());
-                    if (targetPortal.Value != null)
-                    {
-                        targetPortal.Value.Dispose();
-                        _portalContainers.Remove(targetPortal.Key);
-                    }
-
-                    ContainerDataManager.SaveContainerData();
-
-                    var windows = System.Windows.Application.Current.Windows.OfType<NonActivatingWindow>();
-                    var win = windows.FirstOrDefault(w => w.Tag?.ToString() == container.Id?.ToString());
-                    if (win != null) win.Close();
-
-                    UpdateAllHeartContextMenus();
-                }
+                if (result == true) DeleteContainerCore(container);
             };
             menu.Items.Add(deleteThisContainer);
 

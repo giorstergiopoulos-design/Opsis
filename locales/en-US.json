@@ -754,5 +754,14 @@
   "DCM.OpenLog": "Open the log file",
   "DCM.OpenOpsis": "Opsis settings…",
   "Plugin.TrustTitle": "Unverified plugin",
-  "Plugin.TrustBody": "The plugin \"{0}\" is in a folder that any program running as you can change, and it wants to load inside Opsis and run code.\n\nFolder: {1}\nContent fingerprint (SHA-256): {2}…\n\nContinue only if you installed it yourself from a source you trust. Load it?"
+  "Plugin.TrustBody": "The plugin \"{0}\" is in a folder that any program running as you can change, and it wants to load inside Opsis and run code.\n\nFolder: {1}\nContent fingerprint (SHA-256): {2}…\n\nContinue only if you installed it yourself from a source you trust. Load it?",
+  "DCX.NewNote": "New note container",
+  "DCX.ShowAll": "Show all containers",
+  "DCX.DeleteContainer": "Delete selected container",
+  "DCX.DeleteConfirm": "Delete the container \"{0}\"? Its icons return to the desktop.",
+  "DCX.DeleteTitle": "Delete container",
+  "DCX.NoContainers": "No containers",
+  "DCX.ProfileApply": "Apply selected profile",
+  "DCX.ProfileSave": "Save current layout as profile…",
+  "DCX.ProfileName": "Profile name"
 }

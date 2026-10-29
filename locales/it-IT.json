@@ -731,5 +731,14 @@
   "About.UpdateNoDigest": "Questa versione non ha un checksum da verificare, quindi nulla viene installato automaticamente: si apre invece la pagina della versione.",
   "About.DeskContainersGuideTitle": "DeskContainers — Come si usano",
   "VersionNotes.2.2.6": "+ Elementi dello sfondo: l'elemento GPU ora elenca tutte le schede grafiche (dedicata e integrata); aggiunti temi dell'orologio (Classic, Minimal, Neon, Mono, Retro), colore delle barre e posizione centrale.\n~ L'orologio analogico dello sfondo è centrato nella sua scheda.",
-  "VersionNotes.2.2.5": "+ Monitor di sistema: sono elencate tutte le schede grafiche (dedicata e integrata) con frecce ◀ ▶ per passare dall'una all'altra; il widget Disco ricorda il disco mostrato.\n~ L'orologio analogico è ora centrato nel suo widget.\n~ DeskContainers: le icone hanno le stesse dimensioni di quelle del desktop.\n~ 71 testi tradotti nelle altre 12 lingue; i messaggi di aggiornamento e dei plugin sono localizzati."
+  "VersionNotes.2.2.5": "+ Monitor di sistema: sono elencate tutte le schede grafiche (dedicata e integrata) con frecce ◀ ▶ per passare dall'una all'altra; il widget Disco ricorda il disco mostrato.\n~ L'orologio analogico è ora centrato nel suo widget.\n~ DeskContainers: le icone hanno le stesse dimensioni di quelle del desktop.\n~ 71 testi tradotti nelle altre 12 lingue; i messaggi di aggiornamento e dei plugin sono localizzati.",
+  "DCX.NewNote": "Nuovo contenitore di note",
+  "DCX.ShowAll": "Mostra tutti i contenitori",
+  "DCX.DeleteContainer": "Elimina il contenitore selezionato",
+  "DCX.DeleteConfirm": "Eliminare il contenitore \"{0}\"? Le sue icone tornano sul desktop.",
+  "DCX.DeleteTitle": "Elimina contenitore",
+  "DCX.NoContainers": "Nessun contenitore",
+  "DCX.ProfileApply": "Applica il profilo selezionato",
+  "DCX.ProfileSave": "Salva la disposizione attuale come profilo…",
+  "DCX.ProfileName": "Nome del profilo"
 }

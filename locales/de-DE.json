@@ -731,5 +731,14 @@
   "About.UpdateNoDigest": "Für diese Version gibt es keine Prüfsumme zur Überprüfung, daher wird nichts automatisch installiert – stattdessen wird die Release-Seite geöffnet.",
   "About.DeskContainersGuideTitle": "DeskContainers – Anleitung",
   "VersionNotes.2.2.6": "+ Hintergrund-Elemente: Das GPU-Element listet jetzt alle Grafikadapter (dediziert und integriert); Uhrenthemen (Classic, Minimal, Neon, Mono, Retro), Balkenfarbe und mittige Platzierung wurden hinzugefügt.\n~ Die Analoguhr des Hintergrunds ist in ihrer Karte zentriert.",
-  "VersionNotes.2.2.5": "+ Systemmonitor: Alle Grafikadapter (dediziert und integriert) werden angezeigt, mit ◀ ▶ zum Umschalten; das Datenträger-Widget merkt sich den angezeigten Datenträger.\n~ Die Analoguhr ist jetzt in ihrem Widget zentriert.\n~ DeskContainers: Symbole haben dieselbe Größe wie die Desktopsymbole.\n~ 71 Texte in die übrigen 12 Sprachen übersetzt; Update- und Plugin-Meldungen sind jetzt lokalisiert."
+  "VersionNotes.2.2.5": "+ Systemmonitor: Alle Grafikadapter (dediziert und integriert) werden angezeigt, mit ◀ ▶ zum Umschalten; das Datenträger-Widget merkt sich den angezeigten Datenträger.\n~ Die Analoguhr ist jetzt in ihrem Widget zentriert.\n~ DeskContainers: Symbole haben dieselbe Größe wie die Desktopsymbole.\n~ 71 Texte in die übrigen 12 Sprachen übersetzt; Update- und Plugin-Meldungen sind jetzt lokalisiert.",
+  "DCX.NewNote": "Neuer Notiz-Container",
+  "DCX.ShowAll": "Alle Container anzeigen",
+  "DCX.DeleteContainer": "Ausgewählten Container löschen",
+  "DCX.DeleteConfirm": "Container „{0}“ löschen? Seine Symbole kehren auf den Desktop zurück.",
+  "DCX.DeleteTitle": "Container löschen",
+  "DCX.NoContainers": "Keine Container",
+  "DCX.ProfileApply": "Ausgewähltes Profil anwenden",
+  "DCX.ProfileSave": "Aktuelles Layout als Profil speichern…",
+  "DCX.ProfileName": "Profilname"
 }
