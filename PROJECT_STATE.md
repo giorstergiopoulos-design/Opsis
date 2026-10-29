@@ -1,6 +1,6 @@
 # PROJECT STATE
 
-## 2.2.5 (2026-10-29): see CHANGELOG 2.2.5 (GPU arrows, clock centring, container icon size, 71 translations). Items below describe 2.2.0 (still true).
+## 2.2.6: wallpaper elements (all GPUs, clock themes, bar colour, centre). ## 2.2.5 (2026-10-29): see CHANGELOG 2.2.5 (GPU arrows, clock centring, container icon size, 71 translations). Items below describe 2.2.0 (still true).
 
 ## 2.2.0 status (2026-10-29) — read with the section below
 - The engine is now `containers/` -> `OpsisContainers.exe` (all "fence" names gone; `LegacyNames.cs` migrates old data). Settings are in the engine's ☰ ▸ Settings menu (`containers/SettingsMenu.cs`, self-test: `OpsisContainers.exe --selftest-settings <report>` with isolated `OPSIS_APPDATA`; last full run 365 ok / 0 fail BEFORE the event-driven theme change — rerun NOT done).

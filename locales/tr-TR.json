@@ -730,5 +730,6 @@
   "About.UpdateVerifyFailed": "İndirilen dosya yayımlanan sağlama toplamıyla eşleşmedi — silindi, hiçbir şey yüklenmedi. Lütfen daha sonra tekrar deneyin.",
   "About.UpdateNoDigest": "Bu sürümün doğrulanacak bir sağlama toplamı yok, bu nedenle hiçbir şey otomatik yüklenmez — bunun yerine sürüm sayfası açılır.",
   "About.DeskContainersGuideTitle": "DeskContainers — Nasıl kullanılır",
+  "VersionNotes.2.2.6": "+ Duvar kâğıdı öğeleri: GPU öğesi artık tüm grafik bağdaştırıcılarını (harici ve tümleşik) listeler; saat temaları (Classic, Minimal, Neon, Mono, Retro), çubuk rengi ve ortaya yerleştirme eklendi.\n~ Duvar kâğıdındaki analog saat kartının ortasında.",
   "VersionNotes.2.2.5": "+ Sistem İzleyici: tüm grafik bağdaştırıcıları (harici ve tümleşik) listelenir, ◀ ▶ okları ile geçiş yapılır; Disk widget'ı gösterdiği diski hatırlar.\n~ Analog saat artık widget'ının ortasında.\n~ DeskContainers: simgeler masaüstü simgeleriyle aynı boyuttadır.\n~ 71 metin kalan 12 dile çevrildi; güncelleme ve eklenti iletileri yerelleştirildi."
 }

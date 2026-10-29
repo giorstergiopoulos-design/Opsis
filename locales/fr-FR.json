@@ -730,5 +730,6 @@
   "About.UpdateVerifyFailed": "Le fichier téléchargé ne correspond pas à la somme de contrôle publiée — il a été supprimé, rien n'a été installé. Réessayez plus tard.",
   "About.UpdateNoDigest": "Cette version n'a pas de somme de contrôle à vérifier ; rien n'est donc installé automatiquement — la page de la version s'ouvre à la place.",
   "About.DeskContainersGuideTitle": "DeskContainers — Mode d'emploi",
+  "VersionNotes.2.2.6": "+ Éléments du fond d'écran : l'élément GPU liste désormais tous les adaptateurs graphiques (dédié et intégré) ; ajout de thèmes d'horloge (Classic, Minimal, Neon, Mono, Retro), d'une couleur de barres et d'un placement au centre.\n~ L'horloge analogique du fond d'écran est centrée dans sa carte.",
   "VersionNotes.2.2.5": "+ Moniteur système : tous les adaptateurs graphiques (dédié et intégré) sont listés, avec des flèches ◀ ▶ pour basculer ; le widget Disque mémorise le disque affiché.\n~ L'horloge analogique est désormais centrée dans son widget.\n~ DeskContainers : les icônes ont la même taille que celles du bureau.\n~ 71 textes traduits dans les 12 autres langues ; les messages de mise à jour et de plugins sont localisés."
 }

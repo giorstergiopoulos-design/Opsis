@@ -730,5 +730,6 @@
   "About.UpdateVerifyFailed": "O ficheiro transferido não corresponde à soma de verificação publicada — foi eliminado e nada foi instalado. Tente novamente mais tarde.",
   "About.UpdateNoDigest": "Esta versão não tem soma de verificação para validar, por isso nada é instalado automaticamente — abre-se a página da versão.",
   "About.DeskContainersGuideTitle": "DeskContainers — Como utilizar",
+  "VersionNotes.2.2.6": "+ Elementos do fundo: o elemento GPU lista agora todos os adaptadores gráficos (dedicado e integrado); foram adicionados temas de relógio (Classic, Minimal, Neon, Mono, Retro), cor das barras e posição ao centro.\n~ O relógio analógico do fundo está centrado no seu cartão.",
   "VersionNotes.2.2.5": "+ Monitor do sistema: todos os adaptadores gráficos (dedicado e integrado) são listados, com setas ◀ ▶ para alternar; o widget de disco memoriza o disco apresentado.\n~ O relógio analógico está agora centrado no seu widget.\n~ DeskContainers: os ícones têm o mesmo tamanho dos ícones do ambiente de trabalho.\n~ 71 textos traduzidos para as restantes 12 línguas; as mensagens de atualização e de plugins estão localizadas."
 }
