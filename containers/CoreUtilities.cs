@@ -404,10 +404,23 @@ namespace OpsisContainers
         /// Category: Icon Sizing
         /// Moved from: IconManager.GetIconSizePixels
         /// </summary>
+        /// <summary>Size (device-independent pixels) of the icons on the Windows desktop (View > Large/Medium/Small icons or ctrl+wheel): the same value the shell uses.</summary>
+        public static int DesktopIconDips()
+        {
+            try
+            {
+                using var k = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\Shell\Bags\1\Desktop");
+                if (k?.GetValue("IconSize") is int v) return Math.Clamp(v, 16, 256);
+            }
+            catch { }
+            return 48;      // the shell default (Medium icons)
+        }
+
         public static int GetIconSizePixels(string iconSize)
         {
             return iconSize switch
             {
+                "Desktop" => DesktopIconDips(),
                 "Tiny" => 16,
                 "Small" => 24,
                 "Medium" => 32,

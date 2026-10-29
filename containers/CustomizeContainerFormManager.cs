@@ -44,7 +44,7 @@ namespace OpsisContainers
         private readonly string[] _validColors = { "Red", "Green", "Teal", "Blue", "Bismark", "White", "Beige", "Gray", "Black", "Purple", "Fuchsia", "Yellow", "Orange" };
         private readonly string[] _validEffects = { "Zoom", "Bounce", "FadeOut", "SlideUp", "Rotate", "Agitate", "GrowAndFly", "Pulse", "Elastic", "Flip3D", "Spiral", "Shockwave", "Matrix", "Supernova", "Teleport" };
         private readonly string[] _validTextSizes = { "Small", "Medium", "Large", "Extra Large", "Huge" };
-        private readonly string[] _validIconSizes = { "Tiny", "Small", "Medium", "Large", "Huge" };
+        private readonly string[] _validIconSizes = { "Desktop", "Tiny", "Small", "Medium", "Large", "Huge" };
 
         private Color _userAccentColor;
         #endregion

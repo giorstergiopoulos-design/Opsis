@@ -297,7 +297,7 @@ namespace OpsisContainers
             newContainer.BoldTitleText = "false";
             newContainer.TitleTextColor = null;
             newContainer.DisableTextShadow = "false";
-            newContainer.IconSize = "Medium";
+            newContainer.IconSize = "Desktop";
             newContainer.GrayscaleIcons = "false";
             newContainer.IconSpacing = 5;
             newContainer.TitleTextSize = "Medium";

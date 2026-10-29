@@ -2220,7 +2220,7 @@ namespace OpsisContainers
                     // Icon Appearance
                     containerDict["TextColor"] = null;
                     containerDict["DisableTextShadow"] = "false";
-                    containerDict["IconSize"] = "Medium";
+                    containerDict["IconSize"] = "Desktop";
                     containerDict["IconSpacing"] = 5;
                     containerDict["GrayscaleIcons"] = "false";
 
@@ -3873,7 +3873,7 @@ namespace OpsisContainers
                         jsonModified = true;
                     }
 
-                    if (!containerDict.ContainsKey("IconSize")) { containerDict["IconSize"] = "Medium"; jsonModified = true; }
+                    if (!containerDict.ContainsKey("IconSize")) { containerDict["IconSize"] = "Desktop"; jsonModified = true; }
                     if (!containerDict.ContainsKey("IconSpacing")) { containerDict["IconSpacing"] = 5; jsonModified = true; }
                     if (!containerDict.ContainsKey("CustomColor")) { containerDict["CustomColor"] = null; jsonModified = true; }
                     if (!containerDict.ContainsKey("CustomLaunchEffect")) { containerDict["CustomLaunchEffect"] = null; jsonModified = true; }
@@ -4394,7 +4394,7 @@ namespace OpsisContainers
                     UnrolledHeight = 318.0,
                     BoldTitleText = "false",
                     DisableTextShadow = "false",
-                    IconSize = "Medium",
+                    IconSize = "Desktop",
                     IconSpacing = 5,
                     ContainerBorderThickness = 2
                 };
@@ -7026,6 +7026,7 @@ namespace OpsisContainers
                     case "Small": iconWidth = iconHeight = 32; break;
                     case "Large": iconWidth = iconHeight = 48; break;
                     case "Huge": iconWidth = iconHeight = 64; break;
+                    case "Desktop": iconWidth = iconHeight = CoreUtilities.DesktopIconDips(); break;   // same size as the icons on the Windows desktop
                     default: iconWidth = iconHeight = 40; break;
                 }
 
@@ -7444,7 +7445,7 @@ namespace OpsisContainers
             newContainerDict["BoldTitleText"] = "false";
             newContainerDict["TitleTextColor"] = null;
             newContainerDict["DisableTextShadow"] = "false";
-            newContainerDict["IconSize"] = "Medium";
+            newContainerDict["IconSize"] = "Desktop";
             newContainerDict["GrayscaleIcons"] = "false";
             newContainerDict["IconSpacing"] = 5;
             newContainerDict["TitleTextSize"] = "Medium";

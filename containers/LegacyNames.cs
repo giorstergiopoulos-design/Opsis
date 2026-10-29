@@ -38,12 +38,27 @@ namespace OpsisContainers
                             File.Move(file, target);
                         }
                         string text = File.ReadAllText(target), migrated = MigrateKeys(text);
+                        if (name.Equals("containers.json", StringComparison.OrdinalIgnoreCase)) migrated = IconSizeToDesktopOnce(target, migrated);
                         if (migrated != text) File.WriteAllText(target, migrated);
                     }
                     catch (Exception) { /* one unreadable file must not block start-up */ }
                 }
             }
             catch (Exception) { }
+        }
+
+        /// <summary>2.2.1: containers used a fixed "Medium" (40 px) icon, smaller than the desktop icons. Once per file (marker next to it), "Medium" becomes "Desktop"
+        /// (= the real desktop icon size); any later choice of the user is kept.</summary>
+        private static string IconSizeToDesktopOnce(string file, string json)
+        {
+            try
+            {
+                string marker = file + ".iconsize-desktop";
+                if (File.Exists(marker)) return json;
+                File.WriteAllText(marker, "2.2.1");
+                return json.Replace("\"IconSize\": \"Medium\"", "\"IconSize\": \"Desktop\"").Replace("\"IconSize\":\"Medium\"", "\"IconSize\":\"Desktop\"");
+            }
+            catch (Exception) { return json; }
         }
 
         /// <summary>Removes the desktop-menu verb registered under the old name by earlier Opsis builds (only if it points at an Opsis exe).</summary>
