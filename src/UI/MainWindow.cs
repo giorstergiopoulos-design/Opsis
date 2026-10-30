@@ -497,9 +497,10 @@ namespace MotionDesk.UI
         private void EnsureSidebarFits()
         {
             if (!IsHandleCreated) return;
-            BeginInvoke(new Action(() =>
+            void Fit()
             {
                 if (IsDisposed || WindowState != FormWindowState.Normal) return;
+                PerformLayout();                       // the sizes below are only right once the layout of the sidebar has run
                 int need = _nav.Padding.Vertical + _nav.Controls.Cast<Control>().Sum(c => c.Height + c.Margin.Vertical);
                 int missing = need - _nav.ClientSize.Height;
                 if (missing > 0)
@@ -513,7 +514,13 @@ namespace MotionDesk.UI
                     }
                 }
                 _nav.AutoScroll = need > _nav.ClientSize.Height + 1;
-            }));
+            }
+            // Twice: once now, and once after the window has settled (with BOTH plugins - News Crawler and Appearance - the first pass ran before the
+            // final layout, so the last tabs stayed hidden below the visible area).
+            BeginInvoke(new Action(Fit));
+            var again = new System.Windows.Forms.Timer { Interval = 600 };
+            again.Tick += (_, _) => { again.Stop(); again.Dispose(); Fit(); };
+            again.Start();
         }
 
         private void ApplyChromeColors()
@@ -1206,7 +1213,7 @@ namespace MotionDesk.UI
             var keepIconsBtn = new HoverButton { Text = LdKeep("Εικονίδια που μένουν ορατά…", "Icons that stay visible…"), Width = 260, Height = 32, Margin = new Padding(0, 0, 0, 10), FlatStyle = FlatStyle.Flat, ForeColor = UiTheme.TextPrimary, BackColor = UiTheme.SurfaceHover, Cursor = Cursors.Hand };
             keepIconsBtn.FlatAppearance.BorderSize = 0;
             keepIconsBtn.Click += (_, _) => ShowKeepIconsDialog();
-            var quickHideCheck = new FlatCheckBox { Text = LocalizationManager.T("DeskZones.QuickHideDoubleClick"), Checked = AppSettings.Load().QuickHideDoubleClickEnabled, AutoSize = true, BackColor = UiTheme.Background, Margin = new Padding(0, 0, 0, 10) };
+            var quickHideCheck = new FlatToggle { RowWidth = 700, Text = LocalizationManager.T("DeskZones.QuickHideDoubleClick"), Checked = AppSettings.Load().QuickHideDoubleClickEnabled, BackColor = UiTheme.Background, Margin = new Padding(0, 0, 0, 10) };
             quickHideCheck.CheckedChanged += (_, _) =>
             {
                 var a = AppSettings.Load(); a.QuickHideDoubleClickEnabled = quickHideCheck.Checked; a.Save();
@@ -1295,7 +1302,7 @@ namespace MotionDesk.UI
                 ("Add", LocalizationManager.T("Wallpaper.AddFolderButton"), (_, _) => { ChooseWallpaperFolder(); ShowWallpaper(); }),
                 ("Delete", LocalizationManager.T("Wallpaper.ClearPlaylist"), (_, _) => { WallpaperHostEngine.Instance.ClearVideo(); ShowWallpaper(); }));
 
-            var subfoldersCheck = new FlatCheckBox { Text = LocalizationManager.T("Wallpaper.IncludeSubfolders"), AutoSize = true, Checked = settings.IncludeSubfolders, BackColor = UiTheme.Background, Margin = new Padding(0, 4, 0, 6) };
+            var subfoldersCheck = new FlatToggle { RowWidth = 700, Text = LocalizationManager.T("Wallpaper.IncludeSubfolders"), Checked = settings.IncludeSubfolders, BackColor = UiTheme.Background, Margin = new Padding(0, 4, 0, 6) };
             subfoldersCheck.CheckedChanged += (_, _) => WallpaperHostEngine.Instance.SetIncludeSubfolders(subfoldersCheck.Checked);
             panel.Controls.Add(subfoldersCheck);
 
@@ -1379,7 +1386,7 @@ namespace MotionDesk.UI
                 videoListPanel.Controls.Add(new Label { Text = LocalizationManager.T("Wallpaper.NoVideosYet"), AutoSize = true, Location = new Point(6, 6), ForeColor = UiTheme.TextMuted, Font = UiTheme.FontBody });
             panel.Controls.Add(videoListPanel);
 
-            var shuffle = new FlatCheckBox { Text = LocalizationManager.T("Wallpaper.Shuffle"), AutoSize = true, Checked = settings.Shuffle, BackColor = UiTheme.Background, Margin = new Padding(0, 4, 0, 10) };
+            var shuffle = new FlatToggle { RowWidth = 700, Text = LocalizationManager.T("Wallpaper.Shuffle"), Checked = settings.Shuffle, BackColor = UiTheme.Background, Margin = new Padding(0, 4, 0, 10) };
             shuffle.CheckedChanged += (_, _) => WallpaperHostEngine.Instance.SetShuffle(shuffle.Checked);
             panel.Controls.Add(shuffle);
 
@@ -1397,7 +1404,7 @@ namespace MotionDesk.UI
             // false): το wallpaper ήταν πάντα σιωπηλό πριν, δεν αλλάζει συμπεριφορά χωρίς ρητή
             // ενεργοποίηση από τον χρήστη.
             AddSection(panel, LocalizationManager.T("Wallpaper.SectionAudio"));
-            var audioEnabledCheck = new FlatCheckBox { Text = LocalizationManager.T("Wallpaper.AudioEnabled"), AutoSize = true, Checked = settings.AudioEnabled, BackColor = UiTheme.Background, Margin = new Padding(0, 4, 0, 8) };
+            var audioEnabledCheck = new FlatToggle { RowWidth = 700, Text = LocalizationManager.T("Wallpaper.AudioEnabled"), Checked = settings.AudioEnabled, BackColor = UiTheme.Background, Margin = new Padding(0, 4, 0, 8) };
             panel.Controls.Add(audioEnabledCheck);
             panel.Controls.Add(SettingsView.Checkbox(LocalizationManager.T("Wallpaper.AutoMuteOtherAudio"), AppSettings.Load().AutoMuteWhenOtherAudio,
                 v => { var a = AppSettings.Load(); a.AutoMuteWhenOtherAudio = v; a.Save(); }));
@@ -1577,7 +1584,7 @@ namespace MotionDesk.UI
             panel.Controls.Add(ComboRow("Wallpaper.WindSimLabel", WindSimIds, "Wallpaper.Wind.", settings.WindSimulation, id => WallpaperHostEngine.Instance.SetWindSimulation(id)));
             panel.Controls.Add(ComboRow("Wallpaper.TimeSimLabel", TimeSimIds, "Wallpaper.Time.", settings.TimeSimulation, id => WallpaperHostEngine.Instance.SetTimeSimulation(id)));
 
-            var glass = new FlatCheckBox { Text = LocalizationManager.T("Wallpaper.WeatherGlass"), AutoSize = true, Checked = settings.WeatherGlass, BackColor = UiTheme.Background, Margin = new Padding(0, 6, 0, 10) };
+            var glass = new FlatToggle { RowWidth = 700, Text = LocalizationManager.T("Wallpaper.WeatherGlass"), Checked = settings.WeatherGlass, BackColor = UiTheme.Background, Margin = new Padding(0, 6, 0, 10) };
             glass.CheckedChanged += (_, _) => WallpaperHostEngine.Instance.SetWeatherGlass(glass.Checked);
             panel.Controls.Add(glass);
         }
@@ -1696,9 +1703,9 @@ namespace MotionDesk.UI
                 if (infoX == null || infoY == null || infoScale == null || infoShow == null || infoF == null || infoAll == null) return;
                 WallpaperHostEngine.Instance.SetWeatherInfo(infoShow.Checked, infoAll.Checked, infoX.Value, infoY.Value, infoScale.Value, infoF.Checked);
             }
-            infoShow = new FlatCheckBox { Text = LocalizationManager.T("Wallpaper.WeatherInfo"), AutoSize = true, Checked = settings.WeatherShowInfo, BackColor = UiTheme.Background, Margin = new Padding(0, 8, 0, 4) };
-            infoF = new FlatCheckBox { Text = LocalizationManager.T("Wallpaper.Fahrenheit"), AutoSize = true, Checked = settings.WeatherFahrenheit, BackColor = UiTheme.Background, Margin = new Padding(0, 0, 0, 6) };
-            infoAll = new FlatCheckBox { Text = LocalizationManager.T("Wallpaper.InfoAllModes"), AutoSize = true, Checked = settings.InfoOnAllModes, BackColor = UiTheme.Background, Margin = new Padding(0, 0, 0, 4) };
+            infoShow = new FlatToggle { RowWidth = 700, Text = LocalizationManager.T("Wallpaper.WeatherInfo"), Checked = settings.WeatherShowInfo, BackColor = UiTheme.Background, Margin = new Padding(0, 8, 0, 4) };
+            infoF = new FlatToggle { RowWidth = 700, Text = LocalizationManager.T("Wallpaper.Fahrenheit"), Checked = settings.WeatherFahrenheit, BackColor = UiTheme.Background, Margin = new Padding(0, 0, 0, 6) };
+            infoAll = new FlatToggle { RowWidth = 700, Text = LocalizationManager.T("Wallpaper.InfoAllModes"), Checked = settings.InfoOnAllModes, BackColor = UiTheme.Background, Margin = new Padding(0, 0, 0, 4) };
             infoShow.CheckedChanged += (_, _) => CommitInfo();
             infoAll.CheckedChanged += (_, _) => CommitInfo();
             infoF.CheckedChanged += (_, _) => CommitInfo();
@@ -1815,7 +1822,7 @@ namespace MotionDesk.UI
                 };
             while (rules.Count < 3) rules.Add(new WallpaperScheduleRule { Enabled = false, StartMinutes = 0, EndMinutes = 0, Mode = "Waves" });
 
-            var master = new FlatCheckBox { Text = LocalizationManager.T("Wallpaper.ScheduleEnable"), AutoSize = true, Checked = settings.ScheduleEnabled, BackColor = UiTheme.Background, Margin = new Padding(0, 2, 0, 8) };
+            var master = new FlatToggle { RowWidth = 700, Text = LocalizationManager.T("Wallpaper.ScheduleEnable"), Checked = settings.ScheduleEnabled, BackColor = UiTheme.Background, Margin = new Padding(0, 2, 0, 8) };
             panel.Controls.Add(master);
 
             var times = Enumerable.Range(0, 48).Select(i => $"{i / 2:00}:{i % 2 * 30:00}").ToArray();
@@ -2098,7 +2105,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             var deskStripCard = AddCardSection(panel, LocalizationManager.T("Personalization.SectionDeskStrip"));
             AddText(deskStripCard, LocalizationManager.T("Personalization.DeskStripIntro"));
 
-            var deskStripToggle = new FlatCheckBox { Text = LocalizationManager.T("Personalization.EnableDeskStrip"), AutoSize = true, Checked = DeskStripHostEngine.Instance.IsEnabled, BackColor = UiTheme.Surface, Margin = new Padding(0, 4, 0, 10) };
+            var deskStripToggle = new FlatToggle { RowWidth = 700, Text = LocalizationManager.T("Personalization.EnableDeskStrip"), Checked = DeskStripHostEngine.Instance.IsEnabled, BackColor = UiTheme.Surface, Margin = new Padding(0, 4, 0, 10) };
             deskStripCard.Controls.Add(deskStripToggle);
 
             // Ρυθμίσεις dock (θέση, auto-hide, μέγεθος, μεγέθυνση, τρέχουσες εφαρμογές, προεπισκοπήσεις) — εφαρμόζονται αμέσως.
@@ -2597,7 +2604,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             int topTick = 0; bool topBusy = false;
 
             // notification when CPU/RAM stay above 90% for a minute (works while the app lives in the tray)
-            var alertsCheck = new FlatCheckBox { Text = LocalizationManager.T("Performance.AlertsEnable"), AutoSize = true, Checked = AppSettings.Load().UsageAlertsEnabled, BackColor = UiTheme.Background, Margin = new Padding(0, 4, 0, 10) };
+            var alertsCheck = new FlatToggle { RowWidth = 700, Text = LocalizationManager.T("Performance.AlertsEnable"), Checked = AppSettings.Load().UsageAlertsEnabled, BackColor = UiTheme.Background, Margin = new Padding(0, 4, 0, 10) };
             alertsCheck.CheckedChanged += (_, _) => { var a = AppSettings.Load(); a.UsageAlertsEnabled = alertsCheck.Checked; a.Save(); };
             panel.Controls.Add(alertsCheck);
 
@@ -2748,7 +2755,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
         // έπιασε ζωντανά ("το ιστορικό μένει στην 1.9.0"). Πρόσθεσε ΚΑΙ εδώ τη νέα έκδοση.
         private static readonly (string Version, string Date)[] VersionHistory =
         {
-            ("2.2.6", "2026-10"), ("2.2.5", "2026-10"), ("2.2.0", "2026-10"), ("2.1.3", "2026-10"), ("2.1.2", "2026-10"), ("2.1.1", "2026-10"), ("2.1.0", "2026-10"), ("2.0.0", "2026-10"), ("1.9.12", "2026-10"), ("1.9.11", "2026-10"), ("1.9.10", "2026-10"), ("1.9.9", "2026-10"), ("1.9.8", "2026-10"), ("1.9.7", "2026-10"), ("1.9.6", "2026-10"), ("1.9.5", "2026-10"), ("1.9.4", "2026-10"), ("1.9.3", "2026-10"), ("1.9.2", "2026-10"), ("1.9.1", "2026-10"), ("1.9.0", "2026-10"), ("1.8.9", "2026-10"), ("1.8.8", "2026-10"), ("1.8.7", "2026-10"), ("1.8.6", "2026-10"), ("1.8.5", "2026-10"), ("1.7.8", "2026-10"), ("1.7.6", "2026-10"), ("1.7.5", "2026-10"), ("1.6.8", "2026-10"), ("1.6.2", "2026-10"), ("1.6.1", "2026-10"), ("1.6.0", "2026-09"), ("1.5.0", "2026-09"), ("1.4.1", "2026-09"), ("1.4.0", "2026-09"), ("1.3.0", "2026-09"), ("1.2.9", "2026-09"), ("1.2.8", "2026-09"), ("1.2.7", "2026-09"), ("1.2.6", "2026-09"), ("1.2.5", "2026-09"), ("1.2.4", "2026-09"), ("1.2.3", "2026-09"), ("1.2.2", "2026-09"), ("1.2.1", "2026-09"), ("1.2.0", "2026-09"), ("1.1.2", "2026-09"), ("1.1.1", "2026-09"), ("1.1.0", "2026-09"), ("1.0.0", "2026-09")
+            ("2.3.0", "2026-10"), ("2.2.6", "2026-10"), ("2.2.5", "2026-10"), ("2.2.0", "2026-10"), ("2.1.3", "2026-10"), ("2.1.2", "2026-10"), ("2.1.1", "2026-10"), ("2.1.0", "2026-10"), ("2.0.0", "2026-10"), ("1.9.12", "2026-10"), ("1.9.11", "2026-10"), ("1.9.10", "2026-10"), ("1.9.9", "2026-10"), ("1.9.8", "2026-10"), ("1.9.7", "2026-10"), ("1.9.6", "2026-10"), ("1.9.5", "2026-10"), ("1.9.4", "2026-10"), ("1.9.3", "2026-10"), ("1.9.2", "2026-10"), ("1.9.1", "2026-10"), ("1.9.0", "2026-10"), ("1.8.9", "2026-10"), ("1.8.8", "2026-10"), ("1.8.7", "2026-10"), ("1.8.6", "2026-10"), ("1.8.5", "2026-10"), ("1.7.8", "2026-10"), ("1.7.6", "2026-10"), ("1.7.5", "2026-10"), ("1.6.8", "2026-10"), ("1.6.2", "2026-10"), ("1.6.1", "2026-10"), ("1.6.0", "2026-09"), ("1.5.0", "2026-09"), ("1.4.1", "2026-09"), ("1.4.0", "2026-09"), ("1.3.0", "2026-09"), ("1.2.9", "2026-09"), ("1.2.8", "2026-09"), ("1.2.7", "2026-09"), ("1.2.6", "2026-09"), ("1.2.5", "2026-09"), ("1.2.4", "2026-09"), ("1.2.3", "2026-09"), ("1.2.2", "2026-09"), ("1.2.1", "2026-09"), ("1.2.0", "2026-09"), ("1.1.2", "2026-09"), ("1.1.1", "2026-09"), ("1.1.0", "2026-09"), ("1.0.0", "2026-09")
         };
 
 
@@ -3115,7 +3122,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             // ΚΑΙ επιβεβαίωση, μόνο από τα releases αυτού του repo, επαληθευμένο με SHA-256.
             AddSection(panel, LocalizationManager.T("About.UpdateHeading"));
             var updateStatus = new Label { Text = string.Format(LocalizationManager.T("About.UpdateCurrentVersion"), UpdateCheckService.CurrentVersion.ToString(3)), AutoSize = true, MaximumSize = new Size(740, 0), Font = UiTheme.FontBody, ForeColor = UiTheme.TextSecondary, Margin = new Padding(0, 0, 0, 6) };
-            var autoUpdate = new FlatCheckBox { Text = LocalizationManager.T("About.UpdateAuto"), AutoSize = true, Checked = AppSettings.Load().UpdateCheckEnabled, BackColor = UiTheme.Background, Margin = new Padding(0, 2, 0, 6) };
+            var autoUpdate = new FlatToggle { RowWidth = 700, Text = LocalizationManager.T("About.UpdateAuto"), Checked = AppSettings.Load().UpdateCheckEnabled, BackColor = UiTheme.Background, Margin = new Padding(0, 2, 0, 6) };
             autoUpdate.CheckedChanged += (_, _) => { var a = AppSettings.Load(); a.UpdateCheckEnabled = autoUpdate.Checked; a.Save(); };
             panel.Controls.Add(autoUpdate);
 
@@ -3638,9 +3645,9 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             };
             if (reset == null) { parent.Controls.Add(title); return; }
             // card title with a "Reset" button on the right: puts the settings of this section back to their defaults (after a confirmation)
-            var row = new Panel { Width = 724, Height = 40, Margin = new Padding(0, 6, 0, 2), BackColor = Color.Transparent };
+            var row = new Panel { Width = 700, Height = 40, Margin = new Padding(0, 6, 0, 2), BackColor = Color.Transparent };
             title.Margin = new Padding(0); title.Location = new Point(0, 12);
-            var btn = new FlatButton { Text = LocalizationManager.T("Settings.Reset"), Width = 96, Height = 28, Location = new Point(724 - 96, 6) };
+            var btn = new FlatButton { Text = LocalizationManager.T("Settings.Reset"), Width = 96, Height = 28, Location = new Point(700 - 96, 6) };
             btn.Click += (_, _) =>
             {
                 var owner = btn.FindForm();

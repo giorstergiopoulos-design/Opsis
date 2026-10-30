@@ -730,6 +730,7 @@
   "About.UpdateVerifyFailed": "下载的文件与发布的校验和不匹配——已删除，未安装任何内容。请稍后重试。",
   "About.UpdateNoDigest": "此版本没有可供验证的校验和，因此不会自动安装——改为打开发布页面。",
   "About.DeskContainersGuideTitle": "DeskContainers — 使用方法",
+  "VersionNotes.2.3.0": "+ Windows 11 风格的设置：开关行、每个页面的搜索框以及各部分的重置按钮（设置页面）。\n~ 同时安装两个插件时，窗口会增高，以显示侧边菜单的所有标签。",
   "VersionNotes.2.2.6": "+ 壁纸元素：GPU 元素现在列出所有显卡（独立和集成）；新增时钟主题（Classic、Minimal、Neon、Mono、Retro）、进度条颜色和居中位置。\n~ 壁纸的模拟时钟现在位于其卡片正中央。",
   "VersionNotes.2.2.5": "+ 系统监视器：列出所有显卡（独立和集成），可用 ◀ ▶ 箭头切换；磁盘小组件会记住所显示的磁盘。\n~ 模拟时钟现在位于其小组件的正中央。\n~ DeskContainers：图标大小与桌面图标相同。\n~ 71 条文本已翻译为其余 12 种语言；更新和插件消息已本地化。",
   "DCX.NewNote": "新建便笺容器",

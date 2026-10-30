@@ -333,7 +333,7 @@ namespace MotionDesk.UI
             }
 
             var opt = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 6, 0, 10) };
-            var card = new FlatCheckBox { Text = L("Frosted card behind the elements", "Θολό πλαίσιο πίσω από τα στοιχεία"), AutoSize = false, Width = 300, Height = 28, Checked = settings.ElementsCard, BackColor = UiTheme.Background, Margin = new Padding(0, 4, 8, 0) };
+            var card = new FlatToggle { RowWidth = 440, Text = L("Frosted card behind the elements", "Θολό πλαίσιο πίσω από τα στοιχεία"),  Checked = settings.ElementsCard, BackColor = UiTheme.Background, Margin = new Padding(0, 4, 8, 0) };
             card.CheckedChanged += (_, _) => Commit(s => s.ElementsCard = card.Checked);
             var accent = new Button { Width = 60, Height = 26, FlatStyle = FlatStyle.Flat, Margin = new Padding(0, 2, 8, 0), Cursor = Cursors.Hand, TabStop = false };
             Color Parse(string t) { try { return ColorTranslator.FromHtml(t); } catch (Exception) { return Color.FromArgb(0, 210, 255); } }
