@@ -3571,6 +3571,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             // στο scroll του page panel — εκτός από controls με δικό τους νόημα για το wheel
             // (TextBox/ComboBox/NumericUpDown, ή ήδη ξεχωριστά AutoScroll containers).
             EnableWheelPassthrough(panel);
+            PageSearch.Attach(panel);
             return panel;
         }
 
@@ -3625,16 +3626,30 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             });
         }
 
-        private static void AddSection(Control parent, string text)
+        private static void AddSection(Control parent, string text, Action? reset = null)
         {
-            parent.Controls.Add(new Label
+            var title = new Label
             {
                 AutoSize = true,
                 Text = UiTheme.UpperNoAccents(text),
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = UiTheme.AccentCyan,
                 Margin = new Padding(0, 14, 0, 6)
-            });
+            };
+            if (reset == null) { parent.Controls.Add(title); return; }
+            // card title with a "Reset" button on the right: puts the settings of this section back to their defaults (after a confirmation)
+            var row = new Panel { Width = 724, Height = 40, Margin = new Padding(0, 6, 0, 2), BackColor = Color.Transparent };
+            title.Margin = new Padding(0); title.Location = new Point(0, 12);
+            var btn = new FlatButton { Text = LocalizationManager.T("Settings.Reset"), Width = 96, Height = 28, Location = new Point(724 - 96, 6) };
+            btn.Click += (_, _) =>
+            {
+                var owner = btn.FindForm();
+                if (MessageBox.Show(owner, LocalizationManager.T("Settings.ResetConfirm"), text, MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) != DialogResult.Yes) return;
+                reset();
+                (owner as MainWindow)?.NavigateTo("Settings");
+            };
+            row.Controls.Add(title); row.Controls.Add(btn);
+            parent.Controls.Add(row);
         }
 
         // Επανασχεδιασμός σελίδας Εξατομίκευση (task tracker t36, "εμπλούτισε/άλλαξε το περιεχόμενο
@@ -4254,6 +4269,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                 GlassBlur.ApplyScrollbarTheme(stack, UiTheme.Background.GetBrightness() < 0.5f);
                 Controls.Add(stack);
 
+                PageSearch.Attach(stack);
                 AddText(stack, LocalizationManager.T("Settings.Intro"));
 
                 AddSection(stack, LocalizationManager.T("Settings.Appearance"));
@@ -4266,7 +4282,12 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                 stack.Controls.Add(Checkbox(LocalizationManager.T("Settings.UiSoundCues"), AppSettings.Load().UiSoundsEnabled,
                     v => { var a = AppSettings.Load(); a.UiSoundsEnabled = v; a.Save(); }));
 
-                AddSection(stack, LocalizationManager.T("Settings.SectionSnapping"));
+                AddSection(stack, LocalizationManager.T("Settings.SectionSnapping"), () =>
+                {
+                    var d = new AppSettings(); var a = AppSettings.Load();
+                    a.GridSnap = d.GridSnap; a.SnapThreshold = d.SnapThreshold; a.GridSize = d.GridSize; a.Save();
+                    WidgetSnapEngine.EnableGridSnap = a.GridSnap; WidgetSnapEngine.SnapThreshold = a.SnapThreshold; WidgetSnapEngine.GridSize = a.GridSize;
+                });
                 stack.Controls.Add(Checkbox(LocalizationManager.T("Settings.EnableGridSnap"), AppSettings.Load().GridSnap, v => { WidgetSnapEngine.EnableGridSnap = v; SaveAppSettings(); }));
                 var snapRow = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 2, 0, 4) };
                 snapRow.Controls.Add(NumericRow(LocalizationManager.T("Settings.SnapThreshold"), AppSettings.Load().SnapThreshold, 5, 50,
@@ -4275,7 +4296,12 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                     v => { WidgetSnapEngine.GridSize = v; SaveAppSettings(); }, marginLeft: 24));
                 stack.Controls.Add(snapRow);
 
-                AddSection(stack, LocalizationManager.T("Settings.SectionStartup"));
+                AddSection(stack, LocalizationManager.T("Settings.SectionStartup"), () =>
+                {
+                    var d = new AppSettings(); var a = AppSettings.Load();
+                    a.RestoreLastSession = d.RestoreLastSession; a.EnableAnimations = d.EnableAnimations; a.MinimizeToTray = d.MinimizeToTray; a.Save();
+                    AnimationsSettingChanged?.Invoke();
+                });
                 stack.Controls.Add(Checkbox(LocalizationManager.T("Settings.StartWithWindows"), StartupManager.IsStartupEnabled(), StartupManager.SetStartup));
                 stack.Controls.Add(Checkbox(LocalizationManager.T("Settings.RestoreLastSession"), AppSettings.Load().RestoreLastSession,
                     v => { var a = AppSettings.Load(); a.RestoreLastSession = v; a.Save(); }));
@@ -4286,7 +4312,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                 // Plugins (π.χ. News Crawler): ισχύει στην επόμενη εκκίνηση.
                 BuildDiscordRows(stack);
                 stack.Controls.Add(Checkbox(LocalizationManager.T("Settings.PluginsEnabled"), AppSettings.Load().PluginsEnabled,
-                    v => { var a = AppSettings.Load(); a.PluginsEnabled = v; a.Save(); }));
+                    v => { var a = AppSettings.Load(); a.PluginsEnabled = v; a.Save(); }, restart: true));
 
                 // Ζητήθηκε ρητά "ρύθμιση για διαφάνεια παραθύρων των Windows και γρήγορη εκκίνηση
                 // στον πίνακα ελέγχου" — πραγματικές ρυθμίσεις των ίδιων των Windows (μητρώο),
@@ -4476,15 +4502,19 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             // project) στα checkboxes/κουμπιά — FlatCheckBox (custom-σχεδιασμένο, στο ίδιο πνεύμα)
             // αντικαθιστά εδώ το προεπιλεγμένο CheckBox των Windows σε ΟΛΗ τη σελίδα Ρυθμίσεων με
             // μία αλλαγή, αφού κάθε checkbox της σελίδας περνάει από αυτό το ίδιο helper.
-            internal static CheckBox Checkbox(string text, bool initial, Action<bool> onChange)
+            // Windows 11 style row: the text on the left, the switch at the right end (Opsis.UI.FlatToggle). `description` is one muted sentence under the
+            // text; `restart` adds the "Restart needed" tag (everything else applies immediately).
+            internal static CheckBox Checkbox(string text, bool initial, Action<bool> onChange, string description = "", bool restart = false)
             {
-                var box = new FlatCheckBox
+                var box = new FlatToggle
                 {
                     Text = text,
-                    AutoSize = true,
+                    Description = description,
+                    Badge = restart ? LocalizationManager.T("Settings.BadgeRestart") : "",
+                    RowWidth = 700,
                     Checked = initial,
                     BackColor = UiTheme.Background,
-                    Margin = new Padding(0, 4, 0, 4)
+                    Margin = new Padding(0, 2, 0, 2)
                 };
                 box.CheckedChanged += (_, _) => onChange(box.Checked);
                 return box;

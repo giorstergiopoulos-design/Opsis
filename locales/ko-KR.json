@@ -740,5 +740,10 @@
   "DCX.NoContainers": "컨테이너 없음",
   "DCX.ProfileApply": "선택한 프로필 적용",
   "DCX.ProfileSave": "현재 레이아웃을 프로필로 저장…",
-  "DCX.ProfileName": "프로필 이름"
+  "DCX.ProfileName": "프로필 이름",
+  "Settings.BadgeRestart": "다시 시작 필요",
+  "Settings.SearchPlaceholder": "이 페이지의 설정 검색…",
+  "Settings.SearchNoMatch": "이 페이지에 검색과 일치하는 설정이 없습니다.",
+  "Settings.Reset": "초기화",
+  "Settings.ResetConfirm": "이 섹션의 설정을 기본값으로 되돌릴까요?"
 }

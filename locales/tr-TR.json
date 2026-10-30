@@ -740,5 +740,10 @@
   "DCX.NoContainers": "Kapsayıcı yok",
   "DCX.ProfileApply": "Seçili profili uygula",
   "DCX.ProfileSave": "Geçerli düzeni profil olarak kaydet…",
-  "DCX.ProfileName": "Profil adı"
+  "DCX.ProfileName": "Profil adı",
+  "Settings.BadgeRestart": "Yeniden başlatma gerekir",
+  "Settings.SearchPlaceholder": "Bu sayfadaki ayarlarda ara…",
+  "Settings.SearchNoMatch": "Bu sayfadaki hiçbir ayar aramanızla eşleşmiyor.",
+  "Settings.Reset": "Sıfırla",
+  "Settings.ResetConfirm": "Bu bölümün ayarları varsayılanlara döndürülsün mü?"
 }

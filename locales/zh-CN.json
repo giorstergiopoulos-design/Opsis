@@ -740,5 +740,10 @@
   "DCX.NoContainers": "没有容器",
   "DCX.ProfileApply": "应用所选配置文件",
   "DCX.ProfileSave": "将当前布局保存为配置文件…",
-  "DCX.ProfileName": "配置文件名称"
+  "DCX.ProfileName": "配置文件名称",
+  "Settings.BadgeRestart": "需要重启",
+  "Settings.SearchPlaceholder": "搜索此页面的设置…",
+  "Settings.SearchNoMatch": "此页面上没有与搜索匹配的设置。",
+  "Settings.Reset": "重置",
+  "Settings.ResetConfirm": "将此部分的设置恢复为默认值？"
 }

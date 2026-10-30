@@ -740,5 +740,10 @@
   "DCX.NoContainers": "لا توجد حاويات",
   "DCX.ProfileApply": "تطبيق الملف المحدد",
   "DCX.ProfileSave": "حفظ التخطيط الحالي كملف…",
-  "DCX.ProfileName": "اسم الملف"
+  "DCX.ProfileName": "اسم الملف",
+  "Settings.BadgeRestart": "يلزم إعادة التشغيل",
+  "Settings.SearchPlaceholder": "ابحث في إعدادات هذه الصفحة…",
+  "Settings.SearchNoMatch": "لا توجد إعدادات في هذه الصفحة تطابق بحثك.",
+  "Settings.Reset": "إعادة تعيين",
+  "Settings.ResetConfirm": "هل تريد إعادة إعدادات هذا القسم إلى قيمها الافتراضية؟"
 }

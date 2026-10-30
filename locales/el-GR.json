@@ -763,5 +763,10 @@
   "DCX.NoContainers": "Κανένα container",
   "DCX.ProfileApply": "Εφαρμογή επιλεγμένου προφίλ",
   "DCX.ProfileSave": "Αποθήκευση τρέχουσας διάταξης ως προφίλ…",
-  "DCX.ProfileName": "Όνομα προφίλ"
+  "DCX.ProfileName": "Όνομα προφίλ",
+  "Settings.BadgeRestart": "Απαιτείται επανεκκίνηση",
+  "Settings.SearchPlaceholder": "Αναζήτηση ρυθμίσεων σε αυτή τη σελίδα…",
+  "Settings.SearchNoMatch": "Καμία ρύθμιση αυτής της σελίδας δεν ταιριάζει με την αναζήτηση.",
+  "Settings.Reset": "Επαναφορά",
+  "Settings.ResetConfirm": "Να επανέλθουν οι ρυθμίσεις αυτής της ενότητας στις προεπιλογές τους;"
 }

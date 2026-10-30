@@ -740,5 +740,10 @@
   "DCX.NoContainers": "Nessun contenitore",
   "DCX.ProfileApply": "Applica il profilo selezionato",
   "DCX.ProfileSave": "Salva la disposizione attuale come profilo…",
-  "DCX.ProfileName": "Nome del profilo"
+  "DCX.ProfileName": "Nome del profilo",
+  "Settings.BadgeRestart": "Riavvio necessario",
+  "Settings.SearchPlaceholder": "Cerca nelle impostazioni di questa pagina…",
+  "Settings.SearchNoMatch": "Nessuna impostazione di questa pagina corrisponde alla ricerca.",
+  "Settings.Reset": "Ripristina",
+  "Settings.ResetConfirm": "Ripristinare i valori predefiniti delle impostazioni di questa sezione?"
 }

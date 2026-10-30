@@ -740,5 +740,10 @@
   "DCX.NoContainers": "Нет контейнеров",
   "DCX.ProfileApply": "Применить выбранный профиль",
   "DCX.ProfileSave": "Сохранить текущую раскладку как профиль…",
-  "DCX.ProfileName": "Имя профиля"
+  "DCX.ProfileName": "Имя профиля",
+  "Settings.BadgeRestart": "Нужен перезапуск",
+  "Settings.SearchPlaceholder": "Поиск параметров на этой странице…",
+  "Settings.SearchNoMatch": "На этой странице нет параметров, подходящих под поиск.",
+  "Settings.Reset": "Сбросить",
+  "Settings.ResetConfirm": "Вернуть параметры этого раздела к значениям по умолчанию?"
 }

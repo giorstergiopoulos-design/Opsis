@@ -763,5 +763,10 @@
   "DCX.NoContainers": "No containers",
   "DCX.ProfileApply": "Apply selected profile",
   "DCX.ProfileSave": "Save current layout as profile…",
-  "DCX.ProfileName": "Profile name"
+  "DCX.ProfileName": "Profile name",
+  "Settings.BadgeRestart": "Restart needed",
+  "Settings.SearchPlaceholder": "Search settings on this page…",
+  "Settings.SearchNoMatch": "No settings on this page match your search.",
+  "Settings.Reset": "Reset",
+  "Settings.ResetConfirm": "Reset the settings of this section to their defaults?"
 }

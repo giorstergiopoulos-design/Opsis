@@ -740,5 +740,10 @@
   "DCX.NoContainers": "コンテナーがありません",
   "DCX.ProfileApply": "選択したプロファイルを適用",
   "DCX.ProfileSave": "現在のレイアウトをプロファイルとして保存…",
-  "DCX.ProfileName": "プロファイル名"
+  "DCX.ProfileName": "プロファイル名",
+  "Settings.BadgeRestart": "再起動が必要",
+  "Settings.SearchPlaceholder": "このページの設定を検索…",
+  "Settings.SearchNoMatch": "このページに検索に一致する設定はありません。",
+  "Settings.Reset": "リセット",
+  "Settings.ResetConfirm": "このセクションの設定を既定値に戻しますか？"
 }

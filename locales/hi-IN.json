@@ -740,5 +740,10 @@
   "DCX.NoContainers": "कोई कंटेनर नहीं",
   "DCX.ProfileApply": "चुनी हुई प्रोफ़ाइल लागू करें",
   "DCX.ProfileSave": "वर्तमान लेआउट को प्रोफ़ाइल के रूप में सहेजें…",
-  "DCX.ProfileName": "प्रोफ़ाइल का नाम"
+  "DCX.ProfileName": "प्रोफ़ाइल का नाम",
+  "Settings.BadgeRestart": "रीस्टार्ट आवश्यक",
+  "Settings.SearchPlaceholder": "इस पेज की सेटिंग खोजें…",
+  "Settings.SearchNoMatch": "इस पेज की कोई सेटिंग आपकी खोज से मेल नहीं खाती।",
+  "Settings.Reset": "रीसेट करें",
+  "Settings.ResetConfirm": "इस अनुभाग की सेटिंग डिफ़ॉल्ट पर लौटाएँ?"
 }
