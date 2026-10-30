@@ -63,7 +63,7 @@ public sealed class DiscordPresence : IDisposable
             var wp = MotionDesk.Widgets.WallpaperSettings.Load();
             var engine = MotionDesk.Widgets.WallpaperHostEngine.Instance;
             string details = engine.IsEnabled ? "Wallpaper: " + wp.Mode : "Desktop customization";
-            string state = AppActivity.IsFullscreenAppActive ? "Paused while another app is in front" : "Opsis 2.3.0";
+            string state = AppActivity.IsFullscreenAppActive ? "Paused while another app is in front" : "Opsis 2.3.1";
             string key = details + "|" + state;
             if (key == _lastSent) return;
             var payload = new

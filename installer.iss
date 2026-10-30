@@ -1,5 +1,5 @@
 #define MyAppName "Opsis - Desktop Customization"
-#define MyAppVersion "2.3.0"
+#define MyAppVersion "2.3.1"
 #define MyAppPublisher "Opsis Team"
 #define MyAppExeName "Opsis.exe"
 ; Πού βρίσκεται ο installer του News Crawler (δημοσιεύεται ως GitHub release του αντίστοιχου repo).
@@ -39,6 +39,9 @@ AppMutex=Opsis.SingleInstance
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 SetupIconFile=assets\Opsis.ico
+; Opsis logo on every wizard page instead of the default Inno disk-and-box (images made by installer\make-wizard-images.ps1, no text inside)
+WizardImageFile=installer\wizard\large-100.bmp,installer\wizard\large-125.bmp,installer\wizard\large-150.bmp,installer\wizard\large-200.bmp
+WizardSmallImageFile=installer\wizard\small-100.bmp,installer\wizard\small-125.bmp,installer\wizard\small-150.bmp,installer\wizard\small-200.bmp
 UninstallDisplayIcon={app}\{#MyAppExeName}
 DisableWelcomePage=no
 

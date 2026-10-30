@@ -730,6 +730,7 @@
   "About.UpdateVerifyFailed": "El archivo descargado no coincide con la suma de comprobación publicada: se eliminó y no se instaló nada. Inténtelo de nuevo más tarde.",
   "About.UpdateNoDigest": "Esta versión no tiene suma de comprobación para verificar, así que no se instala nada automáticamente: se abre la página de la versión.",
   "About.DeskContainersGuideTitle": "DeskContainers — Cómo usarlos",
+  "VersionNotes.2.3.1": "~ El instalador muestra ahora el logotipo de Opsis en todas las páginas del asistente en lugar del icono predeterminado de Inno.",
   "VersionNotes.2.3.0": "+ Ajustes con el estilo de Windows 11: filas con interruptor, búsqueda en cada página y botón Restablecer por sección (página Ajustes).\n~ Con ambos plugins instalados, la ventana crece para que se vean todas las pestañas del menú lateral.",
   "VersionNotes.2.2.6": "+ Elementos del fondo: el elemento GPU ahora lista todos los adaptadores gráficos (dedicado e integrado); se añadieron temas de reloj (Classic, Minimal, Neon, Mono, Retro), color de barras y colocación centrada.\n~ El reloj analógico del fondo está centrado en su tarjeta.",
   "VersionNotes.2.2.5": "+ Monitor del sistema: se listan todos los adaptadores gráficos (dedicado e integrado) con flechas ◀ ▶ para cambiar; el widget de disco recuerda el disco mostrado.\n~ El reloj analógico ahora está centrado en su widget.\n~ DeskContainers: los iconos tienen el mismo tamaño que los del escritorio.\n~ 71 textos traducidos a los otros 12 idiomas; los mensajes de actualización y de plugins están localizados.",
