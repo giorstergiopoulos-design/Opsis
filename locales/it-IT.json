@@ -730,6 +730,7 @@
   "About.UpdateVerifyFailed": "Il file scaricato non corrisponde al checksum pubblicato: è stato eliminato e non è stato installato nulla. Riprova più tardi.",
   "About.UpdateNoDigest": "Questa versione non ha un checksum da verificare, quindi nulla viene installato automaticamente: si apre invece la pagina della versione.",
   "About.DeskContainersGuideTitle": "DeskContainers — Come si usano",
+  "VersionNotes.2.4.0": "+ Prestazioni adattive: una tabella di profili (Basso / Bilanciato / Alto) governa lo sfondo (limite di fps e scala di rendering), l’aggiornamento di widget e monitor di sistema, il dock DeskStrip e gli effetti di sfocatura; la scalatura dinamica abbassa il livello sotto carico e lo ripristina a carico ridotto; ogni parte può avere un proprio livello.",
   "VersionNotes.2.3.1": "~ Il programma di installazione mostra ora il logo Opsis in tutte le pagine della procedura guidata al posto dell'icona predefinita di Inno.",
   "VersionNotes.2.3.0": "+ Impostazioni in stile Windows 11: righe con interruttore, ricerca in ogni pagina e pulsante Ripristina per sezione (pagina Impostazioni).\n~ Con entrambi i plugin installati la finestra si ingrandisce per mostrare tutte le voci del menu laterale.",
   "VersionNotes.2.2.6": "+ Elementi dello sfondo: l'elemento GPU ora elenca tutte le schede grafiche (dedicata e integrata); aggiunti temi dell'orologio (Classic, Minimal, Neon, Mono, Retro), colore delle barre e posizione centrale.\n~ L'orologio analogico dello sfondo è centrato nella sua scheda.",
@@ -747,5 +748,17 @@
   "Settings.SearchPlaceholder": "Cerca nelle impostazioni di questa pagina…",
   "Settings.SearchNoMatch": "Nessuna impostazione di questa pagina corrisponde alla ricerca.",
   "Settings.Reset": "Ripristina",
-  "Settings.ResetConfirm": "Ripristinare i valori predefiniti delle impostazioni di questa sezione?"
+  "Settings.ResetConfirm": "Ripristinare i valori predefiniti delle impostazioni di questa sezione?",
+  "Perf.Dynamic": "Scalatura dinamica",
+  "Perf.DynamicDesc": "Riduce temporaneamente la qualità quando il PC è molto carico o la batteria è scarica e la ripristina quando la situazione si calma.",
+  "Perf.PerFeature": "Livello di prestazioni di ogni parte (Auto segue il livello rilevato):",
+  "Perf.Feature.Wallpaper": "Sfondo",
+  "Perf.Feature.Widgets": "Widget",
+  "Perf.Feature.SystemMonitor": "Monitor di sistema",
+  "Perf.Feature.DeskStrip": "Dock DeskStrip",
+  "Perf.Feature.Effects": "Effetti di sfocatura e trasparenza",
+  "Perf.Auto": "Auto",
+  "Perf.Low": "Basso",
+  "Perf.Balanced": "Bilanciato",
+  "Perf.High": "Alto"
 }

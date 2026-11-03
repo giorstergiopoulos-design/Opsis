@@ -611,6 +611,7 @@
   "Wallpaper.InfoIntro": "Shows the time, date and temperature on the wallpaper. It works over any wallpaper — your own videos, Waves, Particles, the Weather scene and even your normal static Windows wallpaper. Choose your city, the font and where the text sits on the screen.",
   "Wallpaper.InfoAllModes": "Also show it over videos, the other wallpaper modes and my normal Windows wallpaper",
   "VersionNotes.1.7.6": "= Small release: the clock, date and temperature now show over every wallpaper — including your normal static Windows wallpaper.\n+ The time, date and temperature overlay can be shown over your own videos, Waves and Particles — not only the Weather scene — with the same position, size and °C/°F settings.\n+ New \"Desktop\" mode that shows your normal Windows wallpaper (static picture or slideshow); it starts by itself when the animated wallpaper is off and the overlay is on, so the clock, date and temperature are always there.\n+ Choose the font of the overlay (common Windows fonts, plus \"More fonts…\" for any installed font).\n+ A new \"Clock, date and temperature\" section on the Wallpaper page (all modes) with the location, live weather and the overlay options in one place.\n~ The overlay shows the real time and the live temperature in the non-Weather modes (the weather/time/wind previews apply only to the Weather scene).\n~ The reset button is now simply \"Reset position\" and only resets the position.\n~ Fewer flickers at startup: the wallpaper window is revealed only when its first frame is ready (no black rectangle), windows are no longer rebuilt after a display notification that changed nothing, a rebuild keeps the old wallpaper until the new one is visible, and the clock block no longer jumps when the temperature arrives.\n~ The live weather is read without blocking (cache + background refresh with retries), so it also works reliably through the WebView2 bridge.",
+  "VersionNotes.2.4.0": "+ Adaptive performance: one profile table (Low / Balanced / High) drives the wallpaper (fps cap and render scale), widgets and system monitor refresh, the DeskStrip dock and blur effects; dynamic scaling lowers the level while the PC is under load and restores it when it calms down; each part can be set to its own level.",
   "VersionNotes.2.3.1": "~ The installer now shows the Opsis logo on every wizard page instead of the default Inno icon.",
   "VersionNotes.2.3.0": "+ Settings in the Windows 11 style: switch rows, a search box on every page and a Reset button for sections (Settings page).\n~ With both plugins installed the window now grows so every side-menu tab is visible.",
   "VersionNotes.2.2.6": "+ Wallpaper elements: the GPU element now lists every graphics adapter (dedicated and integrated); clock themes (Classic, Minimal, Neon, Mono, Retro), a bar colour and a centre placement were added.\n~ The analog clock of the wallpaper is centred in its card.",
@@ -770,5 +771,17 @@
   "Settings.SearchPlaceholder": "Search settings on this page…",
   "Settings.SearchNoMatch": "No settings on this page match your search.",
   "Settings.Reset": "Reset",
-  "Settings.ResetConfirm": "Reset the settings of this section to their defaults?"
+  "Settings.ResetConfirm": "Reset the settings of this section to their defaults?",
+  "Perf.Dynamic": "Dynamic scaling",
+  "Perf.DynamicDesc": "Lowers the quality for a while when the PC is under heavy load or the battery is low, and restores it when things calm down.",
+  "Perf.PerFeature": "Performance level of each part (Auto follows the detected level):",
+  "Perf.Feature.Wallpaper": "Wallpaper",
+  "Perf.Feature.Widgets": "Widgets",
+  "Perf.Feature.SystemMonitor": "System monitor",
+  "Perf.Feature.DeskStrip": "DeskStrip dock",
+  "Perf.Feature.Effects": "Blur and transparency effects",
+  "Perf.Auto": "Auto",
+  "Perf.Low": "Low",
+  "Perf.Balanced": "Balanced",
+  "Perf.High": "High"
 }

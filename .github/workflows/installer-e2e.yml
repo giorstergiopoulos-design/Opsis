@@ -1,0 +1,124 @@
+# Installer end-to-end test on CLEAN, FREE GitHub-hosted Windows runners (standard windows-2022 / windows-2025 only; this repository is public, so the minutes are free).
+#   build installer -> silently install the PREVIOUS published release -> upgrade to the new build -> check registry / Program Files / autostart / shortcuts
+#   -> smoke start with OPSIS_FORCE_TIER=Low and High (screenshots as artifacts) -> uninstall -> check nothing is left.
+# Not covered here (a hosted runner cannot): UAC prompt, SmartScreen, real GPUs, several monitors, per-monitor DPI.
+name: installer-e2e
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['installer.iss', 'installer/**', 'MotionDeskStudio.csproj', 'containers/**', 'tests/e2e/**', '.github/workflows/installer-e2e.yml']
+
+concurrency:
+  group: installer-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, windows-2025]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Unit tests
+        shell: pwsh
+        run: dotnet test tests/Opsis.Tests -m:1 --nologo
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { throw "ISCC.exe not found at $iscc" }
+          "ISCC=$iscc" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+
+      - name: Publish and build the installer
+        shell: pwsh
+        run: |
+          dotnet publish MotionDeskStudio.csproj -c Release -r win-x64 --self-contained false -m:1 --nologo
+          & $env:ISCC installer.iss
+          if (-not (Test-Path Output\OpsisSetup.exe)) { throw 'OpsisSetup.exe was not produced' }
+          $v = ([xml](Get-Content MotionDeskStudio.csproj)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+          "EXPECTED_VERSION=$v" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+
+      - name: Install the previous published release (silent)
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          New-Item -ItemType Directory -Force prev | Out-Null
+          $tag = gh release list --repo ${{ github.repository }} --limit 1 --json tagName --jq '.[0].tagName'
+          if (-not $tag) { Write-Host 'No previous release published yet: the upgrade step is skipped.'; "HAS_PREV=false" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV; exit 0 }
+          gh release download $tag --repo ${{ github.repository }} --pattern 'OpsisSetup.exe*' --dir prev
+          $sumFile = Get-ChildItem prev -Filter '*.sha256' | Select-Object -First 1
+          if ($sumFile) {
+            $expected = ((Get-Content $sumFile.FullName -Raw) -split '\s+')[0].ToLower()
+            $actual = (Get-FileHash prev\OpsisSetup.exe -Algorithm SHA256).Hash.ToLower()
+            if ($expected -ne $actual) { throw "SHA-256 of the previous release does not match ($expected vs $actual)" }
+          }
+          $p = Start-Process prev\OpsisSetup.exe -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/TASKS=desktopicon,autostart','/LOG=prev-install.log' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "previous release installer exited with $($p.ExitCode)" }
+          "HAS_PREV=true" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+          pwsh tests/e2e/check-install.ps1 -Mode installed
+
+      - name: Upgrade to the new build (silent)
+        shell: pwsh
+        run: |
+          $p = Start-Process Output\OpsisSetup.exe -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/TASKS=desktopicon,autostart','/LOG=upgrade.log' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "installer exited with $($p.ExitCode)" }
+          pwsh tests/e2e/check-install.ps1 -Mode installed -ExpectedVersion $env:EXPECTED_VERSION
+
+      - name: Smoke start at tier Low and High (screenshots)
+        shell: pwsh
+        run: |
+          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+          New-Item -ItemType Directory -Force shots | Out-Null
+          foreach ($tier in 'Low', 'High') {
+            $env:OPSIS_APPDATA = Join-Path $env:RUNNER_TEMP "opsis-$tier"
+            $env:OPSIS_FORCE_TIER = $tier
+            New-Item -ItemType Directory -Force $env:OPSIS_APPDATA | Out-Null
+            $p = Start-Process "${env:ProgramFiles}\Opsis\Opsis.exe" -PassThru
+            Start-Sleep -Seconds 20
+            if ($p.HasExited) { throw "Opsis exited early at tier $tier (exit code $($p.ExitCode))" }
+            $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+            $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
+            [System.Drawing.Graphics]::FromImage($bmp).CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)
+            $bmp.Save("shots\opsis-$tier.png")
+            $log = Get-ChildItem $env:OPSIS_APPDATA -Recurse -Filter '*.log' -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($log) { Select-String -Path $log.FullName -Pattern 'Hardware: tier' | ForEach-Object { Write-Host $_.Line } }
+            Stop-Process -Id $p.Id -Force
+            Get-Process OpsisContainers -ErrorAction SilentlyContinue | Stop-Process -Force
+            Start-Sleep -Seconds 3
+          }
+          Remove-Item Env:OPSIS_FORCE_TIER
+
+      - name: Uninstall (silent) and check for leftovers
+        shell: pwsh
+        run: |
+          $u = "${env:ProgramFiles}\Opsis\unins000.exe"
+          $p = Start-Process $u -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "uninstaller exited with $($p.ExitCode)" }
+          Start-Sleep -Seconds 3
+          pwsh tests/e2e/check-install.ps1 -Mode removed
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: installer-e2e-${{ matrix.os }}
+          path: |
+            shots/*.png
+            *.log
+          if-no-files-found: ignore
+          retention-days: 14

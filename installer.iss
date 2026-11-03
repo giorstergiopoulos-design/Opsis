@@ -1,5 +1,5 @@
 #define MyAppName "Opsis - Desktop Customization"
-#define MyAppVersion "2.3.1"
+#define MyAppVersion "2.4.0"
 #define MyAppPublisher "Opsis Team"
 #define MyAppExeName "Opsis.exe"
 ; Πού βρίσκεται ο installer του News Crawler (δημοσιεύεται ως GitHub release του αντίστοιχου repo).

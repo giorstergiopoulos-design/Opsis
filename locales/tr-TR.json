@@ -730,6 +730,7 @@
   "About.UpdateVerifyFailed": "İndirilen dosya yayımlanan sağlama toplamıyla eşleşmedi — silindi, hiçbir şey yüklenmedi. Lütfen daha sonra tekrar deneyin.",
   "About.UpdateNoDigest": "Bu sürümün doğrulanacak bir sağlama toplamı yok, bu nedenle hiçbir şey otomatik yüklenmez — bunun yerine sürüm sayfası açılır.",
   "About.DeskContainersGuideTitle": "DeskContainers — Nasıl kullanılır",
+  "VersionNotes.2.4.0": "+ Uyarlanabilir performans: tek bir profil tablosu (Düşük / Dengeli / Yüksek) duvar kâğıdını (fps sınırı, işleme ölçeği), widget ve sistem izleyici yenilemesini, DeskStrip dock'unu ve bulanıklık efektlerini yönetir; dinamik ölçekleme yük altında düzeyi düşürür, yük azalınca geri yükseltir; her bölüm kendi düzeyine ayarlanabilir.",
   "VersionNotes.2.3.1": "~ Yükleyici artık sihirbazın tüm sayfalarında varsayılan Inno simgesi yerine Opsis logosunu gösteriyor.",
   "VersionNotes.2.3.0": "+ Windows 11 tarzı ayarlar: anahtarlı satırlar, her sayfada arama ve bölüm başına Sıfırla düğmesi (Ayarlar sayfası).\n~ Her iki eklenti de kuruluyken pencere, yan menünün tüm sekmeleri görünsün diye büyür.",
   "VersionNotes.2.2.6": "+ Duvar kâğıdı öğeleri: GPU öğesi artık tüm grafik bağdaştırıcılarını (harici ve tümleşik) listeler; saat temaları (Classic, Minimal, Neon, Mono, Retro), çubuk rengi ve ortaya yerleştirme eklendi.\n~ Duvar kâğıdındaki analog saat kartının ortasında.",
@@ -747,5 +748,17 @@
   "Settings.SearchPlaceholder": "Bu sayfadaki ayarlarda ara…",
   "Settings.SearchNoMatch": "Bu sayfadaki hiçbir ayar aramanızla eşleşmiyor.",
   "Settings.Reset": "Sıfırla",
-  "Settings.ResetConfirm": "Bu bölümün ayarları varsayılanlara döndürülsün mü?"
+  "Settings.ResetConfirm": "Bu bölümün ayarları varsayılanlara döndürülsün mü?",
+  "Perf.Dynamic": "Dinamik ölçekleme",
+  "Perf.DynamicDesc": "Bilgisayar çok yüklüyken veya pil azken kaliteyi geçici olarak düşürür, durum yatışınca geri yükseltir.",
+  "Perf.PerFeature": "Her bölümün performans düzeyi (Otomatik algılanan düzeyi izler):",
+  "Perf.Feature.Wallpaper": "Duvar kâğıdı",
+  "Perf.Feature.Widgets": "Widgetlar",
+  "Perf.Feature.SystemMonitor": "Sistem izleyici",
+  "Perf.Feature.DeskStrip": "DeskStrip dock",
+  "Perf.Feature.Effects": "Bulanıklık ve saydamlık efektleri",
+  "Perf.Auto": "Otomatik",
+  "Perf.Low": "Düşük",
+  "Perf.Balanced": "Dengeli",
+  "Perf.High": "Yüksek"
 }

@@ -2,6 +2,17 @@
 
 Πλήρες ιστορικό εκδόσεων του Opsis (πρώην MotionDesk Studio). Στα Ελληνικά — δείτε και μέσα στην εφαρμογή (Σχετικά -> Ιστορικό εκδόσεων) ή σε άλλη γλώσσα από τα locale αρχεία.
 
+## 2.4.0
+
+- **Προσαρμοστική απόδοση ανά hardware:** ένας πίνακας προφίλ (`PerformanceProfile`: Low / Balanced / High) που ελέγχει το όριο fps και την κλίμακα απόδοσης του wallpaper, τον αριθμό επιπέδων/glow, την ανανέωση των widgets και του system monitor (×2,5 πιο αραιά στο Low), το DeskStrip και τα εφέ θολώματος (Mica). Πριν το HardwareProfileService εφαρμοζόταν μόνο σε 3 σημεία.
+- **Δυναμική κλιμάκωση** (`PerformanceGovernor`): 10 δευτερόλεπτα πίεσης (CPU > 88 %, RAM > 92 %, χαμηλή μπαταρία) → ένα επίπεδο κάτω· επαναφορά ένα επίπεδο μετά από 45 δευτερόλεπτα ηρεμίας· ενδιάμεσο φορτίο κρατά το τρέχον επίπεδο και μηδενίζει τους χρονομέτρες (υστέρηση, χωρίς flicker). Ανενεργή όταν ο χρήστης επιβάλλει επίπεδο.
+- **Ρυθμίσεις (σελίδα Wallpaper):** διακόπτης «Δυναμική κλιμάκωση» και δικό του επίπεδο ανά τμήμα (Wallpaper, Widgets, System monitor, DeskStrip, Εφέ θολώματος: Αυτόματη/Χαμηλή/Ισορροπημένη/Υψηλή). 14 γλώσσες (μηχανικές).
+- Ανίχνευση: `HardwareInfo` (RAM, φυσικοί/λογικοί πυρήνες, όλοι οι προσαρμογείς γραφικών, οθόνες και pixels, μπαταρία) γράφεται στο log· χωρίς LibreHardwareMonitor στην εκκίνηση. Hook δοκιμών/CI: `OPSIS_FORCE_TIER=Low|Balanced|High`.
+- Tests: 13 νέα (πίνακας tier, προσομοιωμένα μηχανήματα, υστέρηση του governor). Σύνολο 123.
+- **CI «installer-e2e»** (`.github/workflows/installer-e2e.yml`, `tests/e2e/check-install.ps1`): δωρεάν standard runners windows-2022/2025, timeout και concurrency· build installer → σιωπηλή εγκατάσταση προηγούμενου release (με έλεγχο SHA-256) → αναβάθμιση → έλεγχος Program Files/registry/συντομεύσεων/autostart/έκδοσης → εκκίνηση με OPSIS_FORCE_TIER=Low και High με screenshot artifacts → απεγκατάσταση χωρίς υπολείμματα. ΜΗ ΕΠΑΛΗΘΕΥΜΕΝΟ: το workflow ΔΕΝ έχει τρέξει (έλεγχος σύνταξης YAML/PowerShell μόνο)· δεν καλύπτει UAC, SmartScreen, πραγματική GPU, πολλές οθόνες/DPI.
+- Μετρήσεις idle (αυτό το μηχάνημα, `--background`, 20 s, χωρίς widgets/wallpaper): Low 0,72 % CPU / 99,6 MB· High 0,53 % / 100,1 MB — στο idle χωρίς ενεργά τμήματα δεν διαφέρουν· η διαφορά φαίνεται με wallpaper/widgets ενεργά (ΜΗ ΜΕΤΡΗΜΕΝΟ).
+- **Υπόλοιπο 2.4.1:** εφαρμογή του πίνακα σε DeskContainers (animations της μηχανής), ρολόι, όρια WebView2 ανά οθόνη (`MaxWebViews`), hardware decode/3D· μέτρηση CPU/RAM με wallpaper και widgets σε κάθε tier· έλεγχος GPU % στον governor· οι ανοιχτές εκκρεμότητες του 2.3.1 (σελίδες ρυθμίσεων, αυτόματος έλεγχος controls).
+
 ## 2.3.1
 
 - Διόρθωση: ο installer δεν είχε εικόνες οδηγού και έδειχνε το προεπιλεγμένο εικονίδιο του Inno. Τώρα έχει το λογότυπο Opsis (μεγάλη εικόνα Welcome/Finish και μικρή για τις εσωτερικές σελίδες, 100/125/150/200 % DPI, χωρίς κείμενο μέσα), παραγόμενες από `installer/make-wizard-images.ps1`. Η μεταγλώττιση του ISCC διάβασε τις εικόνες χωρίς σφάλμα· ΜΗ ΕΠΑΛΗΘΕΥΜΕΝΟ σε πραγματικό οδηγό (θα χρειαζόταν εκκίνηση του setup με UAC).

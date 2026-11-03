@@ -730,6 +730,7 @@
   "About.UpdateVerifyFailed": "Die heruntergeladene Datei stimmt nicht mit der veröffentlichten Prüfsumme überein – sie wurde gelöscht, es wurde nichts installiert. Bitte versuchen Sie es später erneut.",
   "About.UpdateNoDigest": "Für diese Version gibt es keine Prüfsumme zur Überprüfung, daher wird nichts automatisch installiert – stattdessen wird die Release-Seite geöffnet.",
   "About.DeskContainersGuideTitle": "DeskContainers – Anleitung",
+  "VersionNotes.2.4.0": "+ Adaptive Leistung: eine Profiltabelle (Niedrig / Ausgewogen / Hoch) steuert Hintergrund (FPS-Limit, Renderskalierung), Widget- und Systemmonitor-Aktualisierung, das DeskStrip-Dock und Unschärfeeffekte; die dynamische Skalierung senkt die Stufe bei hoher Last und stellt sie wieder her; jeder Bereich kann eine eigene Stufe erhalten.",
   "VersionNotes.2.3.1": "~ Das Installationsprogramm zeigt auf jeder Assistentenseite jetzt das Opsis-Logo statt des Standardsymbols von Inno.",
   "VersionNotes.2.3.0": "+ Einstellungen im Windows-11-Stil: Schalterzeilen, eine Suche auf jeder Seite und eine Zurücksetzen-Schaltfläche je Abschnitt (Seite Einstellungen).\n~ Sind beide Plugins installiert, wächst das Fenster, sodass alle Seitenmenü-Einträge sichtbar sind.",
   "VersionNotes.2.2.6": "+ Hintergrund-Elemente: Das GPU-Element listet jetzt alle Grafikadapter (dediziert und integriert); Uhrenthemen (Classic, Minimal, Neon, Mono, Retro), Balkenfarbe und mittige Platzierung wurden hinzugefügt.\n~ Die Analoguhr des Hintergrunds ist in ihrer Karte zentriert.",
@@ -747,5 +748,17 @@
   "Settings.SearchPlaceholder": "Einstellungen auf dieser Seite durchsuchen…",
   "Settings.SearchNoMatch": "Keine Einstellung auf dieser Seite passt zu Ihrer Suche.",
   "Settings.Reset": "Zurücksetzen",
-  "Settings.ResetConfirm": "Die Einstellungen dieses Abschnitts auf die Standardwerte zurücksetzen?"
+  "Settings.ResetConfirm": "Die Einstellungen dieses Abschnitts auf die Standardwerte zurücksetzen?",
+  "Perf.Dynamic": "Dynamische Skalierung",
+  "Perf.DynamicDesc": "Senkt die Qualität vorübergehend, wenn der PC stark ausgelastet oder der Akku schwach ist, und stellt sie wieder her, sobald sich die Lage beruhigt.",
+  "Perf.PerFeature": "Leistungsstufe der einzelnen Bereiche (Automatisch folgt der erkannten Stufe):",
+  "Perf.Feature.Wallpaper": "Hintergrund",
+  "Perf.Feature.Widgets": "Widgets",
+  "Perf.Feature.SystemMonitor": "Systemmonitor",
+  "Perf.Feature.DeskStrip": "DeskStrip-Dock",
+  "Perf.Feature.Effects": "Unschärfe- und Transparenzeffekte",
+  "Perf.Auto": "Automatisch",
+  "Perf.Low": "Niedrig",
+  "Perf.Balanced": "Ausgewogen",
+  "Perf.High": "Hoch"
 }

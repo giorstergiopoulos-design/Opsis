@@ -730,6 +730,7 @@
   "About.UpdateVerifyFailed": "Le fichier téléchargé ne correspond pas à la somme de contrôle publiée — il a été supprimé, rien n'a été installé. Réessayez plus tard.",
   "About.UpdateNoDigest": "Cette version n'a pas de somme de contrôle à vérifier ; rien n'est donc installé automatiquement — la page de la version s'ouvre à la place.",
   "About.DeskContainersGuideTitle": "DeskContainers — Mode d'emploi",
+  "VersionNotes.2.4.0": "+ Performance adaptative : une table de profils (Bas / Équilibré / Élevé) pilote le fond d’écran (limite de fps, échelle de rendu), l’actualisation des widgets et du moniteur système, le dock DeskStrip et les effets de flou ; la mise à l’échelle dynamique baisse le niveau sous forte charge et le rétablit au retour au calme ; chaque partie peut avoir son propre niveau.",
   "VersionNotes.2.3.1": "~ Le programme d'installation affiche désormais le logo Opsis sur chaque page de l'assistant au lieu de l'icône Inno par défaut.",
   "VersionNotes.2.3.0": "+ Paramètres au style Windows 11 : lignes à interrupteur, recherche sur chaque page et bouton Réinitialiser par section (page Paramètres).\n~ Avec les deux plugins installés, la fenêtre s'agrandit pour que tous les onglets du menu latéral soient visibles.",
   "VersionNotes.2.2.6": "+ Éléments du fond d'écran : l'élément GPU liste désormais tous les adaptateurs graphiques (dédié et intégré) ; ajout de thèmes d'horloge (Classic, Minimal, Neon, Mono, Retro), d'une couleur de barres et d'un placement au centre.\n~ L'horloge analogique du fond d'écran est centrée dans sa carte.",
@@ -747,5 +748,17 @@
   "Settings.SearchPlaceholder": "Rechercher dans les paramètres de cette page…",
   "Settings.SearchNoMatch": "Aucun paramètre de cette page ne correspond à votre recherche.",
   "Settings.Reset": "Réinitialiser",
-  "Settings.ResetConfirm": "Rétablir les paramètres par défaut de cette section ?"
+  "Settings.ResetConfirm": "Rétablir les paramètres par défaut de cette section ?",
+  "Perf.Dynamic": "Mise à l’échelle dynamique",
+  "Perf.DynamicDesc": "Réduit temporairement la qualité quand le PC est très sollicité ou la batterie faible, puis la rétablit quand la charge retombe.",
+  "Perf.PerFeature": "Niveau de performance de chaque partie (Auto suit le niveau détecté) :",
+  "Perf.Feature.Wallpaper": "Fond d’écran",
+  "Perf.Feature.Widgets": "Widgets",
+  "Perf.Feature.SystemMonitor": "Moniteur système",
+  "Perf.Feature.DeskStrip": "Dock DeskStrip",
+  "Perf.Feature.Effects": "Effets de flou et de transparence",
+  "Perf.Auto": "Auto",
+  "Perf.Low": "Bas",
+  "Perf.Balanced": "Équilibré",
+  "Perf.High": "Élevé"
 }

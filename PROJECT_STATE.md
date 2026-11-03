@@ -553,3 +553,10 @@ User reported, in rapid succession, that DeskStrip (the floating app-pin dock, `
 Affected files: `src/Widgets/DeskStripWindow.cs` (rewrite), `src/Services/TaskbarPinsReader.cs` (new), `src/UI/MainWindow.cs` (`ShowLicenseDialog`/`PopulateLicenseRichText`), `src/Services/SystemControlService.cs` (`GetPowerPlans`), `src/Program.cs` (encoding provider registration).
 
 Status: Version bumped 1.9.11 → 1.9.12, `VersionNotes.1.9.12` added (EN/EL). Build clean, 0 errors. Installer rebuilt and installed over the user's real install. DeskStrip (all 4 asks) and the Quick Settings encoding fix are LIVE-VERIFIED; the License dialog fix is code-reviewed but not live-screenshotted this round.
+
+## 2.4.0 (2026-11-03): adaptive performance + installer-e2e CI
+- `src/Services/PerformanceProfile.cs`: the ONE table per tier (`PerformanceProfile.For`), per-feature resolution (`ForFeature`, override in `AppSettings.PerfFeatureTier`), `PerformanceGovernor` (dynamic scaling, hysteresis 10 s down / 45 s up; pure `Step` is unit-tested). `HardwareInfo` = cheap detection log. `OPSIS_FORCE_TIER` forces a tier (CI).
+- Applied to: wallpaper page (`cfg.perf`, `opsisSetPerf` live push), widgets + system monitor timers (`MonitorTimer`), DeskStrip, Mica/blur. NOT yet: DeskContainers engine animations, clock, WebView2 count per monitor, hardware decode/3D (2.4.1).
+- Idle measurement (this PC, `Opsis.exe --background`, 20 s window, isolated AppData): Low 0.72 % CPU / 99.6 MB; High 0.53 % / 100.1 MB. Nothing active, so tiers do not differ at idle; not measured with wallpaper/widgets.
+- CI: `.github/workflows/installer-e2e.yml` (+ `tests/e2e/check-install.ps1`) has NOT run yet; verify on the first push (needs the public repo for free minutes).
+- Tests: 123 pass (`dotnet test tests/Opsis.Tests -m:1 -p:UseSharedCompilation=false -nodeReuse:false`).
