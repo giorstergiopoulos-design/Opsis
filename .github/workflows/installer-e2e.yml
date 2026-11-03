@@ -107,9 +107,18 @@ jobs:
 
       - name: Uninstall (silent) and check for leftovers
         shell: pwsh
+        timeout-minutes: 8
         run: |
+          # nothing of Opsis may still run (the smoke step stopped it); a running copy would block the uninstaller
+          Get-Process Opsis, OpsisContainers -ErrorAction SilentlyContinue | Stop-Process -Force
           $u = "${env:ProgramFiles}\Opsis - Desktop Customization\unins000.exe"
-          $p = Start-Process $u -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
+          $p = Start-Process $u -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/LOG=uninstall.log' -PassThru
+          if (-not $p.WaitForExit(240000)) {
+            Write-Host 'The uninstaller did not finish within 4 minutes; processes:'
+            Get-Process | Where-Object { $_.Name -match 'unins|Opsis|taskkill|powershell' } | Format-Table Id, Name, StartTime -AutoSize | Out-String | Write-Host
+            if (Test-Path uninstall.log) { Get-Content uninstall.log -Tail 40 | Write-Host }
+            throw 'uninstaller timed out'
+          }
           if ($p.ExitCode -ne 0) { throw "uninstaller exited with $($p.ExitCode)" }
           Start-Sleep -Seconds 3
           pwsh tests/e2e/check-install.ps1 -Mode removed
