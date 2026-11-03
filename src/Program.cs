@@ -113,6 +113,7 @@ namespace MotionDesk
             Services.RotatingLogger.Write($"Hardware: tier={Services.HardwareProfileService.CurrentTier}, cores={Environment.ProcessorCount}");
             try { Services.RotatingLogger.Write("Hardware detail: " + Services.HardwareInfo.Detect()); } catch (Exception) { }
             Services.PerformanceGovernor.Start();
+            Services.PluginUiStyle.Publish();
             Services.PerformanceGovernor.EffectiveChanged += t =>
             {
                 Services.RotatingLogger.Write("Performance: effective tier is now " + t);

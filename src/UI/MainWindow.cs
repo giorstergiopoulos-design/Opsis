@@ -4346,6 +4346,18 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                 BuildDiscordRows(stack);
                 stack.Controls.Add(Checkbox(LocalizationManager.T("Settings.PluginsEnabled"), AppSettings.Load().PluginsEnabled,
                     v => { var a = AppSettings.Load(); a.PluginsEnabled = v; a.Save(); }, restart: true));
+                {
+                    // default look of the plugin pages / standalone apps: Opsis, Opsis Appearance or Opsis News Crawler
+                    var styleRow = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 4, 0, 8) };
+                    styleRow.Controls.Add(new Label { Text = LocalizationManager.T("Settings.PluginUiStyle"), AutoSize = false, Width = 300, Height = 28, TextAlign = ContentAlignment.MiddleLeft, Font = UiTheme.FontBody, ForeColor = UiTheme.TextSecondary });
+                    var styleCombo = new FlatComboBox { Width = 200 };
+                    string[] names = { LocalizationManager.T("Settings.PluginUiOpsis"), LocalizationManager.T("Settings.PluginUiAppearance"), LocalizationManager.T("Settings.PluginUiCrawler") };
+                    int cur = Math.Max(0, Array.IndexOf(PluginUiStyle.Styles, PluginUiStyle.Current));
+                    styleCombo.SetItems(names, names[cur]);
+                    styleCombo.SelectedIndexChanged += (_, _) => PluginUiStyle.Set(PluginUiStyle.Styles[Math.Clamp(styleCombo.SelectedIndex, 0, 2)]);
+                    styleRow.Controls.Add(styleCombo);
+                    stack.Controls.Add(styleRow);
+                }
 
                 // Ζητήθηκε ρητά "ρύθμιση για διαφάνεια παραθύρων των Windows και γρήγορη εκκίνηση
                 // στον πίνακα ελέγχου" — πραγματικές ρυθμίσεις των ίδιων των Windows (μητρώο),
