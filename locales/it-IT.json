@@ -730,6 +730,7 @@
   "About.UpdateVerifyFailed": "Il file scaricato non corrisponde al checksum pubblicato: è stato eliminato e non è stato installato nulla. Riprova più tardi.",
   "About.UpdateNoDigest": "Questa versione non ha un checksum da verificare, quindi nulla viene installato automaticamente: si apre invece la pagina della versione.",
   "About.DeskContainersGuideTitle": "DeskContainers — Come si usano",
+  "VersionNotes.2.4.2": "~ Caselle e interruttori non vengono più tagliati ai bordi (angolo, anello di focus); la riga «Monitor di sistema» è stata rimossa dalle impostazioni di prestazioni.",
   "VersionNotes.2.4.1": "~ La libreria video è sempre visibile nella pagina Sfondo; la scheda della playlist segue le caselle attivo/inattivo.\n~ Le pagine mantengono la posizione di scorrimento e non tornano più in cima.\n~ La gestione audio compare solo se è installato Opsis Media Suite (Waveframe).\n~ Livello di prestazioni basso: i contenitori saltano le animazioni di avvio decorative.",
   "VersionNotes.2.4.0": "+ Prestazioni adattive: una tabella di profili (Basso / Bilanciato / Alto) governa lo sfondo (limite di fps e scala di rendering), l’aggiornamento di widget e monitor di sistema, il dock DeskStrip e gli effetti di sfocatura; la scalatura dinamica abbassa il livello sotto carico e lo ripristina a carico ridotto; ogni parte può avere un proprio livello.",
   "VersionNotes.2.3.1": "~ Il programma di installazione mostra ora il logo Opsis in tutte le pagine della procedura guidata al posto dell'icona predefinita di Inno.",

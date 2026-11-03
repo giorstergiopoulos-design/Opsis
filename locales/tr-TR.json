@@ -730,6 +730,7 @@
   "About.UpdateVerifyFailed": "İndirilen dosya yayımlanan sağlama toplamıyla eşleşmedi — silindi, hiçbir şey yüklenmedi. Lütfen daha sonra tekrar deneyin.",
   "About.UpdateNoDigest": "Bu sürümün doğrulanacak bir sağlama toplamı yok, bu nedenle hiçbir şey otomatik yüklenmez — bunun yerine sürüm sayfası açılır.",
   "About.DeskContainersGuideTitle": "DeskContainers — Nasıl kullanılır",
+  "VersionNotes.2.4.2": "~ Onay kutuları ve anahtarlar artık kenarlarda kesilmiyor (köşe, odak halkası); performans ayarlarından «Sistem izleyici» satırı kaldırıldı.",
   "VersionNotes.2.4.1": "~ Video kitaplığı Duvar kâğıdı sayfasında her zaman görünür; oynatma listesi kartı etkin/pasif işaretleri izler.\n~ Sayfalar kaydırma konumunu korur ve artık en üste atlamaz.\n~ Ses yönetimi yalnızca Opsis Media Suite (Waveframe) kuruluysa görünür.\n~ Düşük performans düzeyi: kapsayıcılar süs amaçlı başlatma animasyonlarını atlar.",
   "VersionNotes.2.4.0": "+ Uyarlanabilir performans: tek bir profil tablosu (Düşük / Dengeli / Yüksek) duvar kâğıdını (fps sınırı, işleme ölçeği), widget ve sistem izleyici yenilemesini, DeskStrip dock'unu ve bulanıklık efektlerini yönetir; dinamik ölçekleme yük altında düzeyi düşürür, yük azalınca geri yükseltir; her bölüm kendi düzeyine ayarlanabilir.",
   "VersionNotes.2.3.1": "~ Yükleyici artık sihirbazın tüm sayfalarında varsayılan Inno simgesi yerine Opsis logosunu gösteriyor.",

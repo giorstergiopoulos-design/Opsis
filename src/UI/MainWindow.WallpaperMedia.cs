@@ -226,7 +226,7 @@ namespace MotionDesk.UI
                     }
                     case "checkbox":
                     {
-                        var cb = new FlatCheckBox { Text = "", AutoSize = false, Width = 24, Height = 24, Checked = current.Equals("true", StringComparison.OrdinalIgnoreCase), BackColor = UiTheme.Background, Margin = new Padding(0, 4, 0, 0) };
+                        var cb = new FlatCheckBox { Text = "", AutoSize = false, Width = 30, Height = 30, Checked = current.Equals("true", StringComparison.OrdinalIgnoreCase), BackColor = UiTheme.Background, Margin = new Padding(0, 4, 0, 0) };
                         cb.CheckedChanged += (_, _) => Save(prop, cb.Checked ? "true" : "false");
                         row.Controls.Add(cb);
                         break;

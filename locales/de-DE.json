@@ -730,6 +730,7 @@
   "About.UpdateVerifyFailed": "Die heruntergeladene Datei stimmt nicht mit der veröffentlichten Prüfsumme überein – sie wurde gelöscht, es wurde nichts installiert. Bitte versuchen Sie es später erneut.",
   "About.UpdateNoDigest": "Für diese Version gibt es keine Prüfsumme zur Überprüfung, daher wird nichts automatisch installiert – stattdessen wird die Release-Seite geöffnet.",
   "About.DeskContainersGuideTitle": "DeskContainers – Anleitung",
+  "VersionNotes.2.4.2": "~ Kontrollkästchen und Schalter werden an den Rändern nicht mehr abgeschnitten (Ecke, Fokusring); die Zeile „Systemmonitor“ wurde aus den Leistungseinstellungen entfernt.",
   "VersionNotes.2.4.1": "~ Die Videobibliothek ist auf der Seite Hintergrund immer sichtbar; die Playlist-Karte folgt den aktiv/inaktiv-Häkchen.\n~ Seiten behalten ihre Scrollposition und springen nicht mehr nach oben.\n~ Audioverwaltung erscheint nur, wenn Opsis Media Suite (Waveframe) installiert ist.\n~ Niedrige Leistungsstufe: Container überspringen dekorative Startanimationen.",
   "VersionNotes.2.4.0": "+ Adaptive Leistung: eine Profiltabelle (Niedrig / Ausgewogen / Hoch) steuert Hintergrund (FPS-Limit, Renderskalierung), Widget- und Systemmonitor-Aktualisierung, das DeskStrip-Dock und Unschärfeeffekte; die dynamische Skalierung senkt die Stufe bei hoher Last und stellt sie wieder her; jeder Bereich kann eine eigene Stufe erhalten.",
   "VersionNotes.2.3.1": "~ Das Installationsprogramm zeigt auf jeder Assistentenseite jetzt das Opsis-Logo statt des Standardsymbols von Inno.",
