@@ -20,7 +20,7 @@ namespace MotionDesk.UI
             {
                 LocalizationManager.T("Perf.Auto"), LocalizationManager.T("Perf.Low"), LocalizationManager.T("Perf.Balanced"), LocalizationManager.T("Perf.High")
             };
-            foreach (var feature in new[] { PerfFeature.Wallpaper, PerfFeature.Widgets, PerfFeature.SystemMonitor, PerfFeature.DeskStrip, PerfFeature.Effects })
+            foreach (var feature in new[] { PerfFeature.Wallpaper, PerfFeature.Widgets, PerfFeature.DeskStrip, PerfFeature.Effects })
             {
                 var f = feature;
                 var row = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 0, 0, 6) };

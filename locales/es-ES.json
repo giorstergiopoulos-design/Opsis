@@ -730,6 +730,7 @@
   "About.UpdateVerifyFailed": "El archivo descargado no coincide con la suma de comprobación publicada: se eliminó y no se instaló nada. Inténtelo de nuevo más tarde.",
   "About.UpdateNoDigest": "Esta versión no tiene suma de comprobación para verificar, así que no se instala nada automáticamente: se abre la página de la versión.",
   "About.DeskContainersGuideTitle": "DeskContainers — Cómo usarlos",
+  "VersionNotes.2.4.2": "~ Las casillas y los interruptores ya no se cortan en los bordes (esquina, anillo de foco); se quitó la fila «Monitor del sistema» de los ajustes de rendimiento.",
   "VersionNotes.2.4.1": "~ La biblioteca de vídeo siempre es visible en la página Fondo; la tarjeta de lista sigue las casillas activo/inactivo.\n~ Las páginas conservan su posición de desplazamiento y ya no saltan arriba.\n~ La gestión de audio aparece solo si Opsis Media Suite (Waveframe) está instalado.\n~ Nivel de rendimiento bajo: los contenedores omiten las animaciones de inicio decorativas.",
   "VersionNotes.2.4.0": "+ Rendimiento adaptativo: una tabla de perfiles (Bajo / Equilibrado / Alto) controla el fondo (límite de fps y escala de render), la actualización de widgets y monitor del sistema, el dock DeskStrip y los efectos de desenfoque; el escalado dinámico baja el nivel bajo carga y lo restablece al calmarse; cada parte puede tener su propio nivel.",
   "VersionNotes.2.3.1": "~ El instalador muestra ahora el logotipo de Opsis en todas las páginas del asistente en lugar del icono predeterminado de Inno.",
