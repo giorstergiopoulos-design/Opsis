@@ -29,3 +29,15 @@ public sealed class MediaSuiteDetectorTests : IDisposable
         Assert.True(MediaSuiteDetector.Decide(new[] { empty }, Array.Empty<string>()));
     }
 }
+
+public sealed class PluginUiStyleTests
+{
+    [Theory]
+    [InlineData("Appearance", "Appearance")]
+    [InlineData("crawler", "Crawler")]
+    [InlineData("opsis", "Opsis")]
+    [InlineData("", "Opsis")]
+    [InlineData(null, "Opsis")]
+    [InlineData("nonsense", "Opsis")]
+    public void NormalizeFallsBackToOpsis(string? input, string expected) => Assert.Equal(expected, MotionDesk.Services.PluginUiStyle.Normalize(input));
+}

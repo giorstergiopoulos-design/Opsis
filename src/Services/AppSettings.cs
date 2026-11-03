@@ -36,6 +36,7 @@ namespace MotionDesk.Services
         public string? HardwareProfileOverride { get; set; }
         // 2.4.0: dynamic scaling (lowers the tier while the machine is under pressure, with hysteresis) and optional per-feature tier overrides (PerfFeature -> Low/Balanced/High).
         public bool PerfDynamic { get; set; } = true;
+        public string PluginUiStyle { get; set; } = "Opsis";     // Opsis | Appearance | Crawler: the default look of plugin pages and standalone family apps (see PluginUiStyle.cs)
         public System.Collections.Generic.Dictionary<string, string>? PerfFeatureTier { get; set; }
         public bool ShowSystemMonitor { get; set; }
         public bool RestoreLastSession { get; set; } = true;

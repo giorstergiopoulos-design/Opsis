@@ -730,7 +730,7 @@
   "About.UpdateVerifyFailed": "下载的文件与发布的校验和不匹配——已删除，未安装任何内容。请稍后重试。",
   "About.UpdateNoDigest": "此版本没有可供验证的校验和，因此不会自动安装——改为打开发布页面。",
   "About.DeskContainersGuideTitle": "DeskContainers — 使用方法",
-  "VersionNotes.2.4.2": "~ 复选框和开关不再在边缘被裁切（角落、焦点环）；已从性能设置中移除“系统监视器”一行。",
+  "VersionNotes.2.4.2": "~ 复选框和开关不再在边缘被裁切（角落、焦点环）；已从性能设置中移除“系统监视器”一行。\n+ 设置：插件和家族应用的默认外观（Opsis / Appearance / Crawler），通过 plugin-ui.json 发布给它们。",
   "VersionNotes.2.4.1": "~ 壁纸页面始终显示视频库；播放列表卡片会跟随启用/停用勾选。\n~ 页面保持滚动位置，不再跳回顶部。\n~ 仅当安装了 Opsis Media Suite (Waveframe) 时才显示音频管理。\n~ 低性能级别：容器跳过装饰性启动动画。",
   "VersionNotes.2.4.0": "+ 自适应性能：一张配置表（低 / 均衡 / 高）统一控制壁纸（帧率上限与渲染比例）、小组件和系统监视器的刷新、DeskStrip 程序坞及模糊效果；动态缩放在负载高时降低级别，平静后恢复；每个部分都可单独设置级别。",
   "VersionNotes.2.3.1": "~ 安装程序的所有向导页面现在显示 Opsis 徽标，而不是默认的 Inno 图标。",
@@ -762,5 +762,9 @@
   "Perf.Auto": "自动",
   "Perf.Low": "低",
   "Perf.Balanced": "均衡",
-  "Perf.High": "高"
+  "Perf.High": "高",
+  "Settings.PluginUiStyle": "插件和家族应用的默认外观",
+  "Settings.PluginUiOpsis": "Opsis",
+  "Settings.PluginUiAppearance": "Opsis Appearance",
+  "Settings.PluginUiCrawler": "Opsis News Crawler"
 }
