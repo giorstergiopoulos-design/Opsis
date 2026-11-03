@@ -21,3 +21,14 @@ public sealed class PageSearchTests
     [Fact]
     public void EveryWordMustOccur() => Assert.False(PageSearch.Matches("Grid size", "grid colour"));
 }
+
+public sealed class PlaylistSuffixTests
+{
+    [Fact]
+    public void ShowsActiveOverTotalOnlyWhenSomeVideosAreOff()
+    {
+        Assert.Equal("3 video(s)", MotionDesk.UI.MainWindow.ActivePlaylistSuffix(3, 3, "3 video(s)"));
+        Assert.Equal("1 video(s)  [1/3]", MotionDesk.UI.MainWindow.ActivePlaylistSuffix(1, 3, "1 video(s)"));
+        Assert.Equal("0 video(s)  [0/2]", MotionDesk.UI.MainWindow.ActivePlaylistSuffix(0, 2, "0 video(s)"));
+    }
+}

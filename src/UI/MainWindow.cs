@@ -943,11 +943,18 @@ namespace MotionDesk.UI
             // ΔΙΑΦΟΡΕΤΙΚΟ thread, προκαλώντας διαλείπον NullReferenceException σε πεδία που
             // μοιράζονταν μεταξύ διαδοχικών επισκέψεων στην ίδια σελίδα. Ρητό Dispose εδώ κάνει το
             // cleanup άμεσο και στο σωστό thread.
+            // a page that is rebuilt while it is shown (mode change, add/remove of items, language...) keeps the scroll position instead of jumping to the top
+            int keepY = -1;
+            foreach (Control old in _content.Controls) if (old is ScrollableControl sc) keepY = -sc.AutoScrollPosition.Y;
+            bool samePage = _lastPageKey == _currentPageKey && keepY > 0;
+            _lastPageKey = _currentPageKey;
             foreach (Control old in _content.Controls) old.Dispose();
             _content.Controls.Clear();
             control.Dock = DockStyle.Fill;
             _content.Controls.Add(control);
             _content.ResumeLayout();
+            if (samePage && control is ScrollableControl target)
+                BeginInvoke(new Action(() => { if (!target.IsDisposed) target.AutoScrollPosition = new Point(0, keepY); }));
         }
 
         private void ShowAndActivate()
@@ -1290,8 +1297,8 @@ namespace MotionDesk.UI
             modeCombo.SelectedIndexChanged += (_, _) => { WallpaperHostEngine.Instance.SetMode(modeCombo.SelectedItem!); ShowWallpaper(); };
             panel.Controls.Add(modeCombo);
 
-            if (settings.Mode == "Video")
-            {
+            // The video library (add files / folder, the list with the active/inactive tick of every video) is ALWAYS visible, whatever the mode:
+            // the user prepares the playlist before switching to Video. Only the playback options below belong to the Video mode.
             AddSection(panel, LocalizationManager.T("Wallpaper.SectionVideoLibrary"));
             // Ξαναχτίζει ΟΛΟΚΛΗΡΗ τη σελίδα μετά από προσθήκη — ζητήθηκε ρητά "τόσο με την
             // προσθήκη video όσο και με την προσθήκη φακέλου η εφαρμογή να ενημερώνει τη λίστα
@@ -1341,7 +1348,7 @@ namespace MotionDesk.UI
                     if (enabledCheck.Checked)
                         using (var stripBrush = new SolidBrush(UiTheme.AccentCyan)) pe.Graphics.FillRectangle(stripBrush, 0, 0, 3, row.Height);
                 };
-                enabledCheck.CheckedChanged += (_, _) => { WallpaperHostEngine.Instance.SetVideoEnabled(videoPath, enabledCheck.Checked); row.Invalidate(); };
+                enabledCheck.CheckedChanged += (_, _) => { WallpaperHostEngine.Instance.SetVideoEnabled(videoPath, enabledCheck.Checked); row.Invalidate(); RefreshStatus(); };
                 var nameLabel = new Label
                 {
                     Text = Path.GetFileName(videoPath) + (exists ? "" : LocalizationManager.T("Wallpaper.MissingSuffix")),
@@ -1386,6 +1393,8 @@ namespace MotionDesk.UI
                 videoListPanel.Controls.Add(new Label { Text = LocalizationManager.T("Wallpaper.NoVideosYet"), AutoSize = true, Location = new Point(6, 6), ForeColor = UiTheme.TextMuted, Font = UiTheme.FontBody });
             panel.Controls.Add(videoListPanel);
 
+            if (settings.Mode == "Video")
+            {
             var shuffle = new FlatToggle { RowWidth = 700, Text = LocalizationManager.T("Wallpaper.Shuffle"), Checked = settings.Shuffle, BackColor = UiTheme.Background, Margin = new Padding(0, 4, 0, 10) };
             shuffle.CheckedChanged += (_, _) => WallpaperHostEngine.Instance.SetShuffle(shuffle.Checked);
             panel.Controls.Add(shuffle);
@@ -1855,10 +1864,14 @@ namespace MotionDesk.UI
 
         private static string DescribePlaylist(WallpaperSettings s)
         {
-            var playable = s.VideoPaths.Where(File.Exists).ToList();
-            if (playable.Count == 0) return LocalizationManager.T("Wallpaper.PlaylistEmpty");
-            return string.Format(LocalizationManager.T("Wallpaper.PlaylistFormat"), playable.Count, s.Shuffle ? LocalizationManager.T("Wallpaper.ShuffleSuffix") : "", Path.GetFileName(s.CurrentPlaylistFile() ?? ""));
+            var all = s.VideoPaths.Where(File.Exists).ToList();
+            if (all.Count == 0) return LocalizationManager.T("Wallpaper.PlaylistEmpty");
+            // only the videos whose tick is on take part in the playlist: the count is that of the ACTIVE ones, with "active/total" when some are off
+            var playable = all.Where(p => !s.DisabledVideoPaths.Contains(p)).ToList();
+            return ActivePlaylistSuffix(playable.Count, all.Count, string.Format(LocalizationManager.T("Wallpaper.PlaylistFormat"), playable.Count, s.Shuffle ? LocalizationManager.T("Wallpaper.ShuffleSuffix") : "", Path.GetFileName(s.CurrentPlaylistFile() ?? "")));
         }
+
+        internal static string ActivePlaylistSuffix(int active, int total, string text) => active == total ? text : text + $"  [{active}/{total}]";
 
         private static Panel BuildWaveSlider(string label, int value, int min, int max, Action<int> onChange)
         {
@@ -3558,9 +3571,19 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             return card;
         }
 
+        // A scrolling page that does NOT jump when a control inside it gets the focus or changes size (the "auto scroll-up" bug: WinForms scrolls a focused child
+        // into view, which on a tall page throws the user back to the top while they are working further down).
+        private sealed class NoJumpFlowPanel : FlowLayoutPanel
+        {
+            protected override Point ScrollToControl(Control activeControl) => DisplayRectangle.Location;
+        }
+
+        private string? _lastPageKey;
+        private int _lastScrollY;
+
         private FlowLayoutPanel CreatePagePanel()
         {
-            var panel = new FlowLayoutPanel
+            var panel = new NoJumpFlowPanel
             {
                 AutoScroll = true,
                 FlowDirection = FlowDirection.TopDown,
@@ -4265,7 +4288,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                 BackColor = UiTheme.Background;
                 AutoScroll = true;
                 GlassBlur.ApplyScrollbarTheme(this, UiTheme.Background.GetBrightness() < 0.5f);
-                var stack = new FlowLayoutPanel
+                var stack = new NoJumpFlowPanel
                 {
                     Dock = DockStyle.Fill,
                     FlowDirection = FlowDirection.TopDown,
