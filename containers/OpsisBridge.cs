@@ -124,6 +124,7 @@ namespace OpsisContainers
                     case "profile": ProfileManager.SwitchToProfile(arg); ProfileManager.SetManualBaseProfile(arg); TrayManager.Instance?.UpdateProfilesMenu(); return;
                     case "create-profile": if (ProfileManager.CreateProfile(arg)) TrayManager.Instance?.UpdateProfilesMenu(); return;
                     case "show-hidden": TrayManager.ShowHiddenContainerByTitle(arg); return;
+                    case "perf": OpsisPerf.Set(arg); return;
                     case "delete-container": ContainerManager.DeleteContainerById(arg); PublishState(); return;
                 }
             }

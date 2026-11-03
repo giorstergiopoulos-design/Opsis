@@ -43,6 +43,7 @@ namespace OpsisContainers
         // <param name="effect">The effect to apply</param>
         public static void ExecuteLaunchEffect(StackPanel iconStackPanel, LaunchEffect effect)
         {
+            if (OpsisPerf.Reduced) return;          // Low performance tier: no decorative launch animation
             if (iconStackPanel == null)
             {
                 LogManager.Log(LogManager.LogLevel.Warn, LogManager.LogCategory.General,

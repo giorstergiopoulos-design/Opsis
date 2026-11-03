@@ -72,6 +72,7 @@ namespace MotionDesk.Services
             {
                 var psi = new ProcessStartInfo(ExePath) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(ExePath)! };
                 psi.Environment["OPSIS_PARENT_PID"] = Environment.ProcessId.ToString();
+                psi.Environment["OPSIS_PERF_TIER"] = PerformanceProfile.ForFeature(PerfFeature.DeskContainers).Tier.ToString();
                 psi.Environment["OPSIS_LANG"] = LocalizationManager.CurrentLanguage;      // the engine shows its texts in the Opsis language
                 // the engine reads its menu texts (keys "DCM.*") from the Opsis locale files: current language + English fallback
                 string loc = Path.Combine(AppContext.BaseDirectory, "locales");

@@ -730,6 +730,7 @@
   "About.UpdateVerifyFailed": "O ficheiro transferido não corresponde à soma de verificação publicada — foi eliminado e nada foi instalado. Tente novamente mais tarde.",
   "About.UpdateNoDigest": "Esta versão não tem soma de verificação para validar, por isso nada é instalado automaticamente — abre-se a página da versão.",
   "About.DeskContainersGuideTitle": "DeskContainers — Como utilizar",
+  "VersionNotes.2.4.1": "~ A biblioteca de vídeo está sempre visível na página Fundo; o cartão da lista segue as caixas ativo/inativo.\n~ As páginas mantêm a posição de deslocamento e já não saltam para o topo.\n~ A gestão de áudio só aparece se o Opsis Media Suite (Waveframe) estiver instalado.\n~ Nível de desempenho baixo: os contentores ignoram as animações de arranque decorativas.",
   "VersionNotes.2.4.0": "+ Desempenho adaptativo: uma tabela de perfis (Baixo / Equilibrado / Alto) controla o fundo (limite de fps e escala de renderização), a atualização de widgets e do monitor do sistema, o dock DeskStrip e os efeitos de desfoque; a escala dinâmica reduz o nível sob carga e restaura-o quando acalma; cada parte pode ter o seu próprio nível.",
   "VersionNotes.2.3.1": "~ O instalador mostra agora o logótipo do Opsis em todas as páginas do assistente em vez do ícone predefinido do Inno.",
   "VersionNotes.2.3.0": "+ Definições ao estilo do Windows 11: linhas com interruptor, pesquisa em cada página e botão Repor por secção (página Definições).\n~ Com ambos os plugins instalados, a janela cresce para que todos os separadores do menu lateral fiquem visíveis.",

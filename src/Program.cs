@@ -117,6 +117,7 @@ namespace MotionDesk
             {
                 Services.RotatingLogger.Write("Performance: effective tier is now " + t);
                 try { MotionDesk.Widgets.WallpaperHostEngine.Instance.PushPerf(); } catch (Exception) { }
+                try { Services.ContainersBridge.Command("perf:" + Services.PerformanceProfile.ForFeature(Services.PerfFeature.DeskContainers).Tier); } catch (Exception) { }
             };
 
             // Το .NET 5+ δεν περιλαμβάνει πλέον τις legacy κωδικοσελίδες (π.χ. 737 για ελληνικά
