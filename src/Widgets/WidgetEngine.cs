@@ -225,6 +225,27 @@ namespace MotionDesk.Widgets
 
         private WebView2? _webView;
         private System.Windows.Forms.Timer? _nativeMonitorTimer;
+        private int _timerBaseMs;
+        private PerfFeature _timerFeature = PerfFeature.Widgets;
+        private bool _perfHooked;
+
+        // The refresh timer of a widget follows the performance profile: slower on weaker tiers and while the machine is under pressure (dynamic scaling).
+        private System.Windows.Forms.Timer MonitorTimer(int baseMs, PerfFeature feature = PerfFeature.Widgets)
+        {
+            _timerBaseMs = baseMs; _timerFeature = feature;
+            if (!_perfHooked) { _perfHooked = true; PerformanceGovernor.EffectiveChanged += OnPerfChanged; }
+            return new System.Windows.Forms.Timer { Interval = PerformanceProfile.Interval(feature, baseMs) };
+        }
+
+        private void OnPerfChanged(HardwareTier _)
+        {
+            try
+            {
+                if (IsDisposed || !IsHandleCreated) return;
+                BeginInvoke(new Action(() => { if (_nativeMonitorTimer != null && _timerBaseMs > 0) _nativeMonitorTimer.Interval = PerformanceProfile.Interval(_timerFeature, _timerBaseMs); }));
+            }
+            catch (Exception) { }
+        }
         public string WidgetId { get; }
         public bool IsLocked { get; set; } = false;
         public string Variant { get; set; } = "Digital";
@@ -313,6 +334,7 @@ namespace MotionDesk.Widgets
         {
             if (disposing)
             {
+                if (_perfHooked) { PerformanceGovernor.EffectiveChanged -= OnPerfChanged; _perfHooked = false; }
                 _nativeMonitorTimer?.Stop();
                 _nativeMonitorTimer?.Dispose();
                 _nativeMonitorTimer = null;
@@ -854,7 +876,7 @@ namespace MotionDesk.Widgets
             OnVariantChanged(ApplyVariant);
             ApplyVariant();
             Update();
-            _nativeMonitorTimer = new System.Windows.Forms.Timer { Interval = 1000 };
+            _nativeMonitorTimer = MonitorTimer(1000);
             _nativeMonitorTimer.Tick += (_, _) => { if (!AppActivity.IsFullscreenAppActive) Update(); };
             _nativeMonitorTimer.Start();
         }
@@ -887,7 +909,7 @@ namespace MotionDesk.Widgets
                 bars.Push(m.NetworkDownKbps, m.NetworkUpKbps);
             }
             Update();
-            _nativeMonitorTimer = new System.Windows.Forms.Timer { Interval = 1000 };
+            _nativeMonitorTimer = MonitorTimer(1000);
             _nativeMonitorTimer.Tick += (_, _) => { if (!AppActivity.IsFullscreenAppActive) Update(); };
             _nativeMonitorTimer.Start();
         }
@@ -997,7 +1019,7 @@ namespace MotionDesk.Widgets
 
             RefreshVolumeUi();
             RefreshPowerPlans();
-            _nativeMonitorTimer = new System.Windows.Forms.Timer { Interval = 2000 };
+            _nativeMonitorTimer = MonitorTimer(2000);
             _nativeMonitorTimer.Tick += (_, _) => { if (!AppActivity.IsFullscreenAppActive) { RefreshVolumeUi(); RefreshPowerPlans(); } };
             _nativeMonitorTimer.Start();
         }
@@ -1205,7 +1227,7 @@ namespace MotionDesk.Widgets
                 else rows.SetGpu(null, LocalizationManager.T("WidgetText.GpuLoading"));
             }
             Update();
-            _nativeMonitorTimer = new System.Windows.Forms.Timer { Interval = 2000 };
+            _nativeMonitorTimer = MonitorTimer(2000, PerfFeature.SystemMonitor);
             _nativeMonitorTimer.Tick += (_, _) => { if (!AppActivity.IsFullscreenAppActive) Update(); };
             _nativeMonitorTimer.Start();
         }
@@ -1315,7 +1337,7 @@ namespace MotionDesk.Widgets
 
             await RefreshAsync();
             if (IsDisposed) return;
-            _nativeMonitorTimer = new System.Windows.Forms.Timer { Interval = 1500 };
+            _nativeMonitorTimer = MonitorTimer(1500);
             _nativeMonitorTimer.Tick += async (_, _) => { if (!AppActivity.IsFullscreenAppActive) await RefreshAsync(); };
             _nativeMonitorTimer.Start();
         }
@@ -1408,7 +1430,7 @@ namespace MotionDesk.Widgets
 
             await RefreshAsync();
             if (IsDisposed) return;
-            _nativeMonitorTimer = new System.Windows.Forms.Timer { Interval = 5000 };
+            _nativeMonitorTimer = MonitorTimer(5000);
             _nativeMonitorTimer.Tick += async (_, _) => { if (!AppActivity.IsFullscreenAppActive) await RefreshAsync(); };
             _nativeMonitorTimer.Start();
         }
@@ -1474,7 +1496,7 @@ namespace MotionDesk.Widgets
 
             await RefreshAsync();
             if (IsDisposed) return;
-            _nativeMonitorTimer = new System.Windows.Forms.Timer { Interval = 8000 };
+            _nativeMonitorTimer = MonitorTimer(8000);
             _nativeMonitorTimer.Tick += async (_, _) => { if (!AppActivity.IsFullscreenAppActive) await RefreshAsync(); };
             _nativeMonitorTimer.Start();
         }

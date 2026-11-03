@@ -72,7 +72,7 @@ namespace MotionDesk.Widgets
         private bool _dragActive, _contextOpen;
 
         private const string ReorderFormat = "application/x-opsis-deskstrip-item";
-        private bool Low => HardwareProfileService.CurrentTier == HardwareTier.Low;
+        private bool Low => PerformanceProfile.ForFeature(PerfFeature.DeskStrip).Tier == HardwareTier.Low;
         private bool Vertical => _s.Position is DockPosition.Left or DockPosition.Right;
         private double Cell => _s.IconSize * 1.32;
         private double MaxScale => _s.Magnify && !Low ? 1.5 : 1.0;

@@ -551,7 +551,7 @@ namespace MotionDesk.UI
             // εφαρμοσμένο) — ζητήθηκε ρητά "fallback σε συμπαγές χρώμα σε Low-End".
             if (IsHandleCreated)
             {
-                GlassBlur.ApplyMicaBackdrop(Handle, enabled: Services.HardwareProfileService.CurrentTier != Services.HardwareTier.Low);
+                GlassBlur.ApplyMicaBackdrop(Handle, enabled: Services.PerformanceProfile.ForFeature(Services.PerfFeature.Effects).BlurEffects);
                 GlassBlur.ApplyRoundedCorners(Handle);
             }
 

@@ -62,6 +62,8 @@ namespace MotionDesk.Services
 
         private static HardwareTier Compute()
         {
+            // CI / test hook: OPSIS_FORCE_TIER=Low|Balanced|High wins over everything (used by the installer-e2e workflow on the 2-core runners)
+            if (Enum.TryParse<HardwareTier>(Environment.GetEnvironmentVariable("OPSIS_FORCE_TIER"), true, out var env)) return env;
             var forced = GetOverride();
             if (forced.HasValue) return forced.Value;
 
@@ -86,6 +88,8 @@ namespace MotionDesk.Services
 
         // Hooks προσομοίωσης για δοκιμές σε "αδύναμο" μηχάνημα (scripts/LowEndSim.ps1): ΔΕΝ υπάρχουν
         // στο κανονικό UI και δεν επηρεάζουν τίποτα αν οι μεταβλητές περιβάλλοντος δεν οριστούν.
+        internal static long TotalRamMb() => GetTotalRamMb();
+
         private static long GetTotalRamMb()
         {
             if (long.TryParse(Environment.GetEnvironmentVariable("OPSIS_SIM_RAM_MB"), out long simulated) && simulated > 0) return simulated;

@@ -34,6 +34,9 @@ namespace MotionDesk.Services
         // Ξεχωριστή έννοια από το WallpaperPerformanceMode παραπάνω: αυτό απαντά "πόσο δυνατό είναι
         // αυτό το μηχάνημα", όχι "τι θέλει ο χρήστης να δει τώρα" — βλ. PerformanceModeManager.
         public string? HardwareProfileOverride { get; set; }
+        // 2.4.0: dynamic scaling (lowers the tier while the machine is under pressure, with hysteresis) and optional per-feature tier overrides (PerfFeature -> Low/Balanced/High).
+        public bool PerfDynamic { get; set; } = true;
+        public System.Collections.Generic.Dictionary<string, string>? PerfFeatureTier { get; set; }
         public bool ShowSystemMonitor { get; set; }
         public bool RestoreLastSession { get; set; } = true;
         public bool MinimizeToTray { get; set; } = true;

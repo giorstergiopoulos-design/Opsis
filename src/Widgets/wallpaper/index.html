@@ -113,7 +113,7 @@ let audioBoost = 1;
 function bridge() { return window.chrome?.webview?.hostObjects?.wallpaper ?? null; }
 
 function resizeCanvas() {
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = (window.devicePixelRatio || 1) * ((cfg.perf && cfg.perf.renderScale) || 1);   // lower tiers draw fewer pixels (the CSS size stays the same)
     canvas.width = window.innerWidth * dpr;
     canvas.height = window.innerHeight * dpr;
     canvas.style.width = window.innerWidth + 'px';
@@ -125,7 +125,10 @@ function resizeCanvas() {
 window.addEventListener('resize', () => { resizeCanvas(); lastFrameTime = 0; });
 resizeCanvas();
 
+// 2.4.0: the C# side sends ONE profile (cfg.perf, from PerformanceProfile) that follows the hardware tier and the dynamic scaling; it is updated live by opsisSetPerf.
+window.opsisSetPerf = p => { cfg.perf = p; resizeCanvas(); lastFrameTime = 0; };
 function perfProfile() {
+    if (cfg.perf && cfg.perf.targetFps && cfg.performanceMode !== 'Battery') return cfg.perf;
     switch (cfg.performanceMode) {
         case 'High':       return { layers: 4, glow: true,  glowBlur: 30, targetFps: 60, shading: true  };
         case 'Low Power':  return { layers: 2, glow: false, glowBlur: 0,  targetFps: 15, shading: false };

@@ -146,6 +146,7 @@ namespace MotionDesk.Widgets
                 desk = effectiveMode == "Desktop" ? DeskInfo() : null,
                 infoFont = string.IsNullOrWhiteSpace(settings.InfoFont) ? "Segoe UI Light" : settings.InfoFont,
                 waveStyle = settings.WaveStyle,
+                perf = WallpaperHostEngine.PerfObject(),
                 pageUri,
                 elements = settings.Elements.Where(e => e.Enabled).Select(e => new { id = e.Id, scale = Math.Clamp(e.Scale, 40, 250) }),
                 elSide = settings.ElementsSide is "Right" or "Center" ? settings.ElementsSide : "Left",
@@ -1345,6 +1346,19 @@ namespace MotionDesk.Widgets
         // ακριβώς το bug "το .wmv μετατράπηκε επιτυχώς αλλά δεν παίζει το βίντεο".
         public void RefreshAll() => _ = RefreshAllAsync();
         public void RefreshElements() { foreach (var w in _windows) _ = w.RunScriptAsync("window.opsisApplyElements&&window.opsisApplyElements()"); }
+        /// <summary>The performance profile of the wallpaper as the page needs it (fps cap, render scale, layers, glow).</summary>
+        internal static object PerfObject()
+        {
+            var p = MotionDesk.Services.PerformanceProfile.ForFeature(MotionDesk.Services.PerfFeature.Wallpaper);
+            return new { tier = p.Tier.ToString(), fps = p.WallpaperFps, renderScale = p.RenderScale, layers = p.WaveLayers, glowBlur = p.GlowBlur, glow = p.GlowBlur > 0, shading = p.Shading, targetFps = p.WallpaperFps };
+        }
+
+        /// <summary>Dynamic scaling: pushes the new profile to the running pages without reloading them.</summary>
+        public void PushPerf()
+        {
+            string json = JsonSerializer.Serialize(PerfObject());
+            foreach (var w in _windows) _ = w.RunScriptAsync("window.opsisSetPerf&&window.opsisSetPerf(" + json + ")");
+        }
         public void PushProperties() { foreach (var w in _windows) _ = w.PushPropertiesAsync(); }
         public Task RefreshAllAsync() => Task.WhenAll(_windows.Select(w => w.RefreshAsync()));
 

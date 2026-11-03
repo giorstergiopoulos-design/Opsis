@@ -111,6 +111,13 @@ namespace MotionDesk
             Services.SafeModeService.EvaluateAtStartup();
             Services.RotatingLogger.Write($"Startup: SafeMode={Services.SafeModeService.IsSafeMode} (shift={Services.SafeModeService.TriggeredByShift}, failedStartups={Services.SafeModeService.ConsecutiveFailedStartups})");
             Services.RotatingLogger.Write($"Hardware: tier={Services.HardwareProfileService.CurrentTier}, cores={Environment.ProcessorCount}");
+            try { Services.RotatingLogger.Write("Hardware detail: " + Services.HardwareInfo.Detect()); } catch (Exception) { }
+            Services.PerformanceGovernor.Start();
+            Services.PerformanceGovernor.EffectiveChanged += t =>
+            {
+                Services.RotatingLogger.Write("Performance: effective tier is now " + t);
+                try { MotionDesk.Widgets.WallpaperHostEngine.Instance.PushPerf(); } catch (Exception) { }
+            };
 
             // Το .NET 5+ δεν περιλαμβάνει πλέον τις legacy κωδικοσελίδες (π.χ. 737 για ελληνικά
             // OEM/console) by default — χωρίς αυτή την εγγραφή, Encoding.GetEncoding(737) πετάει
