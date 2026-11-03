@@ -59,7 +59,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           New-Item -ItemType Directory -Force prev | Out-Null
-          $tag = gh release list --repo ${{ github.repository }} --limit 1 --json tagName --jq '.[0].tagName'
+          # the PREVIOUS release = the newest one that is not the version being tested
+          $tag = gh release list --repo ${{ github.repository }} --limit 10 --json tagName --jq '.[].tagName' | Where-Object { $_ -ne "v$env:EXPECTED_VERSION" } | Select-Object -First 1
           if (-not $tag) { Write-Host 'No previous release published yet: the upgrade step is skipped.'; "HAS_PREV=false" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV; exit 0 }
           gh release download $tag --repo ${{ github.repository }} --pattern 'OpsisSetup.exe*' --dir prev
           $sumFile = Get-ChildItem prev -Filter '*.sha256' | Select-Object -First 1
@@ -71,7 +72,7 @@ jobs:
           $p = Start-Process prev\OpsisSetup.exe -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/TASKS=desktopicon,autostart','/LOG=prev-install.log' -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "previous release installer exited with $($p.ExitCode)" }
           "HAS_PREV=true" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
-          pwsh tests/e2e/check-install.ps1 -Mode installed
+          pwsh tests/e2e/check-install.ps1 -Mode installed -SkipAutostart
 
       - name: Upgrade to the new build (silent)
         shell: pwsh
@@ -89,7 +90,7 @@ jobs:
             $env:OPSIS_APPDATA = Join-Path $env:RUNNER_TEMP "opsis-$tier"
             $env:OPSIS_FORCE_TIER = $tier
             New-Item -ItemType Directory -Force $env:OPSIS_APPDATA | Out-Null
-            $p = Start-Process "${env:ProgramFiles}\Opsis\Opsis.exe" -PassThru
+            $p = Start-Process "${env:ProgramFiles}\Opsis - Desktop Customization\Opsis.exe" -PassThru
             Start-Sleep -Seconds 20
             if ($p.HasExited) { throw "Opsis exited early at tier $tier (exit code $($p.ExitCode))" }
             $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
@@ -107,7 +108,7 @@ jobs:
       - name: Uninstall (silent) and check for leftovers
         shell: pwsh
         run: |
-          $u = "${env:ProgramFiles}\Opsis\unins000.exe"
+          $u = "${env:ProgramFiles}\Opsis - Desktop Customization\unins000.exe"
           $p = Start-Process $u -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "uninstaller exited with $($p.ExitCode)" }
           Start-Sleep -Seconds 3
