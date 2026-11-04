@@ -68,9 +68,9 @@ namespace MotionDesk.Widgets
         {
             var open = Application.OpenForms.OfType<Form>().FirstOrDefault(f => f.Tag as string == "opsis-welcome");
             if (open != null) { open.Activate(); return; }
-            var f = NewForm(LocalizationManager.T("Welcome.Title"), new Size(560, 420)); f.Tag = "opsis-welcome";
+            var f = NewForm(OpsisStrings.T("ui.welcomeTitle"), new Size(560, 420)); f.Tag = "opsis-welcome";
             var text = new Label { Text = LocalizationManager.T("Welcome.Body"), Dock = DockStyle.Fill, Padding = new Padding(24, 20, 24, 12), ForeColor = UiTheme.TextPrimary, Font = new Font("Segoe UI", 10.5f) };
-            var close = new Opsis.UI.FlatButton { Text = LocalizationManager.T("Welcome.Close"), Primary = true, Width = 120, Height = 34, Dock = DockStyle.Bottom };
+            var close = new Opsis.UI.FlatButton { Text = OpsisStrings.T("ui.gotIt"), Primary = true, Width = 120, Height = 34, Dock = DockStyle.Bottom };
             close.Click += (_, _) => f.Close();
             f.Controls.Add(text); f.Controls.Add(close);
             f.Show();
@@ -81,7 +81,7 @@ namespace MotionDesk.Widgets
             var open = Application.OpenForms.OfType<Form>().FirstOrDefault(f => f.Tag as string == "opsis-family");
             if (open != null) { open.Activate(); return; }
             var apps = FamilyApp.Load();
-            var f = NewForm(LocalizationManager.T("Family.Title"), new Size(640, Math.Min(760, 120 + Math.Max(1, apps.Count) * 78))); f.Tag = "opsis-family";
+            var f = NewForm(OpsisStrings.T("ui.familyTitle"), new Size(640, Math.Min(760, 120 + Math.Max(1, apps.Count) * 78))); f.Tag = "opsis-family";
             var list = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(16) };
             foreach (var app in apps)
             {
@@ -89,7 +89,7 @@ namespace MotionDesk.Widgets
                 row.Controls.Add(new Label { Text = app.Name, Location = new Point(14, 8), AutoSize = true, Font = new Font("Segoe UI Semibold", 10.5f), ForeColor = UiTheme.TextPrimary });
                 row.Controls.Add(new Label { Text = app.Tagline, Location = new Point(14, 32), Size = new Size(380, 30), ForeColor = UiTheme.TextSecondary });
                 string? installed = app.InstalledPath;
-                var btn = new Opsis.UI.FlatButton { Width = 150, Height = 32, Location = new Point(416, 18), Primary = installed == null, Text = installed != null ? LocalizationManager.T("Family.Open") : LocalizationManager.T("Family.Download") };
+                var btn = new Opsis.UI.FlatButton { Width = 150, Height = 32, Location = new Point(416, 18), Primary = installed == null, Text = installed != null ? OpsisStrings.T("ui.open") : OpsisStrings.T("ui.download") };
                 var captured = app;
                 btn.Click += (_, _) =>
                 {

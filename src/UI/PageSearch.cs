@@ -46,7 +46,7 @@ namespace MotionDesk.UI
             var box = new TextBox
             {
                 Width = 360,
-                PlaceholderText = LocalizationManager.T("Settings.SearchPlaceholder"),
+                PlaceholderText = OpsisStrings.T("ui.searchPlaceholder"),
                 BackColor = UiTheme.Surface,
                 ForeColor = UiTheme.TextPrimary,
                 BorderStyle = BorderStyle.FixedSingle,
@@ -57,7 +57,7 @@ namespace MotionDesk.UI
             var none = new Label
             {
                 AutoSize = true,
-                Text = LocalizationManager.T("Settings.SearchNoMatch"),
+                Text = OpsisStrings.T("ui.noMatch"),
                 Font = UiTheme.FontBody,
                 ForeColor = UiTheme.TextSecondary,
                 Margin = new Padding(0, 8, 0, 0),

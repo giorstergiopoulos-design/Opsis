@@ -50,8 +50,8 @@ namespace MotionDesk.UI
             foreach (var w in Application.OpenForms.OfType<MainWindow>()) w.ShowStatus(text, kind);
         }
 
-        internal static string SavedText(string label) => string.Format(LocalizationManager.T("Status.Saved"), CleanLabel(label));
-        internal static string FailedText(string label, string reason) => string.Format(LocalizationManager.T("Status.Failed"), CleanLabel(label), reason);
+        internal static string SavedText(string label) => string.Format(OpsisStrings.T("ui.saved"), CleanLabel(label));
+        internal static string FailedText(string label, string reason) => string.Format(OpsisStrings.T("ui.failed"), CleanLabel(label), reason);
         internal static string CleanLabel(string label) => (label ?? "").Replace("&", "").Trim().TrimEnd(':');
 
         /// <summary>Runs a settings change and reports it in the status bar: "Saved: ..." or "Failed: ..." (the exception does not escape into the UI thread).</summary>
@@ -2817,7 +2817,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
         // έπιασε ζωντανά ("το ιστορικό μένει στην 1.9.0"). Πρόσθεσε ΚΑΙ εδώ τη νέα έκδοση.
         private static readonly (string Version, string Date)[] VersionHistory =
         {
-            ("2.4.5", "2026-11"), ("2.4.4", "2026-11"), ("2.4.3", "2026-11"), ("2.4.2", "2026-11"), ("2.4.1", "2026-11"), ("2.4.0", "2026-11"), ("2.3.1", "2026-10"), ("2.3.0", "2026-10"), ("2.2.6", "2026-10"), ("2.2.5", "2026-10"), ("2.2.0", "2026-10"), ("2.1.3", "2026-10"), ("2.1.2", "2026-10"), ("2.1.1", "2026-10"), ("2.1.0", "2026-10"), ("2.0.0", "2026-10"), ("1.9.12", "2026-10"), ("1.9.11", "2026-10"), ("1.9.10", "2026-10"), ("1.9.9", "2026-10"), ("1.9.8", "2026-10"), ("1.9.7", "2026-10"), ("1.9.6", "2026-10"), ("1.9.5", "2026-10"), ("1.9.4", "2026-10"), ("1.9.3", "2026-10"), ("1.9.2", "2026-10"), ("1.9.1", "2026-10"), ("1.9.0", "2026-10"), ("1.8.9", "2026-10"), ("1.8.8", "2026-10"), ("1.8.7", "2026-10"), ("1.8.6", "2026-10"), ("1.8.5", "2026-10"), ("1.7.8", "2026-10"), ("1.7.6", "2026-10"), ("1.7.5", "2026-10"), ("1.6.8", "2026-10"), ("1.6.2", "2026-10"), ("1.6.1", "2026-10"), ("1.6.0", "2026-09"), ("1.5.0", "2026-09"), ("1.4.1", "2026-09"), ("1.4.0", "2026-09"), ("1.3.0", "2026-09"), ("1.2.9", "2026-09"), ("1.2.8", "2026-09"), ("1.2.7", "2026-09"), ("1.2.6", "2026-09"), ("1.2.5", "2026-09"), ("1.2.4", "2026-09"), ("1.2.3", "2026-09"), ("1.2.2", "2026-09"), ("1.2.1", "2026-09"), ("1.2.0", "2026-09"), ("1.1.2", "2026-09"), ("1.1.1", "2026-09"), ("1.1.0", "2026-09"), ("1.0.0", "2026-09")
+            ("2.4.6", "2026-11"), ("2.4.5", "2026-11"), ("2.4.4", "2026-11"), ("2.4.3", "2026-11"), ("2.4.2", "2026-11"), ("2.4.1", "2026-11"), ("2.4.0", "2026-11"), ("2.3.1", "2026-10"), ("2.3.0", "2026-10"), ("2.2.6", "2026-10"), ("2.2.5", "2026-10"), ("2.2.0", "2026-10"), ("2.1.3", "2026-10"), ("2.1.2", "2026-10"), ("2.1.1", "2026-10"), ("2.1.0", "2026-10"), ("2.0.0", "2026-10"), ("1.9.12", "2026-10"), ("1.9.11", "2026-10"), ("1.9.10", "2026-10"), ("1.9.9", "2026-10"), ("1.9.8", "2026-10"), ("1.9.7", "2026-10"), ("1.9.6", "2026-10"), ("1.9.5", "2026-10"), ("1.9.4", "2026-10"), ("1.9.3", "2026-10"), ("1.9.2", "2026-10"), ("1.9.1", "2026-10"), ("1.9.0", "2026-10"), ("1.8.9", "2026-10"), ("1.8.8", "2026-10"), ("1.8.7", "2026-10"), ("1.8.6", "2026-10"), ("1.8.5", "2026-10"), ("1.7.8", "2026-10"), ("1.7.6", "2026-10"), ("1.7.5", "2026-10"), ("1.6.8", "2026-10"), ("1.6.2", "2026-10"), ("1.6.1", "2026-10"), ("1.6.0", "2026-09"), ("1.5.0", "2026-09"), ("1.4.1", "2026-09"), ("1.4.0", "2026-09"), ("1.3.0", "2026-09"), ("1.2.9", "2026-09"), ("1.2.8", "2026-09"), ("1.2.7", "2026-09"), ("1.2.6", "2026-09"), ("1.2.5", "2026-09"), ("1.2.4", "2026-09"), ("1.2.3", "2026-09"), ("1.2.2", "2026-09"), ("1.2.1", "2026-09"), ("1.2.0", "2026-09"), ("1.1.2", "2026-09"), ("1.1.1", "2026-09"), ("1.1.0", "2026-09"), ("1.0.0", "2026-09")
         };
 
 
@@ -3719,7 +3719,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
             // card title with a "Reset" button on the right: puts the settings of this section back to their defaults (after a confirmation)
             var row = new Panel { Width = 700, Height = 40, Margin = new Padding(0, 6, 0, 2), BackColor = Color.Transparent };
             title.Margin = new Padding(0); title.Location = new Point(0, 12);
-            var btn = new FlatButton { Text = LocalizationManager.T("Settings.Reset"), Width = 96, Height = 28, Location = new Point(700 - 96, 6) };
+            var btn = new FlatButton { Text = OpsisStrings.T("ui.reset"), Width = 96, Height = 28, Location = new Point(700 - 96, 6) };
             btn.Click += (_, _) =>
             {
                 var owner = btn.FindForm();
@@ -4602,7 +4602,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                 {
                     Text = text,
                     Description = description,
-                    Badge = restart ? LocalizationManager.T("Settings.BadgeRestart") : "",
+                    Badge = restart ? OpsisStrings.T("ui.restartNeeded") : "",
                     RowWidth = 700,
                     Checked = initial,
                     BackColor = UiTheme.Background,

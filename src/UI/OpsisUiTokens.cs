@@ -24,6 +24,9 @@ namespace MotionDesk.UI
             Opsis.UI.OpsisTheme.Use(new OpsisUiTokens());
             ThemeManager.Changed += () => Opsis.UI.OpsisTheme.NotifyChanged();
             ThemeManager.Repainted += () => Opsis.UI.OpsisTheme.NotifyChanged();
+            // the common words (ui.*) follow the app's language, and Opsis' own translation of a key (if it has one) wins over the shared one
+            Opsis.UI.OpsisStrings.Language = MotionDesk.Services.LocalizationManager.CurrentLanguage;
+            MotionDesk.Services.LocalizationManager.Changed += () => Opsis.UI.OpsisStrings.Language = MotionDesk.Services.LocalizationManager.CurrentLanguage;
         }
     }
 }

@@ -18,7 +18,7 @@ namespace MotionDesk.UI
             AddText(panel, LocalizationManager.T("Perf.PerFeature"));
             string[] labels =
             {
-                LocalizationManager.T("Perf.Auto"), LocalizationManager.T("Perf.Low"), LocalizationManager.T("Perf.Balanced"), LocalizationManager.T("Perf.High")
+                OpsisStrings.T("ui.auto"), OpsisStrings.T("ui.low"), OpsisStrings.T("ui.balanced"), OpsisStrings.T("ui.high")
             };
             foreach (var feature in new[] { PerfFeature.Wallpaper, PerfFeature.Widgets, PerfFeature.DeskStrip, PerfFeature.Effects })
             {

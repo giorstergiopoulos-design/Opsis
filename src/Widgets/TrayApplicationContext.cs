@@ -259,7 +259,7 @@ namespace MotionDesk.Widgets
             if (_pluginApprovalItem == null) return;
             int n = PluginHost.Instance.PendingApprovals.Count;
             _pluginApprovalItem.Visible = n > 0;
-            _pluginApprovalItem.Text = string.Format(LocalizationManager.T("Plugin.PendingMenu"), n);
+            _pluginApprovalItem.Text = string.Format(OpsisStrings.T("ui.pending.plugins"), n);
         }
 
         // A few seconds after start-up (never while the tray / main window are being built): ask once about every plugin that waits for approval.

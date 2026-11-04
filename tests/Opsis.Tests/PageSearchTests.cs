@@ -51,3 +51,22 @@ public sealed class StatusMessageTests
         MotionDesk.UI.MainWindow.ApplySetting("y", () => throw new InvalidOperationException("disk full"));     // reported in the status bar, not thrown
     }
 }
+
+public sealed class CommonStringsAdoptionTests
+{
+    [Fact]
+    public void OpsisUsesTheSharedTranslationsInEveryLanguage()
+    {
+        string[] keys = { "ui.reset", "ui.restartNeeded", "ui.searchPlaceholder", "ui.noMatch", "ui.saved", "ui.failed", "ui.auto", "ui.low", "ui.balanced", "ui.high", "ui.gotIt", "ui.open", "ui.download", "ui.familyTitle", "ui.welcomeTitle", "ui.pending.plugins" };
+        var before = global::Opsis.UI.OpsisStrings.Language;
+        try
+        {
+            foreach (var lang in global::Opsis.UI.OpsisStrings.SupportedLanguages)
+            {
+                global::Opsis.UI.OpsisStrings.Language = lang;
+                foreach (var k in keys) Assert.NotEqual(k, global::Opsis.UI.OpsisStrings.T(k));       // never the raw key
+            }
+        }
+        finally { global::Opsis.UI.OpsisStrings.Language = before; }
+    }
+}
