@@ -15,6 +15,44 @@ namespace MotionDesk.Services
     /// </summary>
     public static class UiAudit
     {
+        [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)] private static extern IntPtr FindWindow(string? cls, string? title);
+        [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr h);
+        [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool PostMessage(IntPtr h, uint msg, IntPtr w, IntPtr l);
+        [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern int GetWindowThreadProcessId(IntPtr h, out int pid);
+        [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)] private static extern int GetWindowText(IntPtr h, System.Text.StringBuilder sb, int max);
+        private delegate bool EnumProc(IntPtr h, IntPtr l);
+        [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool EnumWindows(EnumProc cb, IntPtr l);
+        [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)] private static extern int GetClassName(IntPtr h, System.Text.StringBuilder sb, int max);
+
+        // A modal message box opened by some control would wait for ever on a runner nobody watches: close every standard dialog (#32770) of this process and note it in the report.
+        private static void StartDialogGuard(List<string> problems, Func<string> where)
+        {
+            int me = Environment.ProcessId;
+            var t = new System.Threading.Thread(() =>
+            {
+                while (true)
+                {
+                    System.Threading.Thread.Sleep(1500);
+                    try
+                    {
+                        EnumWindows((h, _) =>
+                        {
+                            GetWindowThreadProcessId(h, out int pid);
+                            if (pid != me || !IsWindowVisible(h)) return true;
+                            var cls = new System.Text.StringBuilder(64); GetClassName(h, cls, 64);
+                            if (cls.ToString() != "#32770") return true;
+                            var title = new System.Text.StringBuilder(256); GetWindowText(h, title, 256);
+                            lock (problems) problems.Add($"modal dialog '{title}' opened near {where()} (closed by the audit)");
+                            PostMessage(h, 0x0010 /* WM_CLOSE */, IntPtr.Zero, IntPtr.Zero);
+                            return true;
+                        }, IntPtr.Zero);
+                    }
+                    catch (Exception) { }
+                }
+            }) { IsBackground = true };
+            t.Start();
+        }
+
         private static void Pump(int ms)
         {
             var end = DateTime.UtcNow.AddMilliseconds(ms);
@@ -32,6 +70,9 @@ namespace MotionDesk.Services
             var report = new StringBuilder("# Opsis UI click audit" + nl + nl + "| page | controls | clicked | slowest click ms | page load ms |" + nl + "|---|---|---|---|---|" + nl);
             Application.ThreadException += (_, e) => problems.Add("ThreadException: " + e.Exception);
 
+            string progress = Path.Combine(folder, "progress.txt"); string current = "start";
+            void Mark(string s) { current = s; try { File.AppendAllText(progress, DateTime.UtcNow.ToString("HH:mm:ss.fff") + " " + s + nl); } catch (Exception) { } }
+            StartDialogGuard(problems, () => current);
             var win = new MotionDesk.UI.MainWindow { StartPosition = FormStartPosition.Manual, Location = new Point(40, 40) };
             win.Show();
             Pump(2500);
@@ -40,6 +81,7 @@ namespace MotionDesk.Services
 
             foreach (var key in win.PageKeys.ToList())
             {
+                Mark("page " + key);
                 var sw = System.Diagnostics.Stopwatch.StartNew();
                 try { win.NavigateTo(key); Pump(1200); }
                 catch (Exception ex) { problems.Add($"[{key}] navigation failed: {ex.Message}"); }
@@ -70,6 +112,7 @@ namespace MotionDesk.Services
                 {
                     if (win.IsDisposed) break;
                     var t = System.Diagnostics.Stopwatch.StartNew();
+                    Mark($"  [{key}] {c.GetType().Name} '{c.Text}'");
                     try
                     {
                         if (c is Opsis.UI.FlatCheckBox cb && !cb.IsDisposed)
