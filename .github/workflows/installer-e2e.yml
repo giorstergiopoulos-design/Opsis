@@ -116,6 +116,8 @@ jobs:
         run: |
           # nothing of Opsis may still run (the smoke step stopped it); a running copy would block the uninstaller
           Get-Process Opsis, OpsisContainers -ErrorAction SilentlyContinue | Stop-Process -Force
+          # the marker "plugin" belongs to another installer, so the Opsis uninstaller rightly leaves it; remove it here so the leftover check stays meaningful
+          Remove-Item "${env:ProgramFiles}\Opsis - Desktop Customization\plugins\E2eMarker" -Recurse -Force -ErrorAction SilentlyContinue
           $u = "${env:ProgramFiles}\Opsis - Desktop Customization\unins000.exe"
           $p = Start-Process $u -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/LOG=uninstall.log' -PassThru
           if (-not $p.WaitForExit(240000)) {
