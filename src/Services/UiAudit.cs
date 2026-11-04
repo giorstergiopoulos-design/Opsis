@@ -82,6 +82,7 @@ namespace MotionDesk.Services
             win.Show();
             Pump(2500);
             int totalClicked = 0;
+            var allSkipped = new List<string>();
             var pages = new List<object>();
 
             // OPSIS_AUDIT_PAGES=Wallpaper,Widgets limits the pages; OPSIS_AUDIT_NOCLICK=1 only opens them (safe to run on a personal machine with an isolated OPSIS_APPDATA)
@@ -115,6 +116,7 @@ namespace MotionDesk.Services
                 }
                 Collect(win);
                 int total = controls.Count;
+                var skipped = allSkipped;
                 var done = new HashSet<string>();
                 string Sig(Control c, List<Control> list) => c.GetType().Name + "|" + c.Text + "|" + list.Where(x => x.GetType() == c.GetType() && x.Text == c.Text).ToList().IndexOf(c);
 
@@ -126,6 +128,8 @@ namespace MotionDesk.Services
                     Control? c = controls.FirstOrDefault(x => !done.Contains(Sig(x, controls)));
                     if (c == null) break;
                     done.Add(Sig(c, controls));
+                    // switches that change Windows itself (system transparency, fast start-up, start with Windows) or talk to other programs are listed but not flipped
+                    if (c.Text.Contains("(Windows)") || c.Text.Contains("with Windows", StringComparison.OrdinalIgnoreCase) || c.Text.Contains("Discord", StringComparison.OrdinalIgnoreCase)) { skipped.Add($"[{key}] '{c.Text}'"); continue; }
                     var t = System.Diagnostics.Stopwatch.StartNew();
                     Mark($"  [{key}] {c.GetType().Name} '{c.Text}'");
                     try
@@ -156,6 +160,7 @@ namespace MotionDesk.Services
             }
 
             report.Append(nl + $"**Total controls clicked: {totalClicked}**" + nl + nl);
+            if (allSkipped.Count > 0) report.Append("Listed but not flipped on purpose (they change Windows itself or other programs):" + nl + string.Join(nl, allSkipped.Select(s => "- " + s)) + nl + nl);
             report.Append(problems.Count == 0 ? "No problems found." + nl : "## Problems" + nl + nl + string.Join(nl, problems.Select(p => "- " + p)) + nl);
             File.WriteAllText(Path.Combine(folder, "ui-audit.md"), report.ToString());
             File.WriteAllText(Path.Combine(folder, "ui-audit.json"), System.Text.Json.JsonSerializer.Serialize(new { clicked = totalClicked, problems, pages }));

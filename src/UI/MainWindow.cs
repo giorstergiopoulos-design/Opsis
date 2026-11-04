@@ -4411,7 +4411,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                 // όχι δικές μας· βλ. WindowsSystemSettings.cs.
                 AddSection(stack, LocalizationManager.T("Settings.SectionWindows"));
                 stack.Controls.Add(Checkbox(LocalizationManager.T("Settings.TransparencyEffects"), WindowsSystemSettings.GetTransparencyEffectsEnabled(),
-                    v => WindowsSystemSettings.SetTransparencyEffectsEnabled(v)));
+                    v => System.Threading.Tasks.Task.Run(() => { try { WindowsSystemSettings.SetTransparencyEffectsEnabled(v); } catch (Exception ex) { RotatingLogger.Write("Transparency effects: " + ex.Message); } })));   // off the UI thread: it talks to the shell (taskbar) and may wait for it
                 stack.Controls.Add(Checkbox(LocalizationManager.T("Settings.FastStartup"), WindowsSystemSettings.GetFastStartupEnabled(),
                     v =>
                     {
