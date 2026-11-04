@@ -158,6 +158,26 @@ namespace MotionDesk.Services
             }
         }
 
+        // test hooks (InternalsVisibleTo Opsis.Tests): a host instance with plugins added by hand
+        internal void AddForTest(IOpsisNewsCrawlerPlugin plugin, bool started) => _plugins.Add(new Loaded { Plugin = plugin, Started = started });
+        internal void StartAllForTest() { foreach (var p in _plugins) { p.Plugin.Start(); p.Started = true; } }
+
+        /// <summary>The desktop widget a started plugin offers to REPLACE a built-in one (for example "calendar"), or null. A plugin that fails is logged and skipped.</summary>
+        public PluginWidget? FindWidgetReplacing(string builtInId)
+        {
+            foreach (var p in _plugins.Where(p => p.Started).ToList())
+            {
+                if (p.Plugin is not IPluginWidgetProvider provider) continue;
+                try
+                {
+                    var widget = provider.GetWidgets().FirstOrDefault(w => string.Equals(w.ReplacesBuiltIn, builtInId, StringComparison.OrdinalIgnoreCase));
+                    if (widget != null) { Log($"Plugin '{p.Plugin.Name}': widget '{widget.Key}' replaces built-in '{builtInId}'"); return widget; }
+                }
+                catch (Exception ex) { Log($"Plugin '{p.Plugin.Name}' widgets failed: {ex.Message}"); }
+            }
+            return null;
+        }
+
         /// <summary>Σελίδες των plugin για το sidebar, ταξινομημένες κατά Order. Ένα απενεργοποιημένο plugin δεν συνεισφέρει.</summary>
         public IReadOnlyList<PluginNavigationItem> GetNavigationItems()
         {
@@ -302,7 +322,7 @@ namespace MotionDesk.Services
             }
         }
 
-        private void LoadFolder(string folder)
+        internal void LoadFolder(string folder)
         {
             foreach (var dll in Directory.EnumerateFiles(folder, "*Plugin.dll"))
             {

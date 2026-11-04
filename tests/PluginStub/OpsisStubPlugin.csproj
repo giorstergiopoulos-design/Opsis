@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- A minimal plugin for the plugin-e2e workflow: offers a desktop widget that replaces the built-in calendar. Built with the same contract DLL the host ships. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>OpsisStubPlugin</AssemblyName>
+    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="OpsisNewsCrawler.Plugin.Abstractions">
+      <HintPath>..\..\libs\OpsisNewsCrawler.Plugin.Abstractions.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,80 @@
+# Plugin end-to-end test on CLEAN, FREE GitHub-hosted Windows runners (standard windows-2022 / windows-2025; this repository is public, so the minutes are free).
+# A stub plugin (tests/PluginStub) is built against the contract DLL in libs/, installed into an isolated %AppData%\Opsis\plugins, approved through the trust model
+# (SHA-256, answered by the test mode of `Opsis.exe --test-plugin-widget`), loaded by the real host, and the calendar widget is opened: the plugin widget must
+# replace the built-in calendar. plugins.log must show the approval and the replacement and contain no load error; a screenshot of the widget is kept as an artifact.
+# Not covered here: a plugin from another repository (that repository runs its own workflow against the Opsis build), UAC, several monitors, real GPUs.
+name: plugin-e2e
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['libs/OpsisNewsCrawler.Plugin.Abstractions.dll', 'src/Services/PluginHost.cs', 'src/Services/PluginTrust.cs', 'src/Widgets/WidgetEngine.cs', 'tests/PluginStub/**', '.github/workflows/plugin-e2e.yml']
+
+concurrency:
+  group: plugin-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, windows-2025]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Plugin tests
+        shell: pwsh
+        run: dotnet test tests/Opsis.Tests -m:1 --nologo --filter "FullyQualifiedName~PluginWidgetContractTests|FullyQualifiedName~SecurityTests"
+
+      - name: Build the stub plugin and publish Opsis
+        shell: pwsh
+        run: |
+          dotnet build tests/PluginStub/OpsisStubPlugin.csproj -c Release -m:1 --nologo -o stub
+          dotnet publish MotionDeskStudio.csproj -c Release -r win-x64 --self-contained false -m:1 --nologo -o pub
+          if (-not (Test-Path pub\Opsis.exe)) { throw 'Opsis.exe was not published' }
+          if (-not (Test-Path stub\OpsisStubPlugin.dll)) { throw 'the stub plugin was not built' }
+
+      - name: Install the stub plugin (isolated AppData) and run the host
+        shell: pwsh
+        run: |
+          $ap = Join-Path $env:RUNNER_TEMP 'opsis-appdata'
+          New-Item -ItemType Directory -Force "$ap\plugins\OpsisStub" | Out-Null
+          Copy-Item stub\OpsisStubPlugin.* "$ap\plugins\OpsisStub\"
+          $env:OPSIS_APPDATA = $ap
+          $env:OPSIS_E2E = '1'
+          New-Item -ItemType Directory -Force out | Out-Null
+          $p = Start-Process pub\Opsis.exe -ArgumentList '--test-plugin-widget', (Resolve-Path out).Path -PassThru
+          if (-not $p.WaitForExit(120000)) { Stop-Process -Id $p.Id -Force; throw 'the host did not finish in 2 minutes' }
+          Write-Host "host exit code: $($p.ExitCode)"
+          Write-Host (Get-Content out\plugin-widget.txt -Raw)
+          $log = Join-Path $ap 'plugins.log'
+          if (-not (Test-Path $log)) { throw 'plugins.log was not written' }
+          Get-Content $log | Write-Host
+          $text = Get-Content $log -Raw
+          if ($text -notmatch 'approved by the user') { throw 'the trust approval was not logged' }
+          if ($text -notmatch "replaces built-in 'calendar'") { throw 'the plugin widget did not replace the calendar' }
+          if ($text -match 'Failed to load|failed to start|ReflectionTypeLoadException|Could not load type') { throw 'plugins.log contains a load error' }
+          if ($p.ExitCode -ne 0) { throw "host exit code $($p.ExitCode)" }
+          Copy-Item $log out\plugins.log
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: plugin-e2e-${{ matrix.os }}
+          path: |
+            out/*.png
+            out/*.txt
+            out/plugins.log
+          if-no-files-found: ignore
+          retention-days: 14

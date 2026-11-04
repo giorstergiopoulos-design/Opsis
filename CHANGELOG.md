@@ -2,6 +2,17 @@
 
 Πλήρες ιστορικό εκδόσεων του Opsis (πρώην MotionDesk Studio). Στα Ελληνικά — δείτε και μέσα στην εφαρμογή (Σχετικά -> Ιστορικό εκδόσεων) ή σε άλλη γλώσσα από τα locale αρχεία.
 
+## 2.4.3
+
+- **Νέες προαιρετικές δυνατότητες συμβολαίου plugin** (`IPluginWidgetProvider`, `PluginWidget`, `PluginFeed`, `PluginFeeds`, χωρίς αλλαγή έκδοσης 0.8.0.0): widget επιφάνειας που αντικαθιστά ενσωματωμένο (π.χ. ημερολόγιο) και ροές κειμένου για τις μπάρες του News Crawler· πρώτο plugin: Χρονικολόγιο («Σαν σήμερα»). Αν το συμβόλαιο του Opsis είναι παλαιότερο από ένα plugin, το plugin παραλείπεται και το σφάλμα γράφεται στο plugins.log (η αιτία της αποτυχίας του 2.4.2: DLL 15 KB χωρίς τους νέους τύπους → ReflectionTypeLoadException).
+- `libs/OpsisNewsCrawler.Plugin.Abstractions.dll` ← νέο 22 KB (SHA-256 F3074836696EAD48ACC38F9E1E483BF0F3636EFE7A483C3E841AF47FF6374D63, από το repo του plugin· δεν υπήρχε ξεχωριστό build στο C:\w\Opsis-contract). `PluginHost.FindWidgetReplacing`, `WidgetEngine.TryInitializePluginWidget` («calendar»): το plugin control μπαίνει στο ίδιο native panel (τίτλος, drag, resize)· αποτυχία δημιουργίας → επιστροφή στο ενσωματωμένο ημερολόγιο.
+- Trust model 2.2.0 σεβαστό: ο φάκελος του plugin σε %AppData% θέλει έγκριση SHA-256 (δεν άλλαξε τίποτα).
+- Tests: 7 νέα (stub plugin με IPluginWidgetProvider + PluginFeeds, αντικατάσταση ημερολογίου, plugin που αποτυγχάνει, ισοδυναμία κεφαλαίων, τύποι συμβολαίου/έκδοση 0.8.0.0) + φόρτωση του ΠΡΑΓΜΑΤΙΚΟΥ Chronikologio plugin όπως το κάνει ο host (με `OPSIS_REAL_PLUGIN_DIR`)· έτρεξαν και πέρασαν με το χτισμένο plugin. Σύνολο 140.
+- Νέο `Opsis.exe --test-plugin-widget <φάκελος>` (μόνο με `OPSIS_E2E=1` και απομονωμένο `OPSIS_APPDATA`): φορτώνει τα plugins όπως η εφαρμογή (η έγκριση trust απαντιέται «ναι» μόνο σε αυτή τη λειτουργία), ανοίγει το ημερολόγιο, αποθηκεύει screenshot ΜΟΝΟ του widget και αρχείο αποτελέσματος. Επαληθεύτηκε τοπικά με το stub (`tests/PluginStub`): plugins=1, replaced=True, screenshot με το widget του plugin.
+- Workflow `plugin-e2e` (`.github/workflows/plugin-e2e.yml`, windows-2022/2025, δωρεάν δημόσιο repo): build stub + publish Opsis → εγκατάσταση σε απομονωμένο AppData → έγκριση SHA-256 → φόρτωση → έλεγχος plugins.log (έγκριση, αντικατάσταση, κανένα σφάλμα φόρτωσης) → screenshot artifact. ΜΗ ΕΠΑΛΗΘΕΥΜΕΝΟ στο CI μέχρι να τρέξει.
+- Docs: `docs/PLUGIN-FEEDS-AND-WIDGETS.md`.
+- **Υπόλοιπο:** workflow `plugin-e2e` για το ιδιωτικό repo san-shmera (έπεται του release, χωρίς push)· η πλευρά News Crawler του συμβολαίου (`SlotKind.Feed`, SettingsPanel, TickerHost) ανήκει στο repo του Crawler· οι εκκρεμότητες του 2.4.2.
+
 ## 2.4.2
 
 - **Διόρθωση (Opsis.UI, screenshots του χρήστη):** το checkbox κοβόταν στην πάνω-αριστερή γωνία (τα ρολόγια προγραμματισμού wallpaper, η βιβλιοθήκη βίντεο) και ο δακτύλιος εστίασης των διακοπτών κοβόταν δεξιά. Η βιβλιοθήκη κρατά πλέον περιθώριο για τον δακτύλιο και το περίγραμμα· τα tests ενημερώθηκαν (47 περνούν)· τα checkboxes στις γραμμές προγραμματισμού/βιβλιοθήκης μεγάλωσαν σε 30 px.
