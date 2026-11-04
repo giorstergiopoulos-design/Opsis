@@ -767,5 +767,6 @@
   "Settings.PluginUiStyle": "المظهر الافتراضي للإضافات وتطبيقات العائلة",
   "Settings.PluginUiOpsis": "Opsis",
   "Settings.PluginUiAppearance": "Opsis Appearance",
-  "Settings.PluginUiCrawler": "Opsis News Crawler"
+  "Settings.PluginUiCrawler": "Opsis News Crawler",
+  "Plugin.PendingMenu": "إضافات بانتظار الموافقة ({0})…"
 }

@@ -767,5 +767,6 @@
   "Settings.PluginUiStyle": "플러그인 및 패밀리 앱의 기본 모양",
   "Settings.PluginUiOpsis": "Opsis",
   "Settings.PluginUiAppearance": "Opsis Appearance",
-  "Settings.PluginUiCrawler": "Opsis News Crawler"
+  "Settings.PluginUiCrawler": "Opsis News Crawler",
+  "Plugin.PendingMenu": "승인 대기 중인 플러그인 ({0})…"
 }

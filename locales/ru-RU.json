@@ -767,5 +767,6 @@
   "Settings.PluginUiStyle": "Вид плагинов и приложений семейства по умолчанию",
   "Settings.PluginUiOpsis": "Opsis",
   "Settings.PluginUiAppearance": "Opsis Appearance",
-  "Settings.PluginUiCrawler": "Opsis News Crawler"
+  "Settings.PluginUiCrawler": "Opsis News Crawler",
+  "Plugin.PendingMenu": "Плагины, ожидающие одобрения ({0})…"
 }

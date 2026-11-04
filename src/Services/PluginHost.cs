@@ -37,7 +37,7 @@ namespace MotionDesk.Services
         private bool _started;
 
         /// <summary>Asked (on the UI thread) before an UNTRUSTED plugin folder is loaded for the first time; returning false skips it. Default: deny.</summary>
-        public Func<PluginTrustRequest, bool> TrustPrompt { get; set; } = _ => false;
+
         private PluginTrust.Store? _trustStore;
 
         public IReadOnlyList<IOpsisNewsCrawlerPlugin> Plugins => _plugins.Select(p => p.Plugin).ToList();
@@ -118,8 +118,7 @@ namespace MotionDesk.Services
             {
                 try
                 {
-                    if (!trustedRoot && !IsFolderApproved(folder)) continue;
-                    LoadFolder(folder);
+                    ConsiderFolder(folder, trustedRoot);
                 }
                 catch (Exception ex) { Log($"Failed to load '{folder}': {ex}"); }
             }
@@ -282,18 +281,69 @@ namespace MotionDesk.Services
         // ---- discovery & loading ---------------------------------------------------------------
 
         // A folder of an untrusted root (user-writable) is loaded only after the user approved its exact content (see PluginTrust).
-        private bool IsFolderApproved(string folder)
+        // Start-up NEVER waits for that answer (a modal box at login, maybe hidden behind other windows, used to block the tray and left the plugin's page missing for good):
+        // an unapproved folder goes to PendingApprovals and is asked about right after start-up (ResolvePending) or from the tray menu.
+        private readonly List<PluginTrustRequest> _pending = new();
+        internal PluginTrust.Store? TrustStoreOverride;          // tests
+        internal Action<string>? FolderLoader;                   // tests
+        private PluginTrust.Store TrustStore => TrustStoreOverride ?? (_trustStore ??= new PluginTrust.Store(Path.Combine(AppPaths.AppDataFolder, "plugin-trust.json")));
+
+        /// <summary>Plugin folders found but not approved yet (user-writable location, content hash not in plugin-trust.json).</summary>
+        public IReadOnlyList<PluginTrustRequest> PendingApprovals { get { lock (_pending) return _pending.ToList(); } }
+
+        /// <summary>Loads a folder if its root is trusted or its exact content is approved; otherwise remembers it as pending. Returns true when it was loaded.</summary>
+        internal bool ConsiderFolder(string folder, bool trustedRoot)
+        {
+            if (!trustedRoot)
+            {
+                string name = Path.GetFileName(folder), hash;
+                try { hash = PluginTrust.HashFolder(folder); }
+                catch (Exception ex) { Log($"Plugin '{folder}' skipped: trust check failed: {ex.Message}"); return false; }
+                if (!TrustStore.IsApproved(name, hash))
+                {
+                    lock (_pending) { _pending.RemoveAll(p => string.Equals(p.Folder, folder, StringComparison.OrdinalIgnoreCase)); _pending.Add(new PluginTrustRequest(name, folder, hash)); }
+                    Log($"Plugin '{name}' in '{folder}' is waiting for approval (sha256 {hash}); it is not loaded until the user approves it.");
+                    return false;
+                }
+            }
+            (FolderLoader ?? LoadFolder)(folder);
+            return true;
+        }
+
+        /// <summary>Asks about every pending plugin (on the UI thread, after start-up); the approved ones are loaded and started at once. Returns how many were approved.</summary>
+        public int ResolvePending(Func<PluginTrustRequest, bool> ask)
+        {
+            int approved = 0;
+            foreach (var req in PendingApprovals)
+            {
+                bool yes;
+                try { yes = ask(req); } catch (Exception ex) { Log($"Plugin '{req.Name}' approval prompt failed: {ex.Message}"); yes = false; }
+                if (!yes) { Log($"Plugin '{req.Name}' not approved by the user (sha256 {req.Sha256})."); continue; }
+                try
+                {
+                    TrustStore.Approve(req.Name, req.Sha256);
+                    Log($"Plugin '{req.Name}' approved by the user (sha256 {req.Sha256}).");
+                    int before = _plugins.Count;
+                    (FolderLoader ?? LoadFolder)(req.Folder);
+                    foreach (var p in _plugins.Skip(before).ToList()) Activate(p);
+                    lock (_pending) _pending.RemoveAll(p => string.Equals(p.Folder, req.Folder, StringComparison.OrdinalIgnoreCase));
+                    approved++;
+                }
+                catch (Exception ex) { Log($"Plugin '{req.Name}' failed to load after approval: {ex}"); }
+            }
+            if (approved > 0) Changed?.Invoke();
+            return approved;
+        }
+
+        private void Activate(Loaded p)
         {
             try
             {
-                string name = Path.GetFileName(folder), hash = PluginTrust.HashFolder(folder);
-                _trustStore ??= new PluginTrust.Store(Path.Combine(AppPaths.AppDataFolder, "plugin-trust.json"));
-                if (_trustStore.IsApproved(name, hash)) return true;
-                if (TrustPrompt(new PluginTrustRequest(name, folder, hash))) { _trustStore.Approve(name, hash); Log($"Plugin '{name}' approved by the user (sha256 {hash})."); return true; }
-                Log($"Plugin '{name}' in '{folder}' skipped: not in the user-writable-folder allow-list (sha256 {hash}).");
-                return false;
+                p.Plugin.NavigationRequested += key => NavigationRequested?.Invoke(key);
+                PushLanguage(p.Plugin); PushTheme(p.Plugin); PushHardwareProfile(p.Plugin);
+                if (!AppSettings.Load().DisabledPluginIds.Contains(p.Plugin.Id)) { p.Plugin.Start(); p.Started = true; }
             }
-            catch (Exception ex) { Log($"Plugin '{folder}' skipped: trust check failed: {ex.Message}"); return false; }
+            catch (Exception ex) { Log($"Plugin '{p.Plugin.Name}' failed to start: {ex}"); _plugins.Remove(p); }
         }
 
         private static IEnumerable<(string Folder, bool TrustedRoot)> EnumerateCandidateFolders()

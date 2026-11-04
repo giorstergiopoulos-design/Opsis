@@ -767,5 +767,6 @@
   "Settings.PluginUiStyle": "Eklentilerin ve aile uygulamalarının varsayılan görünümü",
   "Settings.PluginUiOpsis": "Opsis",
   "Settings.PluginUiAppearance": "Opsis Appearance",
-  "Settings.PluginUiCrawler": "Opsis News Crawler"
+  "Settings.PluginUiCrawler": "Opsis News Crawler",
+  "Plugin.PendingMenu": "Onay bekleyen eklentiler ({0})…"
 }

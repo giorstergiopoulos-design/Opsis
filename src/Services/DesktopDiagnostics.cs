@@ -416,8 +416,8 @@ namespace MotionDesk.Services
             if (Environment.GetEnvironmentVariable("OPSIS_E2E") != "1" || string.IsNullOrEmpty(Environment.GetEnvironmentVariable("OPSIS_APPDATA")))
             { File.WriteAllText(Path.Combine(folder, "plugin-widget.txt"), "refused: needs OPSIS_E2E=1 and OPSIS_APPDATA"); return 2; }
             void Pump(int ms) { var end = DateTime.UtcNow.AddMilliseconds(ms); while (DateTime.UtcNow < end) { Application.DoEvents(); System.Threading.Thread.Sleep(15); } }
-            PluginHost.Instance.TrustPrompt = _ => true;
             PluginHost.Instance.StartAll();
+            PluginHost.Instance.ResolvePending(_ => true);          // the test mode answers the approval question "yes"
             Pump(1500);
             var replacement = PluginHost.Instance.FindWidgetReplacing("calendar");
             var sc = Screen.PrimaryScreen ?? Screen.AllScreens[0];
