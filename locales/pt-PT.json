@@ -768,5 +768,7 @@
   "Settings.PluginUiOpsis": "Opsis",
   "Settings.PluginUiAppearance": "Opsis Appearance",
   "Settings.PluginUiCrawler": "Opsis News Crawler",
-  "Plugin.PendingMenu": "Plugins a aguardar aprovação ({0})…"
+  "Plugin.PendingMenu": "Plugins a aguardar aprovação ({0})…",
+  "Status.Saved": "Guardado: {0}",
+  "Status.Failed": "Falhou: {0} ({1})"
 }

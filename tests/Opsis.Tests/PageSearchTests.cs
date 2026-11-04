@@ -32,3 +32,22 @@ public sealed class PlaylistSuffixTests
         Assert.Equal("0 video(s)  [0/2]", MotionDesk.UI.MainWindow.ActivePlaylistSuffix(0, 2, "0 video(s)"));
     }
 }
+
+public sealed class StatusMessageTests
+{
+    [Fact]
+    public void LabelsAreCleanedOfMnemonicsAndColons()
+    {
+        Assert.Equal("Grid size", MotionDesk.UI.MainWindow.CleanLabel("&Grid size:"));
+        Assert.Equal("Start with Windows", MotionDesk.UI.MainWindow.CleanLabel("  Start with Windows "));
+    }
+
+    [Fact]
+    public void ApplySettingRunsTheChangeAndNeverThrowsIntoTheUi()
+    {
+        bool ran = false;
+        MotionDesk.UI.MainWindow.ApplySetting("x", () => ran = true);
+        Assert.True(ran);
+        MotionDesk.UI.MainWindow.ApplySetting("y", () => throw new InvalidOperationException("disk full"));     // reported in the status bar, not thrown
+    }
+}

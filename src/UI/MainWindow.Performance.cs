@@ -32,7 +32,7 @@ namespace MotionDesk.UI
                 combo.SelectedIndexChanged += (_, _) =>
                 {
                     int i = Math.Max(0, combo.SelectedIndex);
-                    PerformanceProfile.SetFeatureOverride(f, i == 0 ? null : (HardwareTier)(i - 1));
+                    ApplySetting(LocalizationManager.T("Perf.Feature." + f), () => PerformanceProfile.SetFeatureOverride(f, i == 0 ? null : (HardwareTier)(i - 1)));
                 };
                 row.Controls.Add(combo);
                 panel.Controls.Add(row);
