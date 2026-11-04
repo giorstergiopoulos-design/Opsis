@@ -767,5 +767,6 @@
   "Settings.PluginUiStyle": "Aspecto predeterminado de plugins y apps de la familia",
   "Settings.PluginUiOpsis": "Opsis",
   "Settings.PluginUiAppearance": "Opsis Appearance",
-  "Settings.PluginUiCrawler": "Opsis News Crawler"
+  "Settings.PluginUiCrawler": "Opsis News Crawler",
+  "Plugin.PendingMenu": "Plugins pendientes de aprobación ({0})…"
 }

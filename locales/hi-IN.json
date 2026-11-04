@@ -767,5 +767,6 @@
   "Settings.PluginUiStyle": "प्लगइन और परिवार के ऐप्स का डिफ़ॉल्ट रूप",
   "Settings.PluginUiOpsis": "Opsis",
   "Settings.PluginUiAppearance": "Opsis Appearance",
-  "Settings.PluginUiCrawler": "Opsis News Crawler"
+  "Settings.PluginUiCrawler": "Opsis News Crawler",
+  "Plugin.PendingMenu": "अनुमोदन की प्रतीक्षा में प्लगइन ({0})…"
 }

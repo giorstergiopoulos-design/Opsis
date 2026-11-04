@@ -45,10 +45,8 @@ namespace MotionDesk.Widgets
             // Plugin (π.χ. News Crawler): ξεκινούν πριν χτιστεί το μενού ώστε να προσθέσουν τα δικά τους στοιχεία.
             PluginHost.Instance.NavigationRequested += key => ShowMainWindow("plugin:" + key);
             // Plugins from user-writable folders run code inside Opsis: ask once, show the content hash, remember the approval (plugin-trust.json).
-            PluginHost.Instance.TrustPrompt = req => MessageBox.Show(
-                string.Format(LocalizationManager.T("Plugin.TrustBody"), req.Name, req.Folder, req.Sha256.Substring(0, 16)),
-                LocalizationManager.T("Plugin.TrustTitle"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) == DialogResult.Yes;
-            if (!safeMode) PluginHost.Instance.StartAll();
+            // (the approval question is NOT asked while starting: see PluginHost.ConsiderFolder / ResolvePending)
+            if (!safeMode) { PluginHost.Instance.StartAll(); SchedulePluginApproval(); }
 
             // Δημιουργία Context Menu για το Tray Icon — ομαδοποιημένο σε: παράθυρο, DeskZones,
             // wallpaper, γρήγορα προφίλ, γρήγορες ρυθμίσεις, έξοδος.
@@ -57,6 +55,11 @@ namespace MotionDesk.Widgets
             contextMenu.Items.Add(LocalizationManager.T("Tray.Open"), null, (s, e) => ShowMainWindow());
             contextMenu.Items.Add(LocalizationManager.T("Tray.CommandPalette"), null, (s, e) => { ShowMainWindow(); _mainWindow?.OpenCommandPalette(); });
             contextMenu.Items.Add(LocalizationManager.T("Tray.Settings"), null, (s, e) => ShowMainWindow("Settings"));
+            // plugins that are installed but not approved yet (user-writable folder): one click asks again
+            _pluginApprovalItem = new ToolStripMenuItem { Visible = false };
+            _pluginApprovalItem.Click += (s, e) => AskPluginApproval();
+            contextMenu.Items.Add(_pluginApprovalItem);
+            contextMenu.Opening += (s, e) => UpdatePluginApprovalItem();
             contextMenu.Items.Add(new ToolStripSeparator());
 
             // ---- Wallpaper
@@ -217,6 +220,36 @@ namespace MotionDesk.Widgets
                 int pageArg = Array.FindIndex(cmd, a => a.Equals("--page", StringComparison.OrdinalIgnoreCase));
                 ShowMainWindow(pageArg >= 0 && pageArg + 1 < cmd.Length ? cmd[pageArg + 1] : null);
             }
+        }
+
+        private ToolStripMenuItem? _pluginApprovalItem;
+
+        private void UpdatePluginApprovalItem()
+        {
+            if (_pluginApprovalItem == null) return;
+            int n = PluginHost.Instance.PendingApprovals.Count;
+            _pluginApprovalItem.Visible = n > 0;
+            _pluginApprovalItem.Text = string.Format(LocalizationManager.T("Plugin.PendingMenu"), n);
+        }
+
+        // A few seconds after start-up (never while the tray / main window are being built): ask once about every plugin that waits for approval.
+        private void SchedulePluginApproval()
+        {
+            if (PluginHost.Instance.PendingApprovals.Count == 0) return;
+            var t = new System.Windows.Forms.Timer { Interval = 4000 };
+            t.Tick += (_, _) => { t.Stop(); t.Dispose(); AskPluginApproval(); };
+            t.Start();
+        }
+
+        private void AskPluginApproval()
+        {
+            // a hidden top-most owner so the box is never lost behind other windows (it used to appear behind the desktop at login and was never answered)
+            using var owner = new Form { TopMost = true, ShowInTaskbar = false, FormBorderStyle = FormBorderStyle.None, Opacity = 0, Size = new System.Drawing.Size(1, 1), StartPosition = FormStartPosition.CenterScreen };
+            owner.Show();
+            PluginHost.Instance.ResolvePending(req => MessageBox.Show(owner,
+                string.Format(LocalizationManager.T("Plugin.TrustBody"), req.Name, req.Folder, req.Sha256.Substring(0, 16)),
+                LocalizationManager.T("Plugin.TrustTitle"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) == DialogResult.Yes);
+            UpdatePluginApprovalItem();
         }
 
         private void ShowMainWindow(string? page = null)

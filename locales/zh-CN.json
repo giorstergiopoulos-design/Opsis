@@ -767,5 +767,6 @@
   "Settings.PluginUiStyle": "插件和家族应用的默认外观",
   "Settings.PluginUiOpsis": "Opsis",
   "Settings.PluginUiAppearance": "Opsis Appearance",
-  "Settings.PluginUiCrawler": "Opsis News Crawler"
+  "Settings.PluginUiCrawler": "Opsis News Crawler",
+  "Plugin.PendingMenu": "等待批准的插件 ({0})…"
 }

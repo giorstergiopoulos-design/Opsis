@@ -790,5 +790,6 @@
   "Settings.PluginUiStyle": "Προεπιλεγμένη εμφάνιση plugins και εφαρμογών της οικογένειας",
   "Settings.PluginUiOpsis": "Opsis",
   "Settings.PluginUiAppearance": "Opsis Appearance",
-  "Settings.PluginUiCrawler": "Opsis News Crawler"
+  "Settings.PluginUiCrawler": "Opsis News Crawler",
+  "Plugin.PendingMenu": "Plugins που περιμένουν έγκριση ({0})…"
 }
