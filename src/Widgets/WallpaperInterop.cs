@@ -349,14 +349,21 @@ namespace MotionDesk.Widgets
         private readonly uint _taskbarCreatedMsg;
         public event Action? ExplorerRestarted;
 
+        /// <summary>The same notification the broadcast triggers (tests, and callers that detected the restart another way).</summary>
+        internal void RaiseForTest() => ExplorerRestarted?.Invoke();
+        internal uint TaskbarCreatedMessage => _taskbarCreatedMsg;
+
         public ExplorerRestartWatcher()
         {
             _taskbarCreatedMsg = (uint)RegisterWindowMessage("TaskbarCreated");
+            // A hidden TOP-LEVEL window (never shown). It used to be a message-only window (HWND_MESSAGE), but Windows does NOT deliver broadcast messages such as
+            // "TaskbarCreated" to message-only windows, so the restart of Explorer was never noticed here and the wallpaper stayed gone / the screen black until the
+            // 2-second watchdog (which only covers one case) happened to notice. WS_POPUP + WS_EX_TOOLWINDOW: no taskbar button, no Alt+Tab entry, not visible.
             var cp = new CreateParams
             {
-                // HWND_MESSAGE (-3): message-only window — δεν χρειάζεται ορατό/UI handle,
-                // απλά λαμβάνει broadcast μηνύματα σε όλη τη διάρκεια ζωής της εφαρμογής.
-                Parent = new IntPtr(-3)
+                Style = unchecked((int)0x80000000),        // WS_POPUP
+                ExStyle = 0x00000080,                       // WS_EX_TOOLWINDOW
+                X = 0, Y = 0, Width = 0, Height = 0,
             };
             CreateHandle(cp);
         }
