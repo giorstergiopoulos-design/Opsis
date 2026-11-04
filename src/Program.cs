@@ -51,6 +51,12 @@ namespace MotionDesk
                 Environment.Exit(Services.DesktopDiagnostics.TestTransparency(args[1]));
                 return;
             }
+            if (args.Length == 2 && args[0] == "--ui-audit")
+            {
+                ApplicationConfiguration.Initialize();
+                Environment.Exit(Services.UiAudit.Run(args[1]));
+                return;
+            }
             if (args.Length == 2 && args[0] == "--test-plugin-widget")
             {
                 ApplicationConfiguration.Initialize();

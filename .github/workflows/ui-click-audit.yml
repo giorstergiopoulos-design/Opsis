@@ -1,0 +1,61 @@
+# Click audit of the whole Opsis window on a CLEAN, FREE GitHub-hosted Windows runner (standard windows-2022; this repository is public, so the minutes are free).
+# `Opsis.exe --ui-audit <folder>` (isolated OPSIS_APPDATA, OPSIS_E2E=1) visits EVERY page of the main window (plugin pages included when present), saves a screenshot of each,
+# and changes / restores every switch, check box and combo box on it, recording exceptions, pages that open slowly (> 3 s) and controls that freeze the UI or do not react.
+# The report (ui-audit.md, ui-audit.json, page-*.png) is uploaded as an artifact and shown in the run summary. NEVER run this on a personal machine: it flips real Windows settings
+# (start with Windows, transparency effects, fast start-up...), which is harmless only on a throw-away runner.
+name: ui-click-audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ci-ui-audit]
+
+concurrency:
+  group: ui-click-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: windows-2022
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish Opsis
+        shell: pwsh
+        run: dotnet publish MotionDeskStudio.csproj -c Release -r win-x64 --self-contained false -m:1 --nologo -o pub
+
+      - name: Run the click audit
+        shell: pwsh
+        run: |
+          $ap = Join-Path $env:RUNNER_TEMP 'opsis-appdata'
+          New-Item -ItemType Directory -Force $ap | Out-Null
+          $env:OPSIS_APPDATA = $ap
+          $env:OPSIS_E2E = '1'
+          New-Item -ItemType Directory -Force out | Out-Null
+          $p = Start-Process pub\Opsis.exe -ArgumentList '--ui-audit', (Resolve-Path out).Path -PassThru
+          $finished = $p.WaitForExit(900000)
+          if (-not $finished) { Stop-Process -Id $p.Id -Force; "The audit did not finish in 15 minutes (a freeze?)." | Out-File -Append out\ui-audit.md }
+          if (Test-Path out\ui-audit.md) { Get-Content out\ui-audit.md | Out-File -Append $env:GITHUB_STEP_SUMMARY -Encoding utf8; Get-Content out\ui-audit.md | Write-Host }
+          if (Test-Path "$ap\plugins.log") { Copy-Item "$ap\plugins.log" out\plugins.log }
+          if (-not $finished) { throw 'audit timed out' }
+          if ($p.ExitCode -ne 0) { throw "the audit found problems (exit code $($p.ExitCode)); see the report" }
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-click-audit
+          path: |
+            out/*.png
+            out/*.md
+            out/*.json
+            out/plugins.log
+          if-no-files-found: ignore
+          retention-days: 14

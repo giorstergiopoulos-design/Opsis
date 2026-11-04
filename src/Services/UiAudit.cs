@@ -1,0 +1,108 @@
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Windows.Forms;
+
+namespace MotionDesk.Services
+{
+    /// <summary>
+    /// `Opsis.exe --ui-audit &lt;folder&gt;` (CI: workflow ui-click-audit; needs OPSIS_E2E=1 and an isolated OPSIS_APPDATA): opens the main window, visits EVERY page, screenshots it, and "clicks"
+    /// every switch / check box / combo box on it (change, check, change back), recording exceptions, pages that take more than 3 s, controls that did not react or froze the UI.
+    /// Report: ui-audit.md + ui-audit.json + one PNG per page. Exit 0 = no problem found.
+    /// </summary>
+    public static class UiAudit
+    {
+        private static void Pump(int ms)
+        {
+            var end = DateTime.UtcNow.AddMilliseconds(ms);
+            while (DateTime.UtcNow < end) { Application.DoEvents(); System.Threading.Thread.Sleep(10); }
+        }
+
+        public static int Run(string folder)
+        {
+            Directory.CreateDirectory(folder);
+            string nl = Environment.NewLine;
+            if (Environment.GetEnvironmentVariable("OPSIS_E2E") != "1" || string.IsNullOrEmpty(Environment.GetEnvironmentVariable("OPSIS_APPDATA")))
+            { File.WriteAllText(Path.Combine(folder, "ui-audit.md"), "refused: needs OPSIS_E2E=1 and OPSIS_APPDATA"); return 2; }
+
+            var problems = new List<string>();
+            var report = new StringBuilder("# Opsis UI click audit" + nl + nl + "| page | controls | clicked | slowest click ms | page load ms |" + nl + "|---|---|---|---|---|" + nl);
+            Application.ThreadException += (_, e) => problems.Add("ThreadException: " + e.Exception);
+
+            var win = new MotionDesk.UI.MainWindow { StartPosition = FormStartPosition.Manual, Location = new Point(40, 40) };
+            win.Show();
+            Pump(2500);
+            int totalClicked = 0;
+            var pages = new List<object>();
+
+            foreach (var key in win.PageKeys.ToList())
+            {
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+                try { win.NavigateTo(key); Pump(1200); }
+                catch (Exception ex) { problems.Add($"[{key}] navigation failed: {ex.Message}"); }
+                long load = sw.ElapsedMilliseconds - 1200;
+                if (load > 3000) problems.Add($"[{key}] page took {load} ms to open");
+
+                try
+                {
+                    using var bmp = new Bitmap(win.Width, win.Height);
+                    win.DrawToBitmap(bmp, new Rectangle(0, 0, win.Width, win.Height));
+                    bmp.Save(Path.Combine(folder, "page-" + key.Replace(':', '_') + ".png"), System.Drawing.Imaging.ImageFormat.Png);
+                }
+                catch (Exception ex) { problems.Add($"[{key}] screenshot failed: {ex.Message}"); }
+
+                var controls = new List<Control>();
+                void Collect(Control c)
+                {
+                    foreach (Control child in c.Controls)
+                    {
+                        if (child.Visible && child.Enabled && (child is Opsis.UI.FlatCheckBox || child is Opsis.UI.FlatComboBox)) controls.Add(child);
+                        Collect(child);
+                    }
+                }
+                Collect(win);
+
+                int clicked = 0; long slowest = 0;
+                foreach (var c in controls)
+                {
+                    if (win.IsDisposed) break;
+                    var t = System.Diagnostics.Stopwatch.StartNew();
+                    try
+                    {
+                        if (c is Opsis.UI.FlatCheckBox cb && !cb.IsDisposed)
+                        {
+                            bool before = cb.Checked;
+                            cb.Checked = !before; Pump(80);
+                            if (cb.Checked == before) problems.Add($"[{key}] '{cb.Text}' did not change");
+                            cb.Checked = before; Pump(80);
+                            clicked++;
+                        }
+                        else if (c is Opsis.UI.FlatComboBox combo && combo.Items.Count > 1 && !combo.IsDisposed)
+                        {
+                            int i = combo.SelectedIndex;
+                            combo.SelectedIndex = (i + 1) % combo.Items.Count; Pump(80);
+                            combo.SelectedIndex = i < 0 ? 0 : i; Pump(80);
+                            clicked++;
+                        }
+                    }
+                    catch (Exception ex) { problems.Add($"[{key}] control '{c.Name}' '{c.Text}' threw {ex.GetType().Name}: {ex.Message}"); }
+                    slowest = Math.Max(slowest, t.ElapsedMilliseconds);
+                    if (t.ElapsedMilliseconds > 3000) problems.Add($"[{key}] a control took {t.ElapsedMilliseconds} ms (UI freeze)");
+                }
+                totalClicked += clicked;
+                report.Append($"| {key} | {controls.Count} | {clicked} | {slowest} | {load} |" + nl);
+                pages.Add(new { page = key, controls = controls.Count, clicked, slowestMs = slowest, loadMs = load });
+            }
+
+            report.Append(nl + $"**Total controls clicked: {totalClicked}**" + nl + nl);
+            report.Append(problems.Count == 0 ? "No problems found." + nl : "## Problems" + nl + nl + string.Join(nl, problems.Select(p => "- " + p)) + nl);
+            File.WriteAllText(Path.Combine(folder, "ui-audit.md"), report.ToString());
+            File.WriteAllText(Path.Combine(folder, "ui-audit.json"), System.Text.Json.JsonSerializer.Serialize(new { clicked = totalClicked, problems, pages }));
+            try { win.Close(); } catch (Exception) { }
+            return problems.Count == 0 ? 0 : 1;
+        }
+    }
+}

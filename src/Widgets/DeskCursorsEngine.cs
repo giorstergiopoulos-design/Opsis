@@ -41,7 +41,9 @@ namespace MotionDesk.Widgets
         {
             using (var key = Registry.CurrentUser.OpenSubKey(CursorsKeyPath, true))
                 key?.SetValue(string.Empty, schemeName, RegistryValueKind.String);
-            SystemParametersInfo(SPI_SETCURSORS, 0, IntPtr.Zero, SPIF_SENDCHANGE);
+            // SPIF_SENDCHANGE broadcasts WM_SETTINGCHANGE and waits for EVERY top-level window: one hung program froze the Personalization page (and Opsis) for seconds.
+            // The registry is already written; the system call runs on a worker thread.
+            System.Threading.Tasks.Task.Run(() => { try { SystemParametersInfo(SPI_SETCURSORS, 0, IntPtr.Zero, SPIF_SENDCHANGE); } catch (Exception) { } });
         }
 
         public static void ResetAllToWindowsDefault()
