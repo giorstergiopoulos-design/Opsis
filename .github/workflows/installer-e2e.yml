@@ -73,6 +73,10 @@ jobs:
           if ($p.ExitCode -ne 0) { throw "previous release installer exited with $($p.ExitCode)" }
           "HAS_PREV=true" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
           pwsh tests/e2e/check-install.ps1 -Mode installed -SkipAutostart
+          # a plugin put next to Opsis by its own installer must survive the upgrade
+          $m = "${env:ProgramFiles}\Opsis - Desktop Customization\plugins\E2eMarker"
+          New-Item -ItemType Directory -Force $m | Out-Null
+          Set-Content "$m\keep.txt" 'plugin file'
 
       - name: Upgrade to the new build (silent)
         shell: pwsh
@@ -80,6 +84,7 @@ jobs:
           $p = Start-Process Output\OpsisSetup.exe -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/TASKS=desktopicon,autostart','/LOG=upgrade.log' -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "installer exited with $($p.ExitCode)" }
           pwsh tests/e2e/check-install.ps1 -Mode installed -ExpectedVersion $env:EXPECTED_VERSION
+          if ($env:HAS_PREV -eq 'true' -and -not (Test-Path "${env:ProgramFiles}\Opsis - Desktop Customization\plugins\E2eMarker\keep.txt")) { throw 'the upgrade removed a plugin folder next to Opsis' }
 
       - name: Smoke start at tier Low and High (screenshots)
         shell: pwsh
