@@ -730,7 +730,7 @@
   "About.UpdateVerifyFailed": "下载的文件与发布的校验和不匹配——已删除，未安装任何内容。请稍后重试。",
   "About.UpdateNoDigest": "此版本没有可供验证的校验和，因此不会自动安装——改为打开发布页面。",
   "About.DeskContainersGuideTitle": "DeskContainers — 使用方法",
-  "VersionNotes.2.4.4": "~ 等待批准的插件（如 %AppData% 中的 News Crawler）不再阻塞启动或消失：Opsis 在启动后立即以及从托盘菜单询问。\n~ 资源管理器重启后会重建壁纸（重启通知现在能到达 Opsis）。\n~ 每次更改设置时，状态栏会显示“已保存：…”或“失败：…”。\n~ 应用光标不再冻结 Opsis。",
+  "VersionNotes.2.4.4": "~ 等待批准的插件（如 %AppData% 中的 News Crawler）不再阻塞启动或消失：Opsis 在启动后立即以及从托盘菜单询问。\n~ 资源管理器重启后会重建壁纸（重启通知现在能到达 Opsis）。\n~ 每次更改设置时，状态栏会显示“已保存：…”或“失败：…”。\n~ 应用光标不再冻结 Opsis。\n~ 托盘不再显示“Collection was modified”错误；欢迎指南和 Opsis 家族是 Opsis 自己的条目，只显示一次。",
   "VersionNotes.2.4.3": "+ 新的可选插件契约（版本仍为 0.8.0.0）：插件可以替换内置桌面小组件（如日历），并为 News Crawler 栏发布文本源；首个插件是“历史上的今天”。需要比 Opsis 更新的契约的插件会被跳过，错误写入 plugins.log。",
   "VersionNotes.2.4.2": "~ 复选框和开关不再在边缘被裁切（角落、焦点环）；已从性能设置中移除“系统监视器”一行。\n+ 设置：插件和家族应用的默认外观（Opsis / Appearance / Crawler），通过 plugin-ui.json 发布给它们。",
   "VersionNotes.2.4.1": "~ 壁纸页面始终显示视频库；播放列表卡片会跟随启用/停用勾选。\n~ 页面保持滚动位置，不再跳回顶部。\n~ 仅当安装了 Opsis Media Suite (Waveframe) 时才显示音频管理。\n~ 低性能级别：容器跳过装饰性启动动画。",
@@ -771,5 +771,14 @@
   "Settings.PluginUiCrawler": "Opsis News Crawler",
   "Plugin.PendingMenu": "等待批准的插件 ({0})…",
   "Status.Saved": "已保存：{0}",
-  "Status.Failed": "失败：{0}（{1}）"
+  "Status.Failed": "失败：{0}（{1}）",
+  "Tray.Welcome": "欢迎指南",
+  "Tray.Family": "Opsis 家族",
+  "Welcome.Title": "欢迎使用 Opsis",
+  "Welcome.Body": "Opsis 可自定义你的桌面：\n\n•  壁纸：在图标后方显示视频、网页、图片、天气等。\n•  小组件和 DeskContainers：时钟、系统监视器以及对图标分组的容器。\n•  DeskZones 和 DeskStrip：将窗口吸附到区域，并提供应用程序坞。\n•  设置：每个页面都有搜索；更改会立即保存并显示在状态栏中。\n•  托盘图标可打开一切；插件（News Crawler、Appearance 等）会添加自己的页面。",
+  "Welcome.Close": "知道了",
+  "Family.Title": "Opsis 家族",
+  "Family.Open": "打开",
+  "Family.Download": "下载",
+  "Family.NoList": "未找到家族应用列表。"
 }

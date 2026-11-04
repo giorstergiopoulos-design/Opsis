@@ -150,6 +150,16 @@ namespace MotionDesk
 
         private static DateTime _lastErrorDialog = DateTime.MinValue;
 
+        internal static bool IsTransient(Exception ex)
+        {
+            for (var e = ex; e != null; e = e.InnerException)
+            {
+                if (e is InvalidOperationException && e.Message.Contains("modified", StringComparison.OrdinalIgnoreCase)) return true;      // "Collection was modified; enumeration operation may not execute."
+                if (e is ObjectDisposedException) return true;
+            }
+            return false;
+        }
+
         private static void ReportError(Exception? ex)
         {
             if (ex == null) return;
@@ -161,6 +171,10 @@ namespace MotionDesk
             }
             catch (Exception) { }
             Services.RotatingLogger.WriteException("UnhandledException", ex);
+
+            // A transient race (a list changed by another thread while the tray menu or a widget was reading it) is logged and retried by the next refresh; it must never
+            // pop up a dialog in the user's face. Same for a window that closed while a timer ticked.
+            if (IsTransient(ex)) return;
 
             // Ένα exception μέσα σε timer tick επαναλαμβάνεται κάθε tick — χωρίς όριο, ο χρήστης έβλεπε
             // ατέλειωτη αλληλουχία modal διαλόγων. Ένας διάλογος ανά 30s αρκεί (όλα καταγράφονται στο crash.log).

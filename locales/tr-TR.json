@@ -730,7 +730,7 @@
   "About.UpdateVerifyFailed": "İndirilen dosya yayımlanan sağlama toplamıyla eşleşmedi — silindi, hiçbir şey yüklenmedi. Lütfen daha sonra tekrar deneyin.",
   "About.UpdateNoDigest": "Bu sürümün doğrulanacak bir sağlama toplamı yok, bu nedenle hiçbir şey otomatik yüklenmez — bunun yerine sürüm sayfası açılır.",
   "About.DeskContainersGuideTitle": "DeskContainers — Nasıl kullanılır",
-  "VersionNotes.2.4.4": "~ Onay bekleyen eklentiler (ör. %AppData% içindeki News Crawler) artık açılışı engellemez ve kaybolmaz: Opsis açılıştan hemen sonra ve tepsi menüsünden sorar.\n~ Gezgin yeniden başlatıldıktan sonra duvar kâğıdı yeniden oluşturulur (yeniden başlatma bildirimi artık Opsis'e ulaşıyor).\n~ Durum çubuğu her ayar değişikliğinde «Kaydedildi: …» veya «Başarısız: …» yazar.\n~ İmleçleri uygulamak artık Opsis'i dondurmaz.",
+  "VersionNotes.2.4.4": "~ Onay bekleyen eklentiler (ör. %AppData% içindeki News Crawler) artık açılışı engellemez ve kaybolmaz: Opsis açılıştan hemen sonra ve tepsi menüsünden sorar.\n~ Gezgin yeniden başlatıldıktan sonra duvar kâğıdı yeniden oluşturulur (yeniden başlatma bildirimi artık Opsis'e ulaşıyor).\n~ Durum çubuğu her ayar değişikliğinde «Kaydedildi: …» veya «Başarısız: …» yazar.\n~ İmleçleri uygulamak artık Opsis'i dondurmaz.\n~ Tepsi artık «Collection was modified» hataları göstermiyor; karşılama kılavuzu ve Opsis ailesi Opsis'in kendi girdileridir, bir kez gösterilir.",
   "VersionNotes.2.4.3": "+ Yeni isteğe bağlı eklenti sözleşmesi (sürüm 0.8.0.0 olarak kalır): bir eklenti yerleşik masaüstü widget'ını (örneğin takvimi) değiştirebilir ve News Crawler çubukları için metin akışları yayımlayabilir; ilk eklenti Kronoloji (\"Bugün tarihte\"). Opsis'ten daha yeni bir sözleşme isteyen eklenti atlanır ve hata plugins.log dosyasına yazılır.",
   "VersionNotes.2.4.2": "~ Onay kutuları ve anahtarlar artık kenarlarda kesilmiyor (köşe, odak halkası); performans ayarlarından «Sistem izleyici» satırı kaldırıldı.\n+ Ayarlar: eklentilerin ve aile uygulamalarının varsayılan görünümü (Opsis / Appearance / Crawler), onlar için plugin-ui.json içinde yayımlanır.",
   "VersionNotes.2.4.1": "~ Video kitaplığı Duvar kâğıdı sayfasında her zaman görünür; oynatma listesi kartı etkin/pasif işaretleri izler.\n~ Sayfalar kaydırma konumunu korur ve artık en üste atlamaz.\n~ Ses yönetimi yalnızca Opsis Media Suite (Waveframe) kuruluysa görünür.\n~ Düşük performans düzeyi: kapsayıcılar süs amaçlı başlatma animasyonlarını atlar.",
@@ -771,5 +771,14 @@
   "Settings.PluginUiCrawler": "Opsis News Crawler",
   "Plugin.PendingMenu": "Onay bekleyen eklentiler ({0})…",
   "Status.Saved": "Kaydedildi: {0}",
-  "Status.Failed": "Başarısız: {0} ({1})"
+  "Status.Failed": "Başarısız: {0} ({1})",
+  "Tray.Welcome": "Karşılama kılavuzu",
+  "Tray.Family": "Opsis ailesi",
+  "Welcome.Title": "Opsis'e hoş geldiniz",
+  "Welcome.Body": "Opsis masaüstünüzü özelleştirir:\n\n•  Duvar kâğıdı: video, web sayfası, resim, hava durumu ve daha fazlası, simgelerin arkasında.\n•  Widget'lar ve DeskContainers: saat, sistem izleyici ve simgeleri gruplayan kapsayıcılar.\n•  DeskZones ve DeskStrip: pencereleri bölgelere oturtun ve uygulamalarınız için bir dock.\n•  Ayarlar: her sayfada arama vardır; değişiklikler hemen kaydedilir ve durum çubuğunda gösterilir.\n•  Tepsi simgesi her şeyi açar; eklentiler (News Crawler, Appearance, ...) kendi sayfalarını ekler.",
+  "Welcome.Close": "Anladım",
+  "Family.Title": "Opsis ailesi",
+  "Family.Open": "Aç",
+  "Family.Download": "İndir",
+  "Family.NoList": "Aile uygulamalarının listesi bulunamadı."
 }
