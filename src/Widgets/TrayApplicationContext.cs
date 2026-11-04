@@ -55,6 +55,9 @@ namespace MotionDesk.Widgets
             contextMenu.Items.Add(LocalizationManager.T("Tray.Open"), null, (s, e) => ShowMainWindow());
             contextMenu.Items.Add(LocalizationManager.T("Tray.CommandPalette"), null, (s, e) => { ShowMainWindow(); _mainWindow?.OpenCommandPalette(); });
             contextMenu.Items.Add(LocalizationManager.T("Tray.Settings"), null, (s, e) => ShowMainWindow("Settings"));
+            // Opsis' own help entries: ONE welcome guide and ONE family window for the whole suite (plugins do not offer them when hosted: PluginHost.IsHostOwnedEntry)
+            contextMenu.Items.Add(LocalizationManager.T("Tray.Welcome"), null, (s, e) => FamilyWindows.ShowWelcome());
+            contextMenu.Items.Add(LocalizationManager.T("Tray.Family"), null, (s, e) => FamilyWindows.ShowFamily());
             // plugins that are installed but not approved yet (user-writable folder): one click asks again
             _pluginApprovalItem = new ToolStripMenuItem { Visible = false };
             _pluginApprovalItem.Click += (s, e) => AskPluginApproval();
@@ -95,23 +98,11 @@ namespace MotionDesk.Widgets
             profilesMenu.DropDownItems.Add("Focus", null, (s, e) => ApplyProfile("Focus"));
             contextMenu.Items.Add(profilesMenu);
 
-            // ---- Plugins: one submenu per plugin (a plugin with a single entry shows it directly in the Plugins group)
-            var pluginGroups = PluginHost.Instance.GetTrayMenuGroups();
-            if (pluginGroups.Count > 0)
-            {
-                contextMenu.Items.Add(new ToolStripSeparator());
-                foreach (var (pluginName, items) in pluginGroups)
-                {
-                    var sub = new ToolStripMenuItem(pluginName);
-                    foreach (var pluginMenu in items)
-                    {
-                        if (pluginMenu.IsSeparator) { sub.DropDownItems.Add(new ToolStripSeparator()); continue; }
-                        var invoke = pluginMenu.Invoke;
-                        sub.DropDownItems.Add(LocalizationManager.CurrentLanguage == "el" ? pluginMenu.TitleEl : pluginMenu.TitleEn, null, (s, e) => { try { invoke(); } catch (Exception) { } });
-                    }
-                    contextMenu.Items.Add(sub);
-                }
-            }
+            // ---- Plugins: one submenu per plugin, rebuilt every time the menu opens (a plugin approved or started after start-up appears without a restart)
+            _pluginMenuHost = contextMenu;
+            _pluginMenuIndex = contextMenu.Items.Count;
+            RebuildPluginMenu();
+            contextMenu.Opening += (s, e) => RebuildPluginMenu();
 
             contextMenu.Items.Add(new ToolStripSeparator());
             ToolStripMenuItem startupItem = new ToolStripMenuItem(LocalizationManager.T("Tray.Startup"));
@@ -219,6 +210,45 @@ namespace MotionDesk.Widgets
                 var cmd = Environment.GetCommandLineArgs();
                 int pageArg = Array.FindIndex(cmd, a => a.Equals("--page", StringComparison.OrdinalIgnoreCase));
                 ShowMainWindow(pageArg >= 0 && pageArg + 1 < cmd.Length ? cmd[pageArg + 1] : null);
+            }
+        }
+
+        private ContextMenuStrip? _pluginMenuHost;
+        private int _pluginMenuIndex;
+        private readonly List<ToolStripItem> _pluginMenuItems = new();
+
+        // The plugin part of the tray menu: built from SNAPSHOTS of the plugin state (PluginHost), retried when a plugin changes while it is read, and never allowed to throw into the UI.
+        private void RebuildPluginMenu()
+        {
+            if (_pluginMenuHost == null) return;
+            for (int attempt = 1; attempt <= 3; attempt++)
+            {
+                try
+                {
+                    var groups = PluginHost.Instance.GetTrayMenuGroups();
+                    foreach (var old in _pluginMenuItems) { _pluginMenuHost.Items.Remove(old); old.Dispose(); }
+                    _pluginMenuItems.Clear();
+                    int at = Math.Min(_pluginMenuIndex, _pluginMenuHost.Items.Count);
+                    if (groups.Count > 0)
+                    {
+                        var sep = new ToolStripSeparator(); _pluginMenuHost.Items.Insert(at++, sep); _pluginMenuItems.Add(sep);
+                        foreach (var (pluginName, items) in groups)
+                        {
+                            var sub = new ToolStripMenuItem(pluginName);
+                            foreach (var pluginMenu in items)
+                            {
+                                if (pluginMenu.IsSeparator) { sub.DropDownItems.Add(new ToolStripSeparator()); continue; }
+                                var invoke = pluginMenu.Invoke;
+                                sub.DropDownItems.Add(LocalizationManager.CurrentLanguage == "el" ? pluginMenu.TitleEl : pluginMenu.TitleEn, null,
+                                    (s, e) => { try { invoke(); } catch (Exception ex) { RotatingLogger.Write("Plugin menu item failed: " + ex.Message); } });
+                            }
+                            _pluginMenuHost.Items.Insert(at++, sub); _pluginMenuItems.Add(sub);
+                        }
+                    }
+                    return;
+                }
+                catch (Exception ex) when (attempt < 3) { RotatingLogger.Write($"Tray plugin menu, attempt {attempt}: {ex.Message}"); System.Threading.Thread.Sleep(20 * attempt); }
+                catch (Exception ex) { RotatingLogger.Write("Tray plugin menu failed: " + ex.Message); }
             }
         }
 

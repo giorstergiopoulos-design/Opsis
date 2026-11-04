@@ -34,13 +34,33 @@ namespace MotionDesk.Services
         }
 
         private readonly List<Loaded> _plugins = new();
+        // Plugins are started, approved (LoadFolder), removed and read from several threads and from timers: every read works on a SNAPSHOT taken under this lock, and every change happens
+        // under it. Enumerating the live list while another thread changed it threw "Collection was modified" in the tray menu.
+        private readonly object _gate = new();
+        /// <summary>Runs a call into plugin code again (up to 3 times, a few ms apart) when it fails with "Collection was modified" - a plugin that is being started or stopped on another thread; any other error is passed on.</summary>
+        internal static T Retry<T>(Func<T> call)
+        {
+            for (int attempt = 1; ; attempt++)
+            {
+                try { return call(); }
+                catch (InvalidOperationException ex) when (attempt < 3 && ex.Message.Contains("modified", StringComparison.OrdinalIgnoreCase))
+                {
+                    Log($"retry {attempt}: {ex.Message}");
+                    System.Threading.Thread.Sleep(15 * attempt);
+                }
+            }
+        }
+
+        private Loaded[] Snap() { lock (_gate) return _plugins.ToArray(); }
+        private void AddLoaded(Loaded l) { lock (_gate) _plugins.Add(l); }
+        private void RemoveLoaded(Loaded l) { lock (_gate) _plugins.Remove(l); }
         private bool _started;
 
         /// <summary>Asked (on the UI thread) before an UNTRUSTED plugin folder is loaded for the first time; returning false skips it. Default: deny.</summary>
 
         private PluginTrust.Store? _trustStore;
 
-        public IReadOnlyList<IOpsisNewsCrawlerPlugin> Plugins => _plugins.Select(p => p.Plugin).ToList();
+        public IReadOnlyList<IOpsisNewsCrawlerPlugin> Plugins => Snap().Select(p => p.Plugin).ToList();
 
         // Ζητήθηκε ρητά: ξεχωριστό κουμπί ενεργοποίησης/απενεργοποίησης ΓΙΑ ΚΑΘΕ plugin (π.χ. το
         // News Crawler), όχι μόνο ο γενικός διακόπτης "Φόρτωση plugins" (AppSettings.PluginsEnabled)
@@ -56,7 +76,7 @@ namespace MotionDesk.Services
             else if (!settings.DisabledPluginIds.Contains(id)) settings.DisabledPluginIds.Add(id);
             settings.Save();
 
-            var p = _plugins.FirstOrDefault(x => x.Plugin.Id == id);
+            var p = Snap().FirstOrDefault(x => x.Plugin.Id == id);
             if (p != null)
             {
                 try
@@ -78,13 +98,13 @@ namespace MotionDesk.Services
         /// host κρατάει ήδη μόνιμες αναφορές (π.χ. η συνδρομή στο NavigationRequested παρακάτω).</summary>
         public bool UninstallPlugin(string id)
         {
-            var p = _plugins.FirstOrDefault(x => x.Plugin.Id == id);
+            var p = Snap().FirstOrDefault(x => x.Plugin.Id == id);
             if (p == null) return false;
 
             try { if (p.Started) p.Plugin.Stop(); }
             catch (Exception ex) { Log($"Plugin '{p.Plugin.Name}' failed to stop before uninstall: {ex.Message}"); }
 
-            _plugins.Remove(p);
+            RemoveLoaded(p);
             var settings = AppSettings.Load();
             settings.DisabledPluginIds.Remove(id);
 
@@ -124,7 +144,7 @@ namespace MotionDesk.Services
             }
 
             var disabled = AppSettings.Load().DisabledPluginIds;
-            foreach (var p in _plugins.ToList())
+            foreach (var p in Snap())
             {
                 try
                 {
@@ -137,20 +157,20 @@ namespace MotionDesk.Services
                 catch (Exception ex)
                 {
                     Log($"Plugin '{p.Plugin.Name}' failed to start: {ex}");
-                    _plugins.Remove(p);
+                    RemoveLoaded(p);
                 }
             }
 
-            ThemeManager.Changed += () => { foreach (var p in _plugins.ToList()) PushTheme(p.Plugin); };
+            ThemeManager.Changed += () => { foreach (var p in Snap()) PushTheme(p.Plugin); };
             // Η γλώσσα του Opsis ισχύει και για τα plugin: αλλάζει ΚΑΙ στα δύο ταυτόχρονα.
-            LocalizationManager.Changed += () => { foreach (var p in _plugins.ToList()) PushLanguage(p.Plugin); };
-            HardwareProfileService.ProfileChanged += _ => { foreach (var p in _plugins.ToList()) PushHardwareProfile(p.Plugin); };
+            LocalizationManager.Changed += () => { foreach (var p in Snap()) PushLanguage(p.Plugin); };
+            HardwareProfileService.ProfileChanged += _ => { foreach (var p in Snap()) PushHardwareProfile(p.Plugin); };
             Changed?.Invoke();
         }
 
         public void StopAll()
         {
-            foreach (var p in _plugins.ToList())
+            foreach (var p in Snap())
             {
                 try { p.Plugin.Stop(); }
                 catch (Exception ex) { Log($"Plugin '{p.Plugin.Name}' failed to stop: {ex.Message}"); }
@@ -158,13 +178,13 @@ namespace MotionDesk.Services
         }
 
         // test hooks (InternalsVisibleTo Opsis.Tests): a host instance with plugins added by hand
-        internal void AddForTest(IOpsisNewsCrawlerPlugin plugin, bool started) => _plugins.Add(new Loaded { Plugin = plugin, Started = started });
-        internal void StartAllForTest() { foreach (var p in _plugins) { p.Plugin.Start(); p.Started = true; } }
+        internal void AddForTest(IOpsisNewsCrawlerPlugin plugin, bool started) => AddLoaded(new Loaded { Plugin = plugin, Started = started });
+        internal void StartAllForTest() { foreach (var p in Snap()) { p.Plugin.Start(); p.Started = true; } }
 
         /// <summary>The desktop widget a started plugin offers to REPLACE a built-in one (for example "calendar"), or null. A plugin that fails is logged and skipped.</summary>
         public PluginWidget? FindWidgetReplacing(string builtInId)
         {
-            foreach (var p in _plugins.Where(p => p.Started).ToList())
+            foreach (var p in Snap().Where(p => p.Started).ToList())
             {
                 if (p.Plugin is not IPluginWidgetProvider provider) continue;
                 try
@@ -181,23 +201,39 @@ namespace MotionDesk.Services
         public IReadOnlyList<PluginNavigationItem> GetNavigationItems()
         {
             var items = new List<PluginNavigationItem>();
-            foreach (var p in _plugins.Where(p => p.Started))
+            foreach (var p in Snap().Where(p => p.Started))
             {
-                try { items.AddRange(p.Plugin.GetNavigationItems()); }
+                try { items.AddRange(Retry(() => p.Plugin.GetNavigationItems().ToList())); }
                 catch (Exception ex) { Log($"Plugin '{p.Plugin.Name}' navigation failed: {ex.Message}"); }
             }
             return items.OrderBy(i => i.Order).ToList();
         }
 
         /// <summary>Tray items per plugin (plugin display name -> its items) so the tray menu can group them by plugin.</summary>
+        /// <summary>The "welcome guide" and "Opsis family" entries belong to Opsis itself (one of each in the tray, wherever the plugins are hosted); a plugin copy would show them several times.</summary>
+        internal static bool IsHostOwnedEntry(PluginMenuItem item)
+        {
+            if (item.IsSeparator) return false;
+            var k = (item.Key ?? "").Trim().ToLowerInvariant();
+            return k is "welcome" or "suite" or "family" || k.EndsWith(".welcome") || k.EndsWith(".suite") || k.EndsWith(".family");
+        }
+
+        internal static List<PluginMenuItem> WithoutHostOwned(IEnumerable<PluginMenuItem> items)
+        {
+            var list = items.Where(i => !IsHostOwnedEntry(i)).ToList();
+            while (list.Count > 0 && list[^1].IsSeparator) list.RemoveAt(list.Count - 1);          // no dangling separators
+            while (list.Count > 0 && list[0].IsSeparator) list.RemoveAt(0);
+            return list;
+        }
+
         public IReadOnlyList<(string PluginName, IReadOnlyList<PluginMenuItem> Items)> GetTrayMenuGroups()
         {
             var groups = new List<(string, IReadOnlyList<PluginMenuItem>)>();
-            foreach (var p in _plugins.Where(p => p.Started))
+            foreach (var p in Snap().Where(p => p.Started))
             {
                 try
                 {
-                    var items = p.Plugin.GetTrayMenuItems().ToList();
+                    var items = WithoutHostOwned(Retry(() => p.Plugin.GetTrayMenuItems().ToList()));
                     if (items.Count > 0) groups.Add((p.Plugin.Name, items));
                 }
                 catch (Exception ex) { Log($"Plugin '{p.Plugin.Name}' tray items failed: {ex.Message}"); }
@@ -208,9 +244,9 @@ namespace MotionDesk.Services
         public IReadOnlyList<PluginMenuItem> GetTrayMenuItems()
         {
             var items = new List<PluginMenuItem>();
-            foreach (var p in _plugins.Where(p => p.Started))
+            foreach (var p in Snap().Where(p => p.Started))
             {
-                try { items.AddRange(p.Plugin.GetTrayMenuItems()); }
+                try { items.AddRange(WithoutHostOwned(Retry(() => p.Plugin.GetTrayMenuItems().ToList()))); }
                 catch (Exception ex) { Log($"Plugin '{p.Plugin.Name}' tray items failed: {ex.Message}"); }
             }
             return items;
@@ -222,9 +258,9 @@ namespace MotionDesk.Services
         public IReadOnlyList<(string Id, PluginAboutInfo Info)> GetAboutInfos()
         {
             var infos = new List<(string, PluginAboutInfo)>();
-            foreach (var p in _plugins)
+            foreach (var p in Snap())
             {
-                try { infos.Add((p.Plugin.Id, p.Plugin.GetAboutInfo())); }
+                try { infos.Add((p.Plugin.Id, Retry(() => p.Plugin.GetAboutInfo()))); }
                 catch (Exception ex) { Log($"Plugin '{p.Plugin.Name}' about info failed: {ex.Message}"); }
             }
             return infos;
@@ -323,9 +359,9 @@ namespace MotionDesk.Services
                 {
                     TrustStore.Approve(req.Name, req.Sha256);
                     Log($"Plugin '{req.Name}' approved by the user (sha256 {req.Sha256}).");
-                    int before = _plugins.Count;
+                    int before = Snap().Length;
                     (FolderLoader ?? LoadFolder)(req.Folder);
-                    foreach (var p in _plugins.Skip(before).ToList()) Activate(p);
+                    foreach (var p in Snap().Skip(before).ToList()) Activate(p);
                     lock (_pending) _pending.RemoveAll(p => string.Equals(p.Folder, req.Folder, StringComparison.OrdinalIgnoreCase));
                     approved++;
                 }
@@ -343,7 +379,7 @@ namespace MotionDesk.Services
                 PushLanguage(p.Plugin); PushTheme(p.Plugin); PushHardwareProfile(p.Plugin);
                 if (!AppSettings.Load().DisabledPluginIds.Contains(p.Plugin.Id)) { p.Plugin.Start(); p.Started = true; }
             }
-            catch (Exception ex) { Log($"Plugin '{p.Plugin.Name}' failed to start: {ex}"); _plugins.Remove(p); }
+            catch (Exception ex) { Log($"Plugin '{p.Plugin.Name}' failed to start: {ex}"); RemoveLoaded(p); }
         }
 
         private static IEnumerable<(string Folder, bool TrustedRoot)> EnumerateCandidateFolders()
@@ -388,13 +424,13 @@ namespace MotionDesk.Services
                     // ο δικός του αυτόματος updater στο %AppData%\Opsis\plugins). Ζητήθηκε ρητά να μην
                     // μένει "κολλημένη" η παλιά — κρατάμε πάντα τη ΝΕΟΤΕΡΗ έκδοση, όχι αυτή που απλά
                     // βρέθηκε πρώτη (ο παλιός κώδικας έκανε ακριβώς αυτό το λάθος: "first wins").
-                    var existing = _plugins.FirstOrDefault(p => p.Plugin.Id == plugin.Id);
+                    var existing = Snap().FirstOrDefault(p => p.Plugin.Id == plugin.Id);
                     if (existing != null)
                     {
                         if (!IsNewerVersion(plugin.Version, existing.Plugin.Version)) continue;
-                        _plugins.Remove(existing);
+                        RemoveLoaded(existing);
                     }
-                    _plugins.Add(new Loaded { Plugin = plugin, Folder = folder });
+                    AddLoaded(new Loaded { Plugin = plugin, Folder = folder });
                 }
             }
         }

@@ -117,6 +117,10 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>assets\Opsis.ico</Link>
     </None>
+    <None Include="suite\apps.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>suite\apps.json</Link>
+    </None>
     <None Include="assets\tray\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>assets\tray\%(RecursiveDir)%(Filename)%(Extension)</Link>

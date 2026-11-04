@@ -730,7 +730,7 @@
   "About.UpdateVerifyFailed": "El archivo descargado no coincide con la suma de comprobación publicada: se eliminó y no se instaló nada. Inténtelo de nuevo más tarde.",
   "About.UpdateNoDigest": "Esta versión no tiene suma de comprobación para verificar, así que no se instala nada automáticamente: se abre la página de la versión.",
   "About.DeskContainersGuideTitle": "DeskContainers — Cómo usarlos",
-  "VersionNotes.2.4.4": "~ Los plugins que esperan aprobación (p. ej. News Crawler en %AppData%) ya no bloquean el inicio ni desaparecen: Opsis pregunta justo después de arrancar y desde el menú de la bandeja.\n~ Tras reiniciar el Explorador, el fondo se reconstruye (la notificación de reinicio ya llega a Opsis).\n~ La barra de estado indica «Guardado: …» o «Error: …» en cada cambio de ajuste.\n~ Aplicar cursores ya no congela Opsis.",
+  "VersionNotes.2.4.4": "~ Los plugins que esperan aprobación (p. ej. News Crawler en %AppData%) ya no bloquean el inicio ni desaparecen: Opsis pregunta justo después de arrancar y desde el menú de la bandeja.\n~ Tras reiniciar el Explorador, el fondo se reconstruye (la notificación de reinicio ya llega a Opsis).\n~ La barra de estado indica «Guardado: …» o «Error: …» en cada cambio de ajuste.\n~ Aplicar cursores ya no congela Opsis.\n~ La bandeja ya no muestra errores «Collection was modified»; la guía de bienvenida y la familia Opsis son entradas propias de Opsis, mostradas una sola vez.",
   "VersionNotes.2.4.3": "+ Nuevo contrato de plugin opcional (la versión sigue siendo 0.8.0.0): un plugin puede sustituir un widget de escritorio integrado (por ejemplo el calendario) y publicar flujos de texto para las barras de News Crawler; el primer plugin es la Crónica («Tal día como hoy»). Un plugin que necesita un contrato más nuevo se omite y el error se escribe en plugins.log.",
   "VersionNotes.2.4.2": "~ Las casillas y los interruptores ya no se cortan en los bordes (esquina, anillo de foco); se quitó la fila «Monitor del sistema» de los ajustes de rendimiento.\n+ Ajustes: aspecto predeterminado de los plugins y apps de la familia (Opsis / Appearance / Crawler), publicado para ellos en plugin-ui.json.",
   "VersionNotes.2.4.1": "~ La biblioteca de vídeo siempre es visible en la página Fondo; la tarjeta de lista sigue las casillas activo/inactivo.\n~ Las páginas conservan su posición de desplazamiento y ya no saltan arriba.\n~ La gestión de audio aparece solo si Opsis Media Suite (Waveframe) está instalado.\n~ Nivel de rendimiento bajo: los contenedores omiten las animaciones de inicio decorativas.",
@@ -771,5 +771,14 @@
   "Settings.PluginUiCrawler": "Opsis News Crawler",
   "Plugin.PendingMenu": "Plugins pendientes de aprobación ({0})…",
   "Status.Saved": "Guardado: {0}",
-  "Status.Failed": "Error: {0} ({1})"
+  "Status.Failed": "Error: {0} ({1})",
+  "Tray.Welcome": "Guía de bienvenida",
+  "Tray.Family": "La familia Opsis",
+  "Welcome.Title": "Bienvenido a Opsis",
+  "Welcome.Body": "Opsis personaliza tu escritorio:\n\n•  Fondo: vídeo, página web, imagen, tiempo y más, detrás de tus iconos.\n•  Widgets y DeskContainers: reloj, monitor del sistema y contenedores que agrupan tus iconos.\n•  DeskZones y DeskStrip: ajusta ventanas a zonas y un dock para tus apps.\n•  Ajustes: cada página tiene búsqueda; los cambios se guardan al instante y se muestran en la barra de estado.\n•  El icono de la bandeja lo abre todo; los plugins (News Crawler, Appearance, ...) añaden sus páginas.",
+  "Welcome.Close": "Entendido",
+  "Family.Title": "La familia Opsis",
+  "Family.Open": "Abrir",
+  "Family.Download": "Descargar",
+  "Family.NoList": "No se encontró la lista de apps de la familia."
 }
