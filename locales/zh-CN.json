@@ -768,5 +768,7 @@
   "Settings.PluginUiOpsis": "Opsis",
   "Settings.PluginUiAppearance": "Opsis Appearance",
   "Settings.PluginUiCrawler": "Opsis News Crawler",
-  "Plugin.PendingMenu": "等待批准的插件 ({0})…"
+  "Plugin.PendingMenu": "等待批准的插件 ({0})…",
+  "Status.Saved": "已保存：{0}",
+  "Status.Failed": "失败：{0}（{1}）"
 }

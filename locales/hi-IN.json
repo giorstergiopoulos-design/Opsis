@@ -768,5 +768,7 @@
   "Settings.PluginUiOpsis": "Opsis",
   "Settings.PluginUiAppearance": "Opsis Appearance",
   "Settings.PluginUiCrawler": "Opsis News Crawler",
-  "Plugin.PendingMenu": "अनुमोदन की प्रतीक्षा में प्लगइन ({0})…"
+  "Plugin.PendingMenu": "अनुमोदन की प्रतीक्षा में प्लगइन ({0})…",
+  "Status.Saved": "सहेजा गया: {0}",
+  "Status.Failed": "विफल: {0} ({1})"
 }

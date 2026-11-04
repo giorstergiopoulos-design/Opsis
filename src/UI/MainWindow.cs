@@ -39,6 +39,49 @@ namespace MotionDesk.UI
         private Label _pageTitle = null!;
         private StatusStrip _status = null!;
         private readonly ToolStripStatusLabel _statusLabel = new("Opsis ready") { Spring = true, TextAlign = ContentAlignment.MiddleLeft };
+
+        internal enum StatusKind { Info, Success, Error }
+        private System.Windows.Forms.Timer? _msgTimer;
+        private bool _msgActive;        // a message is showing: the 5-second system-load text must not overwrite it
+
+        /// <summary>A message in the status bar for a change the user just made (saved / failed): green or red, back to the normal text after a few seconds. Safe from any thread.</summary>
+        internal static void ReportStatus(string text, StatusKind kind = StatusKind.Success)
+        {
+            foreach (var w in Application.OpenForms.OfType<MainWindow>()) w.ShowStatus(text, kind);
+        }
+
+        internal static string SavedText(string label) => string.Format(LocalizationManager.T("Status.Saved"), CleanLabel(label));
+        internal static string FailedText(string label, string reason) => string.Format(LocalizationManager.T("Status.Failed"), CleanLabel(label), reason);
+        internal static string CleanLabel(string label) => (label ?? "").Replace("&", "").Trim().TrimEnd(':');
+
+        /// <summary>Runs a settings change and reports it in the status bar: "Saved: ..." or "Failed: ..." (the exception does not escape into the UI thread).</summary>
+        internal static void ApplySetting(string label, Action change)
+        {
+            try { change(); ReportStatus(SavedText(label), StatusKind.Success); }
+            catch (Exception ex) { ReportStatus(FailedText(label, ex.Message), StatusKind.Error); RotatingLogger.Write($"Setting '{label}' failed: {ex}"); }
+        }
+
+        private void ShowStatus(string text, StatusKind kind)
+        {
+            if (IsDisposed) return;
+            if (InvokeRequired) { try { BeginInvoke(new Action(() => ShowStatus(text, kind))); } catch (Exception) { } return; }
+            _msgActive = true;
+            _statusLabel.Text = text;
+            _statusLabel.ForeColor = kind switch { StatusKind.Success => Color.FromArgb(72, 200, 120), StatusKind.Error => Color.FromArgb(235, 90, 80), _ => UiTheme.TextSecondary };
+            _msgTimer ??= new System.Windows.Forms.Timer { Interval = 6000 };
+            _msgTimer.Stop();
+            _msgTimer.Tick -= StatusTimerTick;
+            _msgTimer.Tick += StatusTimerTick;
+            _msgTimer.Start();
+        }
+
+        private void StatusTimerTick(object? sender, EventArgs e)
+        {
+            _msgTimer?.Stop();
+            _msgActive = false;
+            _statusLabel.ForeColor = UiTheme.TextSecondary;
+            UpdateStatus();                          // back to the normal system-load text
+        }
         private readonly System.Windows.Forms.Timer _statusTimer;
         private readonly System.Windows.Forms.Timer _brandPulseTimer;
         private double _brandPulseT;
@@ -4274,6 +4317,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
 
         private void UpdateStatus()
         {
+            if (_msgActive) return;
             var m = SystemMonitorService.Instance.GetSnapshot();
             _statusLabel.Text = string.Format(LocalizationManager.T("Status.SystemFormat"), m.CpuPercent.ToString("0.0"), m.AvailableMemoryMb.ToString("0"), RamUsedPercent(m.AvailableMemoryMb, m.TotalMemoryMb));
         }
@@ -4561,7 +4605,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                     BackColor = UiTheme.Background,
                     Margin = new Padding(0, 2, 0, 2)
                 };
-                box.CheckedChanged += (_, _) => onChange(box.Checked);
+                box.CheckedChanged += (_, _) => ApplySetting(text, () => onChange(box.Checked));
                 return box;
             }
 
@@ -4622,7 +4666,7 @@ WmvConversionService.PromptInstallFfmpeg(wmvFiles.Length);
                 var row = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(marginLeft, 2, 0, 4) };
                 row.Controls.Add(new Label { Text = label + ":", AutoSize = true, ForeColor = UiTheme.TextSecondary, Font = UiTheme.FontBody, Padding = new Padding(0, 6, 8, 0) });
                 var numeric = new NumericUpDown { Minimum = min, Maximum = max, Value = value, Width = 80 };
-                numeric.ValueChanged += (_, _) => onChange((int)numeric.Value);
+                numeric.ValueChanged += (_, _) => ApplySetting(label, () => onChange((int)numeric.Value));
                 row.Controls.Add(numeric);
                 row.Controls.Add(new Label { Text = unit, AutoSize = true, ForeColor = UiTheme.TextMuted, Font = UiTheme.FontBody, Padding = new Padding(8, 6, 0, 0) });
                 return row;

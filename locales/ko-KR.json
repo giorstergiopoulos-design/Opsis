@@ -768,5 +768,7 @@
   "Settings.PluginUiOpsis": "Opsis",
   "Settings.PluginUiAppearance": "Opsis Appearance",
   "Settings.PluginUiCrawler": "Opsis News Crawler",
-  "Plugin.PendingMenu": "승인 대기 중인 플러그인 ({0})…"
+  "Plugin.PendingMenu": "승인 대기 중인 플러그인 ({0})…",
+  "Status.Saved": "저장됨: {0}",
+  "Status.Failed": "실패: {0} ({1})"
 }
