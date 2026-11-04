@@ -406,6 +406,36 @@ namespace MotionDesk.Services
             return 0;
         }
 
+        /// <summary>
+        /// `--test-plugin-widget &lt;folder&gt;` (CI: workflow plugin-e2e; needs OPSIS_E2E=1 and an isolated OPSIS_APPDATA): loads the plugins of %AppData%Opsisplugins exactly like the app does
+        /// (the trust prompt is answered "approve" only in this test mode), opens the calendar widget, saves a screenshot and a result file. Exit 0 = a plugin widget replaced the calendar.
+        /// </summary>
+        public static int TestPluginWidget(string folder)
+        {
+            Directory.CreateDirectory(folder);
+            if (Environment.GetEnvironmentVariable("OPSIS_E2E") != "1" || string.IsNullOrEmpty(Environment.GetEnvironmentVariable("OPSIS_APPDATA")))
+            { File.WriteAllText(Path.Combine(folder, "plugin-widget.txt"), "refused: needs OPSIS_E2E=1 and OPSIS_APPDATA"); return 2; }
+            void Pump(int ms) { var end = DateTime.UtcNow.AddMilliseconds(ms); while (DateTime.UtcNow < end) { Application.DoEvents(); System.Threading.Thread.Sleep(15); } }
+            PluginHost.Instance.TrustPrompt = _ => true;
+            PluginHost.Instance.StartAll();
+            Pump(1500);
+            var replacement = PluginHost.Instance.FindWidgetReplacing("calendar");
+            var sc = Screen.PrimaryScreen ?? Screen.AllScreens[0];
+            var w = new WidgetWindow("calendar", sc.Bounds.X + 200, sc.Bounds.Y + 200, 420, 340);
+            w.Show();
+            Pump(3500);
+            using (var shot = new Bitmap(w.Width, w.Height))          // only the widget, never the whole screen
+            {
+                using (var g = Graphics.FromImage(shot)) g.CopyFromScreen(w.Location, Point.Empty, shot.Size);
+                shot.Save(Path.Combine(folder, "calendar-widget.png"), System.Drawing.Imaging.ImageFormat.Png);
+            }
+            w.Close();
+            File.WriteAllText(Path.Combine(folder, "plugin-widget.txt"),
+                $"plugins={PluginHost.Instance.Plugins.Count} replaced={(replacement != null)} widget={replacement?.Key}");
+            PluginHost.Instance.StopAll();
+            return replacement != null ? 0 : 1;
+        }
+
         [DllImport("user32.dll")] private static extern bool SetCursorPos(int x, int y);
         [DllImport("user32.dll")] private static extern bool GetCursorPos(out POINT p);
 

@@ -17,5 +17,9 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../MotionDeskStudio.csproj" />
+    <!-- the plugin contract, for the plugin tests (the host shares this very assembly with every plugin) -->
+    <Reference Include="OpsisNewsCrawler.Plugin.Abstractions">
+      <HintPath>../../libs/OpsisNewsCrawler.Plugin.Abstractions.dll</HintPath>
+    </Reference>
   </ItemGroup>
 </Project>

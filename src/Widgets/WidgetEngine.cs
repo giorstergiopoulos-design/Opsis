@@ -319,7 +319,7 @@ namespace MotionDesk.Widgets
             else if (string.Equals(widgetId, "quicksettings", StringComparison.OrdinalIgnoreCase))
                 InitializeNativeQuickSettings();
             else if (string.Equals(widgetId, "calendar", StringComparison.OrdinalIgnoreCase))
-                InitializeNativeCalendar();
+            { if (!TryInitializePluginWidget("calendar")) InitializeNativeCalendar(); }
             else if (string.Equals(widgetId, "media", StringComparison.OrdinalIgnoreCase))
                 _ = InitializeNativeMediaAsync();
             else if (string.Equals(widgetId, "notifications", StringComparison.OrdinalIgnoreCase))
@@ -1237,6 +1237,24 @@ namespace MotionDesk.Widgets
         // δήλωση "appointments" capability σε packaged (MSIX) εφαρμογή, που το Opsis δεν είναι·
         // ίδιο μοτίβο με πολλά desktop calendar widgets (π.χ. Rainmeter): δείχνει μήνα/ημέρες/
         // σήμερα, όχι πραγματικά ραντεβού.
+        // A plugin (e.g. "On this day") can replace a built-in widget with its own content: the plugin control is hosted in the same native panel (title, drag, resize).
+        private bool TryInitializePluginWidget(string builtInId)
+        {
+            var widget = PluginHost.Instance.FindWidgetReplacing(builtInId);
+            if (widget == null) return false;
+            Control content;
+            try { content = widget.CreateContent(); }
+            catch (Exception ex) { RotatingLogger.Write($"Plugin widget '{widget.Key}' failed to create: {ex.Message}"); return false; }
+            var panel = CreateNativePanel(LocalizationManager.CurrentLanguage == "el" ? widget.TitleEl : widget.TitleEn, out var values);
+            values.Visible = false;
+            content.Dock = DockStyle.Fill;
+            var area = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
+            area.Controls.Add(content);
+            panel.Controls.Add(area);
+            area.BringToFront();
+            return true;
+        }
+
         private void InitializeNativeCalendar()
         {
             var panel = CreateNativePanel(LocalizationManager.T("Widgets.Calendar"), out var values);
