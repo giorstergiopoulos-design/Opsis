@@ -28,6 +28,7 @@ namespace MotionDesk.Services
         private static void StartDialogGuard(List<string> problems, Func<string> where)
         {
             int me = Environment.ProcessId;
+            var seen = new HashSet<IntPtr>();
             var t = new System.Threading.Thread(() =>
             {
                 while (true)
@@ -42,7 +43,9 @@ namespace MotionDesk.Services
                             var cls = new System.Text.StringBuilder(64); GetClassName(h, cls, 64);
                             if (cls.ToString() != "#32770") return true;
                             var title = new System.Text.StringBuilder(256); GetWindowText(h, title, 256);
-                            lock (problems) problems.Add($"modal dialog '{title}' opened near {where()} (closed by the audit)");
+                            if (seen.Add(h)) lock (problems) problems.Add($"modal dialog '{title}' opened near {where()} (answered by the audit)");
+                            // a Yes/No box has no close button (WM_CLOSE is ignored): press No, then Cancel, then OK (IDNO=7, IDCANCEL=2, IDOK=1) - whichever button the box has
+                            foreach (int id in new[] { 7, 2, 1 }) PostMessage(h, 0x0111 /* WM_COMMAND */, (IntPtr)id, IntPtr.Zero);
                             PostMessage(h, 0x0010 /* WM_CLOSE */, IntPtr.Zero, IntPtr.Zero);
                             return true;
                         }, IntPtr.Zero);
@@ -70,6 +73,8 @@ namespace MotionDesk.Services
             var report = new StringBuilder("# Opsis UI click audit" + nl + nl + "| page | controls | clicked | slowest click ms | page load ms |" + nl + "|---|---|---|---|---|" + nl);
             Application.ThreadException += (_, e) => problems.Add("ThreadException: " + e.Exception);
 
+            // the "where are you? (weather location)" question is asked once on the first visit of the Wallpaper page by design: answer it beforehand so it does not count as a freeze
+            try { var ws = MotionDesk.Widgets.WallpaperSettings.Load(); ws.WeatherLocationPrompted = true; ws.Save(); } catch (Exception) { }
             string progress = Path.Combine(folder, "progress.txt"); string current = "start";
             void Mark(string s) { current = s; try { File.AppendAllText(progress, DateTime.UtcNow.ToString("HH:mm:ss.fff") + " " + s + nl); } catch (Exception) { } }
             StartDialogGuard(problems, () => current);
@@ -79,7 +84,10 @@ namespace MotionDesk.Services
             int totalClicked = 0;
             var pages = new List<object>();
 
-            foreach (var key in win.PageKeys.ToList())
+            // OPSIS_AUDIT_PAGES=Wallpaper,Widgets limits the pages; OPSIS_AUDIT_NOCLICK=1 only opens them (safe to run on a personal machine with an isolated OPSIS_APPDATA)
+            var only = (Environment.GetEnvironmentVariable("OPSIS_AUDIT_PAGES") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            bool noClick = Environment.GetEnvironmentVariable("OPSIS_AUDIT_NOCLICK") == "1";
+            foreach (var key in win.PageKeys.Where(k => only.Length == 0 || only.Contains(k)).ToList())
             {
                 Mark("page " + key);
                 var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -110,7 +118,7 @@ namespace MotionDesk.Services
                 int clicked = 0; long slowest = 0;
                 foreach (var c in controls)
                 {
-                    if (win.IsDisposed) break;
+                    if (win.IsDisposed || noClick) break;
                     var t = System.Diagnostics.Stopwatch.StartNew();
                     Mark($"  [{key}] {c.GetType().Name} '{c.Text}'");
                     try
