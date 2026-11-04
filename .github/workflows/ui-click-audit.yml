@@ -44,6 +44,7 @@ jobs:
           $finished = $p.WaitForExit(900000)
           if (-not $finished) { Stop-Process -Id $p.Id -Force; "The audit did not finish in 15 minutes (a freeze?)." | Out-File -Append out\ui-audit.md }
           if (Test-Path out\ui-audit.md) { Get-Content out\ui-audit.md | Out-File -Append $env:GITHUB_STEP_SUMMARY -Encoding utf8; Get-Content out\ui-audit.md | Write-Host }
+          if (Test-Path out\progress.txt) { Write-Host '--- last progress lines ---'; Get-Content out\progress.txt -Tail 15 | Write-Host }
           if (Test-Path "$ap\plugins.log") { Copy-Item "$ap\plugins.log" out\plugins.log }
           if (-not $finished) { throw 'audit timed out' }
           if ($p.ExitCode -ne 0) { throw "the audit found problems (exit code $($p.ExitCode)); see the report" }
@@ -56,6 +57,7 @@ jobs:
             out/*.png
             out/*.md
             out/*.json
+            out/*.txt
             out/plugins.log
           if-no-files-found: ignore
           retention-days: 14
