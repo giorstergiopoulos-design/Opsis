@@ -1,0 +1,17 @@
+<Project>
+  <!-- Release hygiene for every project of this repository: reproducible builds with no local paths inside the binaries, and the same publisher information everywhere. -->
+  <PropertyGroup>
+    <Deterministic>true</Deterministic>
+    <DeterministicSourcePaths>true</DeterministicSourcePaths>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <!-- the repository folder is written as /src/ inside every file (source paths, PDB references); no PDB is produced for Release -->
+    <PathMap>$(MSBuildThisFileDirectory)=/src/</PathMap>
+    <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
+    <Authors>giorstergiopoulos-design</Authors>
+    <Company>giorstergiopoulos-design</Company>
+    <Copyright>Copyright (c) 2026 giorstergiopoulos-design</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/giorstergiopoulos-design/Opsis</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+</Project>

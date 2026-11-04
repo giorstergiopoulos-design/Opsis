@@ -12,7 +12,7 @@
 <p align="center">
   <img alt="Platform" src="https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6?logo=windows&logoColor=white" />
   <img alt=".NET" src="https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white" />
-  <img alt="Version" src="https://img.shields.io/badge/version-2.4.4-00B4D8" />
+  <img alt="Version" src="https://img.shields.io/badge/version-2.4.5-00B4D8" />
   <img alt="License" src="https://img.shields.io/badge/license-MIT-green" />
   <img alt="Languages" src="https://img.shields.io/badge/localized-14%20languages-blue" />
 </p>
@@ -227,4 +227,4 @@ easier to review than broad refactors bundled with a feature.
 
 ## Άδεια / License
 
-[MIT](LICENSE) © Opsis Team
+[MIT](LICENSE) © giorstergiopoulos-design — the standard MIT text; third-party components and their licences, and the disclaimer, are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

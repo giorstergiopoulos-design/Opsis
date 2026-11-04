@@ -100,30 +100,19 @@ namespace MotionDesk.Services
         }
 
         // Verifies the setup through a locked handle and starts it right away (silent; /CLOSEAPPLICATIONS lets the installer close Opsis through its
-        // AppMutex, see installer.iss) - the lock is released only after the process exists. A small hidden PowerShell helper then waits for the setup
-        // to finish and starts Opsis again when it succeeded; it plays no part in the integrity check. The caller terminates this process right after.
+        // AppMutex, see installer.iss) - the lock is released only after the process exists. /RESTARTOPSIS=1 makes the setup itself open Opsis again when it
+        // has finished (a [Run] entry of installer.iss), so no helper process, script or hidden window is involved at all. The caller terminates this
+        // process right after.
+        internal const string SetupArguments = "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS /RESTARTOPSIS=1";
+
         public static void LaunchAfterExit(string setupPath, string sha256)
         {
-            static string Q(string s) => "'" + s.Replace("'", "''") + "'";
-            var exe = Environment.ProcessPath ?? "";
             using var locked = OpenVerified(setupPath, sha256);
-            var setup = Process.Start(new ProcessStartInfo(setupPath)
+            Process.Start(new ProcessStartInfo(setupPath)
             {
-                Arguments = "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS",
+                Arguments = SetupArguments,
                 UseShellExecute = true,                       // lets the installer's manifest ask for elevation (UAC)
                 WorkingDirectory = Path.GetDirectoryName(setupPath)!
-            });
-            if (setup == null) return;
-            var script = new StringBuilder()
-                .AppendLine("$ErrorActionPreference = 'SilentlyContinue'")
-                .AppendLine($"try {{ Wait-Process -Id {setup.Id} -Timeout 900 }} catch {{ }}")
-                .AppendLine($"if (Test-Path -LiteralPath {Q(exe)}) {{ Start-Process -FilePath {Q(exe)} }}")
-                .ToString();
-            Process.Start(new ProcessStartInfo("powershell.exe")
-            {
-                ArgumentList = { "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-Command", script },
-                UseShellExecute = false,
-                CreateNoWindow = true
             });
         }
     }

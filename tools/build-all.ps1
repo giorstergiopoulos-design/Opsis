@@ -10,13 +10,13 @@ param(
     [switch]$NoInstaller
 )
 $ErrorActionPreference = 'Stop'
-$Iscc = "C:\Users\gstrj\AppData\Local\Programs\Inno Setup 6\ISCC.exe"
+$Iscc = Join-Path $env:LOCALAPPDATA "Programs\Inno Setup 7\ISCC.exe"
 
 # --- CONFIGURE HERE ---
 $Projects = @(
-    @{ Name='MotionDesk'; Path='C:\Users\gstrj\Documents\MotionDeskStudio'; Branch='claude/pensive-carson-sls1n6' },
-    @{ Name='GearWin';    Path='C:\Users\gstrj\Documents\GearWin';          Branch='claude/full-audit' },
-    @{ Name='Waveframe';  Path='C:\Users\gstrj\Documents\waveframe';        Branch='claude/full-audit' }
+    @{ Name='MotionDesk'; Path=(Join-Path $env:USERPROFILE 'Documents\MotionDeskStudio'); Branch='claude/pensive-carson-sls1n6' },
+    @{ Name='GearWin';    Path=(Join-Path $env:USERPROFILE 'Documents\GearWin');          Branch='claude/full-audit' },
+    @{ Name='Waveframe';  Path=(Join-Path $env:USERPROFILE 'Documents\waveframe');        Branch='claude/full-audit' }
 )
 
 function Run($exe, $argList) {

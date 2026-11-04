@@ -36,22 +36,25 @@ jobs:
         shell: pwsh
         run: dotnet test tests/Opsis.Tests -m:1 --nologo
 
-      - name: Install Inno Setup
+      # The installer is built with Inno Setup 7, which has no free, version-pinned package for hosted runners (winget and Chocolatey ship Inno Setup 6), so this workflow
+      # tests the PUBLISHED installers: the newest release is upgraded from the one before it.
+      - name: Download the newest published installer
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          choco install innosetup -y --no-progress
-          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
-          if (-not (Test-Path $iscc)) { throw "ISCC.exe not found at $iscc" }
-          "ISCC=$iscc" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
-
-      - name: Publish and build the installer
-        shell: pwsh
-        run: |
-          dotnet publish MotionDeskStudio.csproj -c Release -r win-x64 --self-contained false -m:1 --nologo
-          & $env:ISCC installer.iss
-          if (-not (Test-Path Output\OpsisSetup.exe)) { throw 'OpsisSetup.exe was not produced' }
-          $v = ([xml](Get-Content MotionDeskStudio.csproj)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
-          "EXPECTED_VERSION=$v" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+          New-Item -ItemType Directory -Force new | Out-Null
+          $tag = gh release list --repo ${{ github.repository }} --limit 10 --json tagName --jq '.[].tagName' | Select-Object -First 1
+          if (-not $tag) { throw 'no release is published yet' }
+          gh release download $tag --repo ${{ github.repository }} --pattern 'OpsisSetup.exe*' --dir new
+          $sumFile = Get-ChildItem new -Filter '*.sha256' | Select-Object -First 1
+          if ($sumFile) {
+            $expected = ((Get-Content $sumFile.FullName -Raw) -split '\s+')[0].ToLower()
+            $actual = (Get-FileHash new\OpsisSetup.exe -Algorithm SHA256).Hash.ToLower()
+            if ($expected -ne $actual) { throw "SHA-256 of $tag does not match ($expected vs $actual)" }
+          }
+          "EXPECTED_VERSION=$($tag.TrimStart('v'))" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+          "Testing the installer of $tag"
 
       - name: Install the previous published release (silent)
         shell: pwsh
@@ -81,7 +84,7 @@ jobs:
       - name: Upgrade to the new build (silent)
         shell: pwsh
         run: |
-          $p = Start-Process Output\OpsisSetup.exe -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/TASKS=desktopicon,autostart','/LOG=upgrade.log' -Wait -PassThru
+          $p = Start-Process new\OpsisSetup.exe -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/TASKS=desktopicon,autostart','/LOG=upgrade.log' -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "installer exited with $($p.ExitCode)" }
           pwsh tests/e2e/check-install.ps1 -Mode installed -ExpectedVersion $env:EXPECTED_VERSION
           if ($env:HAS_PREV -eq 'true' -and -not (Test-Path "${env:ProgramFiles}\Opsis - Desktop Customization\plugins\E2eMarker\keep.txt")) { throw 'the upgrade removed a plugin folder next to Opsis' }

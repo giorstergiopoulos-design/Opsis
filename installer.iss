@@ -1,6 +1,11 @@
+; This script is built with Inno Setup 7 only (the build scripts and tests assume it).
+#if Ver < EncodeVer(7,0,0)
+  #error This installer must be compiled with Inno Setup 7 or newer.
+#endif
 #define MyAppName "Opsis - Desktop Customization"
-#define MyAppVersion "2.4.4"
-#define MyAppPublisher "Opsis Team"
+#define MyAppVersion "2.4.5"
+#define MyAppPublisher "giorstergiopoulos-design"
+#define MyAppURL "https://github.com/giorstergiopoulos-design/Opsis"
 #define MyAppExeName "Opsis.exe"
 ; Πού βρίσκεται ο installer του News Crawler (δημοσιεύεται ως GitHub release του αντίστοιχου repo).
 ; ΠΡΟΣΟΧΗ: το URL είναι η υπόθεση για το repo του crawler — άλλαξέ το αν ο installer ανέβει αλλού.
@@ -24,6 +29,15 @@ AppId={{A9E8F765-1234-4567-89AB-CDEF01234567}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
+AppPublisherURL={#MyAppURL}
+AppSupportURL={#MyAppURL}/issues
+AppUpdatesURL={#MyAppURL}/releases
+VersionInfoCompany={#MyAppPublisher}
+VersionInfoDescription=Opsis - Desktop Customization setup
+VersionInfoVersion={#MyAppVersion}.0
+VersionInfoProductName={#MyAppName}
+VersionInfoProductVersion={#MyAppVersion}
+VersionInfoCopyright=Copyright (c) 2026 {#MyAppPublisher}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 OutputDir=Output
@@ -383,6 +397,9 @@ Filename: "{cmd}"; Parameters: "/C winget install --id Gyan.FFmpeg -e --silent -
 ; 2. Εκκίνηση της εφαρμογής μετά το τέλος της εγκατάστασης
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
+; 3. Self-update: the updater starts this setup with /RESTARTOPSIS=1 and Opsis opens again when the update finished. (This replaces a hidden PowerShell helper that waited for the setup.)
+Filename: "{app}\{#MyAppExeName}"; Flags: nowait runasoriginaluser; Check: RestartOpsisRequested
+
 [Code]
 // Ελέγχει αν το winget (App Installer) υπάρχει στο σύστημα, ώστε το tickbox του FFmpeg να μην
 // εμφανίζεται καν σε μηχανήματα χωρίς winget (θα απέτυχε σιωπηλά χωρίς αυτό τον έλεγχο).
@@ -605,4 +622,10 @@ begin
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM OpsisContainers.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   RemovePerUserInstall;
   Result := '';
+end;
+
+// True when the setup was started by Opsis' own updater (/RESTARTOPSIS=1): Opsis is opened again after the update.
+function RestartOpsisRequested: Boolean;
+begin
+  Result := ExpandConstant('{param:RESTARTOPSIS|0}') = '1';
 end;

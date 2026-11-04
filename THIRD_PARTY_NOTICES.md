@@ -33,3 +33,16 @@ and the process exits together with Opsis. Data of earlier builds is migrated au
 >
 > This project includes code originally developed by HakanKokcu as part of the BirdyFences
 > project, which was licensed under the MIT License at the time of this project's creation.
+
+## Other components (each under its own licence)
+
+- LibreHardwareMonitorLib (github.com/LibreHardwareMonitor/LibreHardwareMonitor) - Mozilla Public License 2.0; reads GPU sensors for the System Monitor widget.
+- NAudio / NAudio.Wasapi (github.com/naudio/NAudio) - MIT; WASAPI loopback capture and FFT.
+- Microsoft.Web.WebView2 (Microsoft Edge WebView2 SDK) - used to render web and video wallpapers.
+- .NET / Windows Forms runtime - MIT, (c) .NET Foundation and contributors.
+- Opsis.UI (shared controls of the Opsis family) - MIT, same author.
+- Weather data comes at run time from the free Open-Meteo API (open-meteo.com) and, as a fallback, wttr.in (github.com/chubin/wttr.in), without an API key; only the requested coordinates or city name are sent.
+
+## Disclaimer
+
+The software is provided "as is" (see LICENSE). It injects a window behind the desktop icons and customises system icons and cursors: use it at your own risk.

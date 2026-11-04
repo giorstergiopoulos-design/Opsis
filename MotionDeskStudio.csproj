@@ -23,9 +23,9 @@
          είχε κανένα πρακτικό αποτέλεσμα, μόνο θα πρόσθετε ~35+ άσχετα attributes σε custom controls.
          Βλ. https://aka.ms/winforms-warnings/wfo1000 -->
     <NoWarn>$(NoWarn);WFO1000</NoWarn>
-    <Version>2.4.4</Version>
-    <AssemblyVersion>2.4.4.0</AssemblyVersion>
-    <FileVersion>2.4.4.0</FileVersion>
+    <Version>2.4.5</Version>
+    <AssemblyVersion>2.4.5.0</AssemblyVersion>
+    <FileVersion>2.4.5.0</FileVersion>
     <Product>Opsis - Desktop Customization</Product>
     <!-- Ζητήθηκε ρητά "η εφαρμογή να μην περνά ως false positive". Πραγματική, εγγυημένη λύση
          είναι μόνο ένα πληρωμένο code-signing certificate (βλ. PROJECT_STATE.md — παραλείφθηκε
@@ -35,9 +35,9 @@
          Description) — το project ήδη ΔΕΝ κάνει trimming/single-file/ReadyToRun/obfuscation
          (άλλος συνηθισμένος λόγος false positive), οπότε δεν χρειάζεται αλλαγή εκεί.
     -->
-    <Company>Opsis Team</Company>
-    <Authors>Opsis Team</Authors>
-    <Copyright>Copyright © 2026 Opsis Team</Copyright>
+    <Company>giorstergiopoulos-design</Company>
+    <Authors>giorstergiopoulos-design</Authors>
+    <Copyright>Copyright (c) 2026 giorstergiopoulos-design</Copyright>
     <Description>Opsis - Desktop Customization — animated desktop wallpaper and workspace customization for Windows.</Description>
   </PropertyGroup>
 

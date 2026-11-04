@@ -27,6 +27,6 @@ Opsis' own rule (README, hand-off docs): **no DLL injection into explorer.exe / 
 
 ## 5. Instructions for the implementing terminal
 - Queue rule: finish active tasks listed in `PROJECT_STATE.md` / `_handoff/` first, then `docs/ENGINE_ROADMAP.md`, then `docs/UI_FRAMEWORK_STUDY.md`, then this list (items 2–6).
-- Plugin repo: `C:\Users\gstrj\Documents\OpsisAppearance` (GitHub `giorstergiopoulos-design/OpsisAppearance`; set local `git config user.name/user.email` if a fresh clone). Build `dotnet build OpsisAppearance.sln -c Release`, tests `dotnet test tests/OpsisAppearance.Tests` (136 pass). The page can be rendered without a screen: `src\OpsisAppearance.App\bin\Release\net10.0-windows\OpsisAppearance.exe --snapshot out.png [--el]`.
+- Plugin repo: `<Documents>\OpsisAppearance` (GitHub `giorstergiopoulos-design/OpsisAppearance`; set local `git config user.name/user.email` if a fresh clone). Build `dotnet build OpsisAppearance.sln -c Release`, tests `dotnet test tests/OpsisAppearance.Tests` (136 pass). The page can be rendered without a screen: `src\OpsisAppearance.App\bin\Release\net10.0-windows\OpsisAppearance.exe --snapshot out.png [--el]`.
 - All controls of the page are in `OpsisControls.cs` (palette comes from the host `SetTheme`); do not add plain WinForms controls.
 - The user's own Opsis keeps the installed plugin DLL (`%AppData%\Opsis\plugins\Opsis Appearance\OpsisAppearancePlugin.dll`) locked: do not overwrite it; give the user the new build instead.
