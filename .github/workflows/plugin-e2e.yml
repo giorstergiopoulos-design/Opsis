@@ -8,7 +8,7 @@ name: plugin-e2e
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, ci-plugin-e2e]
     paths: ['libs/OpsisNewsCrawler.Plugin.Abstractions.dll', 'src/Services/PluginHost.cs', 'src/Services/PluginTrust.cs', 'src/Widgets/WidgetEngine.cs', 'tests/PluginStub/**', '.github/workflows/plugin-e2e.yml']
 
 concurrency:
