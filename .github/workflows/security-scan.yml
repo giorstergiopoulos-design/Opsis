@@ -1,0 +1,105 @@
+# Security scan of the PUBLISHED release files on a clean, free GitHub-hosted Windows machine (public repository = free minutes).
+# 1. Microsoft Defender scans every release asset (installer, portable zip) with fresh signatures: a detection here is a false positive (or a real problem) to fix BEFORE users meet it.
+# 2. A trace scan looks inside the portable zips (exe/dll/pdb) for personal data: user/machine names, local build paths, e-mail addresses.
+# 3. Secrets scan of the repository (gitleaks) and known-vulnerable NuGet packages when the repository has .NET projects.
+# Runs on demand, every Monday, and when a release is published. Never uploads anything outside the repository.
+name: security-scan
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 5 * * 1'
+  release:
+    types: [published]
+
+concurrency:
+  group: security-scan
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download the latest release files
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          New-Item -ItemType Directory -Force assets | Out-Null
+          gh release download -R $env:GITHUB_REPOSITORY -D assets --clobber -p '*.exe' -p '*.zip' -p '*.sha256'
+          Get-ChildItem assets | ForEach-Object { "{0}  {1:N1} MB" -f $_.Name, ($_.Length/1MB) }
+
+      - name: Check the published SHA-256 files
+        shell: pwsh
+        run: |
+          $bad = 0
+          Get-ChildItem assets -Filter *.sha256 | ForEach-Object {
+            $target = Join-Path assets ($_.Name -replace '\.sha256$','')
+            if (Test-Path $target) {
+              $want = ((Get-Content $_.FullName -Raw).Trim() -split '\s+')[0].ToLower()
+              $got = (Get-FileHash $target -Algorithm SHA256).Hash.ToLower()
+              if ($want -ne $got) { "MISMATCH $($_.Name)"; $bad++ } else { "ok  $($_.Name)" }
+            }
+          }
+          if ($bad) { throw "$bad checksum file(s) do not match" }
+
+      - name: Microsoft Defender scan (fresh signatures)
+        shell: pwsh
+        run: |
+          try { Update-MpSignature -ErrorAction Stop } catch { "signature update failed: $($_.Exception.Message)" }
+          Set-MpPreference -DisableRealtimeMonitoring $false -ErrorAction SilentlyContinue
+          $dir = (Resolve-Path assets).Path
+          Start-MpScan -ScanType CustomScan -ScanPath $dir -ErrorAction Stop
+          Start-Sleep 5
+          $threats = @(Get-MpThreatDetection | Where-Object { $_.Resources -like "*$dir*" -or $_.Resources -like '*assets*' })
+          Get-MpComputerStatus | Select-Object AMProductVersion, AntivirusSignatureVersion, AntivirusSignatureLastUpdated | Format-List
+          if ($threats.Count -gt 0) {
+            $threats | ForEach-Object { "DETECTED: $($_.ThreatID) in $($_.Resources -join ', ')" }
+            throw "Defender reported $($threats.Count) detection(s)"
+          }
+          'Defender: no detection in the release files'
+
+      - name: Trace scan inside the portable zips (personal data and build paths)
+        shell: pwsh
+        run: |
+          $patterns = @('C:\Users\','C:\w\','gstrj','LOGISTIRIO','giorstergiopoulos@gmail','/Users/','D:\a\')
+          # D:\a\ is the runner build path of THIS repository's CI; the owner login in a public GitHub URL is not personal data
+          $work = Join-Path $env:RUNNER_TEMP 'trace'; New-Item -ItemType Directory -Force $work | Out-Null
+          $hits = @()
+          Get-ChildItem assets -Filter *.zip | ForEach-Object {
+            $d = Join-Path $work $_.BaseName; Expand-Archive $_.FullName $d -Force
+            Get-ChildItem $d -Recurse -File -Include *.exe,*.dll,*.pdb,*.json,*.config,*.js,*.html | ForEach-Object {
+              $b = [IO.File]::ReadAllBytes($_.FullName)
+              $u8 = [Text.Encoding]::Latin1.GetString($b); $u16 = [Text.Encoding]::Unicode.GetString($b)
+              foreach ($p in $patterns) {
+                if ($u8.IndexOf($p, [StringComparison]::OrdinalIgnoreCase) -ge 0 -or $u16.IndexOf($p, [StringComparison]::OrdinalIgnoreCase) -ge 0) { $hits += "$($_.Name): contains '$p'" }
+              }
+            }
+          }
+          $hits | Sort-Object -Unique | ForEach-Object { "TRACE: $_" }
+          if ($hits.Count -gt 0) { throw "$($hits.Count) trace(s) of personal data or build paths inside the release files" }
+          'trace scan: clean'
+
+      - name: Secrets scan of the repository (gitleaks)
+        shell: pwsh
+        run: |
+          $v = '8.21.2'
+          Invoke-WebRequest "https://github.com/gitleaks/gitleaks/releases/download/v$v/gitleaks_${v}_windows_x64.zip" -OutFile gl.zip
+          Expand-Archive gl.zip gl -Force
+          ./gl/gitleaks.exe detect --source . --no-banner --redact --exit-code 1
+
+      - name: Known-vulnerable NuGet packages
+        shell: pwsh
+        run: |
+          $sln = Get-ChildItem -Recurse -Include *.sln,*.slnx -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $sln) { 'no .NET solution'; exit 0 }
+          dotnet list $sln.FullName package --vulnerable --include-transitive 2>&1 | Tee-Object vuln.txt
+          if (Select-String -Path vuln.txt -Pattern '\bHigh\b|\bCritical\b' -Quiet) { throw 'a package with a High/Critical vulnerability is referenced' }
