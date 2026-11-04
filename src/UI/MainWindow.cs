@@ -619,6 +619,9 @@ namespace MotionDesk.UI
 
         /// <summary>Επιτρέπει σε εξωτερικό caller (π.χ. το tray context menu) να ανοίξει το
         /// κύριο παράθυρο κατευθείαν σε συγκεκριμένη σελίδα αντί για το Dashboard.</summary>
+        /// <summary>The keys of the pages in the side menu (plugin pages included), for the click audit.</summary>
+        public IReadOnlyList<string> PageKeys => _navButtons.Keys.ToList();
+
         public void NavigateTo(string pageKey)
         {
             if (_navButtons.TryGetValue(pageKey, out var button))
