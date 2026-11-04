@@ -114,11 +114,18 @@ namespace MotionDesk.Services
                     }
                 }
                 Collect(win);
+                int total = controls.Count;
+                var done = new HashSet<string>();
+                string Sig(Control c, List<Control> list) => c.GetType().Name + "|" + c.Text + "|" + list.Where(x => x.GetType() == c.GetType() && x.Text == c.Text).ToList().IndexOf(c);
 
                 int clicked = 0; long slowest = 0;
-                foreach (var c in controls)
+                for (int guard = 0; guard < 150; guard++)
                 {
                     if (win.IsDisposed || noClick) break;
+                    controls.Clear(); Collect(win);          // a click can rebuild the whole page (the old controls are then disposed): look again after every click
+                    Control? c = controls.FirstOrDefault(x => !done.Contains(Sig(x, controls)));
+                    if (c == null) break;
+                    done.Add(Sig(c, controls));
                     var t = System.Diagnostics.Stopwatch.StartNew();
                     Mark($"  [{key}] {c.GetType().Name} '{c.Text}'");
                     try
@@ -144,8 +151,8 @@ namespace MotionDesk.Services
                     if (t.ElapsedMilliseconds > 3000) problems.Add($"[{key}] a control took {t.ElapsedMilliseconds} ms (UI freeze)");
                 }
                 totalClicked += clicked;
-                report.Append($"| {key} | {controls.Count} | {clicked} | {slowest} | {load} |" + nl);
-                pages.Add(new { page = key, controls = controls.Count, clicked, slowestMs = slowest, loadMs = load });
+                report.Append($"| {key} | {total} | {clicked} | {slowest} | {load} |" + nl);
+                pages.Add(new { page = key, controls = total, clicked, slowestMs = slowest, loadMs = load });
             }
 
             report.Append(nl + $"**Total controls clicked: {totalClicked}**" + nl + nl);
