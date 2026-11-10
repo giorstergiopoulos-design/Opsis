@@ -59,8 +59,38 @@ namespace MotionDesk.Widgets
             int id = _nextId++;
             bool ok = RegisterHotKey(Handle, id, modifiers, vk);
             if (ok) { _handlers[id] = onPressed; }
-            else RotatingLogger.Write($"HotkeyManager: RegisterHotKey failed (already taken) for modifiers=0x{modifiers:X} vk=0x{vk:X} (Win32 error {Marshal.GetLastWin32Error()})");
+            else
+            {
+                int err = Marshal.GetLastWin32Error();
+                RotatingLogger.Write($"HotkeyManager: RegisterHotKey failed (already taken) for modifiers=0x{modifiers:X} vk=0x{vk:X} (Win32 error {err})");
+                lock (FailedCombos) FailedCombos.Add(Describe(modifiers, vk));
+            }
             return ok;
+        }
+
+        // 2.4.6.1: οι συντομεύσεις που ΔΕΝ καταχωρήθηκαν (πιασμένες από άλλη εφαρμογή/οδηγό) — το tray τις
+        // δείχνει μία φορά με balloon ώστε ο χρήστης να ξέρει ότι δεν θα δουλέψουν.
+        public static readonly System.Collections.Generic.List<string> FailedCombos = new();
+
+        public static string TakeFailureSummary()
+        {
+            lock (FailedCombos)
+            {
+                if (FailedCombos.Count == 0) return "";
+                var s = string.Join(", ", FailedCombos);
+                FailedCombos.Clear();
+                return s;
+            }
+        }
+
+        private static string Describe(uint modifiers, uint vk)
+        {
+            var parts = new System.Collections.Generic.List<string>();
+            if ((modifiers & MOD_CONTROL) != 0) parts.Add("Ctrl");
+            if ((modifiers & MOD_ALT) != 0) parts.Add("Alt");
+            if ((modifiers & MOD_SHIFT) != 0) parts.Add("Shift");
+            parts.Add(((Keys)vk).ToString());
+            return string.Join("+", parts);
         }
 
         protected override void WndProc(ref Message m)

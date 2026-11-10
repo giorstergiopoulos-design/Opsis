@@ -41,11 +41,26 @@ namespace MotionDesk.Services
         /// <summary>Interval of a timer after the profile of its feature is applied: slower on weaker tiers, never below the base.</summary>
         public static int Interval(PerfFeature feature, int baseMs) => (int)Math.Round(baseMs * ForFeature(feature).RefreshScale);
 
+        // 2.4.6.1: cache 2 s — το FeatureOverride καλείται από timers (WidgetEngine κ.ά.) και πριν διάβαζε/parse-άρε
+        // ολόκληρο το settings.json σε κάθε κλήση.
+        private static Dictionary<string, string>? _overrideCache;
+        private static long _overrideCacheTick;
+        private static readonly object _overrideLock = new();
+
         public static HardwareTier? FeatureOverride(PerfFeature feature)
         {
             try
             {
-                var map = AppSettings.Load().PerfFeatureTier;
+                Dictionary<string, string>? map;
+                lock (_overrideLock)
+                {
+                    if (_overrideCacheTick == 0 || Environment.TickCount64 - _overrideCacheTick > 2000)
+                    {
+                        _overrideCache = AppSettings.Load().PerfFeatureTier;
+                        _overrideCacheTick = Math.Max(1, Environment.TickCount64);
+                    }
+                    map = _overrideCache;
+                }
                 if (map != null && map.TryGetValue(feature.ToString(), out var raw) && Enum.TryParse<HardwareTier>(raw, out var t)) return t;
             }
             catch (Exception) { }
@@ -58,6 +73,7 @@ namespace MotionDesk.Services
             a.PerfFeatureTier ??= new Dictionary<string, string>();
             if (tier == null) a.PerfFeatureTier.Remove(feature.ToString()); else a.PerfFeatureTier[feature.ToString()] = tier.Value.ToString();
             a.Save();
+            lock (_overrideLock) { _overrideCacheTick = 0; }
             PerformanceGovernor.RaiseChanged();
         }
     }

@@ -729,6 +729,7 @@ namespace OpsisContainers
 
                     // FIX: Instantly terminate the process to prevent background threads from 
                     // throwing NullReferenceExceptions during a graceful WPF teardown.
+                    try { DesktopOriginals.ShowAll(); } catch (Exception) { } // 2.4.6.1: Exit() παρακάμπτει το App.Exit -> επαναφορά εικονιδίων
                     Environment.Exit(0);
                 }
                 else

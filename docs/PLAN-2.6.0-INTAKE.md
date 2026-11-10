@@ -28,7 +28,7 @@
 | 2.1.3 Theme packs vs Εξατομίκευση, Appearance χωρίς νέα καρτέλα | ΑΝΟΙΧΤΟ | |
 | 2.1.4 Lockscreen GIF (LockscreenGif), «ταίριασμα lockscreen με wallpaper» exclude καιρού/ώρας | ΑΝΟΙΧΤΟ | υπάρχει «Match lock screen to wallpaper» (v1.9.7) |
 | 2.1.4 Κατάργηση φάσματος ήχου από στοιχεία wallpaper | ΑΝΟΙΧΤΟ | εξαρτάται από §2.1.6/§4.4 |
-| 2.1.5/2.1.5β Κινούμενα wallpapers με landmarks, ποιότητα εικόνας | ΑΝΟΙΧΤΟ | η δική μου 3D «Landscape» δουλειά είναι **παγωμένη** στο `C:\w\landscape-backup` (όχι στο repo)· τα 3D ΕΞΩ προς το παρόν |
+| 2.1.5/2.1.5β Κινούμενα wallpapers με landmarks, ποιότητα εικόνας | ΑΝΟΙΧΤΟ | η δική μου 3D «Landscape» δουλειά είναι **παγωμένη** στο `<workspace>\landscape-backup` (όχι στο repo)· τα 3D ΕΞΩ προς το παρόν |
 | 2.1.6 Music overlay (GSMTC), θέση επιλογής | ΑΝΟΙΧΤΟ | |
 | 2.1.7 Θέμα Glass + `Opsis.Glass`, 3 επίπεδα | ΑΝΟΙΧΤΟ | Mica/blur υπάρχει (`GlassBlur`), όχι liquid glass |
 | 2.1.8 Μεγέθυνση/διάταξη κυρίου παραθύρου, ομαδοποίηση σελίδων, κάρτες, υπο-καρτέλες, αναζήτηση, Reset ανά ενότητα | ΜΕΡΙΚΟ | αναζήτηση σε κάθε σελίδα (2.3.0)· Reset μόνο σε Ρυθμίσεις· switch rows· όχι κάρτες/υπο-καρτέλες· ύψος παραθύρου με 2 plugins (2.3.0, ανεπιβεβαίωτο) |
@@ -84,6 +84,22 @@
 5. Οι δύο διορθώσεις ασφαλείας του fork (νεκρές εντολές tray, `Environment.Exit` που παρακάμπτει την επαναφορά εικονιδίων) — **μόνο αν** επιβεβαιωθεί ότι επηρεάζουν σταθερότητα· διαφορετικά → R.2.
 Όλα τα υπόλοιπα (κάρτες UI, rubber-band, glass κ.λπ.) **δεν** μπαίνουν στη 2.4.6.1.
 
+## 4Β. Αποφάσεις 2.4.6.1 (καταγραφή)
+
+| Θέμα | Απόφαση | Σημείωση |
+|---|---|---|
+| (α) Hotkeys vs Windows | **μπαίνει** (έλεγχος) | Host: Ctrl+Alt+G/M/F, Ctrl+Alt+Shift+βελάκια, Ctrl+Shift+βελάκια. Μηχανή (hook): Ctrl+Alt+0-9/,/./Z, Ctrl+`. Καμία σύγκρουση με Win+D/L/E/R/Tab, Alt+Tab, Win+βελάκια, Ctrl+Shift+Esc, Win+Shift+S. Η μηχανή ΑΚΟΥΕΙ Win+D μόνο για να αντιδράσει, δεν το δεσμεύει. |
+| (α) Μήνυμα όταν αποτύχει RegisterHotKey | **μπαίνει** | `HotkeyManager.FailedCombos` + balloon στο tray, κλειδί `Hotkey.Conflict` ×14 |
+| (α) Ctrl+Shift+βελάκι (FocusAdjacentZone) | **R** | Δεσμεύεται global και «κλέβει» την επιλογή κειμένου σε όλες τις εφαρμογές. Θέλει απόφαση/ρύθμιση (opt-in ή άλλος συνδυασμός) = αλλαγή συμπεριφοράς |
+| (β) Environment.Exit παρακάμπτει επαναφορά εικονιδίων | **μπαίνει** (μόνο BackupManager restore) | `DesktopOriginals.ShowAll()` πριν το Exit· τα άλλα Exit είναι duplicate-instance/diagnostics, δεν αγγίζουν εικονίδια. Εντολή «restore icons» από tray/CLI = νέο feature → **R** |
+| (β) Νεκρές εντολές tray | **R** | δεν επιβεβαιώθηκε ζημιά σταθερότητας/plugins· χρειάζεται πλήρης έλεγχος tray |
+| (γ) Cache FeatureOverride/AppSettings.Load | **μπαίνει** (FeatureOverride, TTL 2 s) | τα υπόλοιπα `AppSettings.Load()` (175 σημεία) → **R** (θέλει κεντρικό cache με invalidation στο Save) |
+| (γ) FlatToggle Font dispose | **μπαίνει** | Opsis.UI 0.3.1 (add-only, API ίδιο) |
+| (γ) Bounded favicon cache | **R** | δεν υπάρχει favicon cache στο Opsis/containers |
+| (γ) Reusable toast timer | **R** | SmartToast: ένας DispatcherTimer ανά toast, σταματά στο κλείσιμο· καμία μετρημένη διαρροή |
+| (δ) Baseline πόρων | **μπαίνει** | `tools/resource-logger.ps1` (CSV: CPU, Private Bytes, WS, handles, threads, GDI, USER). Τρέχει ο χρήστης |
+| (ε) Rollback | **μπαίνει** | tag `v2.4.6.1` + branch `rollback/pre-2.6.0` στο v2.4.6.1 |
+
 ## 5. Πρόταση σειράς για 2.6.0 beta (κριτήριο: εύκολο / φτηνό / γρήγορο)
 | # | Πακέτο | Κόστος | Γιατί σε αυτή τη θέση |
 |---|---|---|---|
@@ -128,7 +144,7 @@
 | `CHANGELOG.md` | 133 KB | 2026-11-04 | ΚΡΑΤΑ (πηγή ιστορικού εκδόσεων)· έχει «Υπόλοιπο» ανά έκδοση που ενσωματώνονται στη λίστα R |
 | `README.md`, `THIRD_PARTY_NOTICES.md` | 16 / 3 KB | 2026-11-04 | ΚΡΑΤΑ (θα ενημερωθούν στο release) |
 | `release/2.2.0…2.4.6-assets/RELEASE-NOTES.md` (12 αρχεία) | <2 KB έκαστο | 2026-10-29…11-04 | **ΠΛΕΟΝΑΣΜΑ** του CHANGELOG· αν δεν απαιτούνται ως GitHub release body → διαγραφή όλων πλην του τελευταίου |
-Επιπλέον (εκτός repo `Opsis`): `C:\w\TASKS-MASTER.md` (αντικαθίσταται από το master plan §26), `C:\w\TASKS-common.md`, `TASKS-HYGIENE.md`, `TASKS-*` — προτείνεται ένα ενιαίο task manager αρχείο.
+Επιπλέον (εκτός repo `Opsis`): `<workspace>\TASKS-MASTER.md` (αντικαθίσταται από το master plan §26), `<workspace>\TASKS-common.md`, `TASKS-HYGIENE.md`, `TASKS-*` — προτείνεται ένα ενιαίο task manager αρχείο.
 
 ## 8. Επόμενη ενέργεια (μετά την έγκριση)
 1. Ο χρήστης απαντά: προτεραιότητες §5, έγκριση §4 (2.4.6.1), έγκριση λίστας §7, και τις 3 ερωτήσεις της §6.

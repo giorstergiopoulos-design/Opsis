@@ -150,6 +150,10 @@ namespace MotionDesk.Widgets
             _updateCheckTimer.Start();
 
             _hotkeys.RegisterCtrlAlt('F', () => DeskFlipEngine.Show());
+            // 2.4.6.1: ενημέρωση χρήστη αν κάποια global συντόμευση ήταν ήδη πιασμένη (δεν θα δουλέψει).
+            var failedHotkeys = HotkeyManager.TakeFailureSummary();
+            if (failedHotkeys.Length > 0)
+                _trayIcon.ShowBalloonTip(8000, "Opsis", string.Format(LocalizationManager.T("Hotkey.Conflict"), failedHotkeys), ToolTipIcon.Warning);
 
             // Fences-style: διπλό-κλικ σε κενό σημείο της επιφάνειας εργασίας κρύβει/επαναφέρει
             // όλα τα εικονίδια εκτός του Ο Υπολογιστής μου/φάκελος χρήστη/Πίνακας Ελέγχου/Κάδος
