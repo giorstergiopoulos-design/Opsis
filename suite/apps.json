@@ -1,229 +1,191 @@
 {
-    "schema":  1,
-    "updated":  "2026-11-04",
-    "owner":  "giorstergiopoulos-design",
-    "apps":  [
-                 {
-                     "id":  "opsis",
-                     "name":  "Opsis",
-                     "repo":  "Opsis",
-                     "installerAsset":  "^OpsisSetup\\.exe$",
-                     "checksumAsset":  "OpsisSetup.exe.sha256",
-                     "uninstallDisplayName":  "Opsis - Desktop Customization",
-                     "paths":  [
-                                   "%ProgramFiles%\\Opsis - Desktop Customization\\Opsis.exe",
-                                   "%LocalAppData%\\Programs\\Opsis - Desktop Customization\\Opsis.exe"
-                               ],
-                     "tagline":  {
-                                     "en":  "Desktop customisation for Windows 11",
-                                     "el":  "Εξατομίκευση επιφάνειας εργασίας για Windows 11"
-                                 },
-                     "capabilities":  {
-                                          "en":  [
-                                                     "Animated and video wallpapers behind your icons (works on Windows 11 24H2+)",
-                                                     "Widgets: system monitor, clock, weather, network, disk",
-                                                     "DeskStrip dock and DeskContainers (Fences-style groups)",
-                                                     "10-band system equalizer through Equalizer APO",
-                                                     "Plugins: News Crawler, Appearance and more"
-                                                 ],
-                                          "el":  [
-                                                     "Κινούμενα wallpapers και βίντεο πίσω από τα εικονίδια (και στα Windows 11 24H2+)",
-                                                     "Widgets: παρακολούθηση συστήματος, ρολόι, καιρός, δίκτυο, δίσκος",
-                                                     "DeskStrip dock και DeskContainers (ομάδες σαν Fences)",
-                                                     "Equalizer 10 ζωνών για όλο το σύστημα μέσω Equalizer APO",
-                                                     "Plugins: News Crawler, Appearance και άλλα"
-                                                 ]
-                                      }
-                 },
-                 {
-                     "id":  "newscrawler",
-                     "name":  "Opsis News Crawler",
-                     "repo":  "OpsisNewsCrawler",
-                     "installerAsset":  "^OpsisNewsCrawler-Setup\\.exe$",
-                     "checksumAsset":  "OpsisNewsCrawler-Setup.exe.sha256",
-                     "uninstallDisplayName":  "Opsis News Crawler",
-                     "paths":  [
-                                   "%ProgramFiles%\\Opsis News Crawler\\OpsisNewsCrawler.exe",
-                                   "%LocalAppData%\\Programs\\Opsis News Crawler\\OpsisNewsCrawler.exe",
-                                   "%AppData%\\Opsis\\plugins\\Opsis - Desktop Customization\\OpsisNewsCrawler.OpsisPlugin.dll"
-                               ],
-                     "tagline":  {
-                                     "en":  "News and markets ticker inside your taskbar",
-                                     "el":  "Ειδήσεις και αγορές σε μπάρα μέσα στη γραμμή εργασιών"
-                                 },
-                     "capabilities":  {
-                                          "en":  [
-                                                     "Scrolling headlines from many sources and categories",
-                                                     "Breaking-news mode with sound and live video link",
-                                                     "Prices, portfolio and price alerts; weather and severe-weather warnings",
-                                                     "Transparent bar in the free part of the taskbar or on the desktop",
-                                                     "Standalone app or Opsis plugin"
-                                                 ],
-                                          "el":  [
-                                                     "Κυλιόμενοι τίτλοι από πολλές πηγές και κατηγορίες",
-                                                     "Λειτουργία έκτακτων ειδήσεων με ήχο και σύνδεσμο σε ζωντανό βίντεο",
-                                                     "Τιμές, χαρτοφυλάκιο και ειδοποιήσεις ορίων· καιρός και προειδοποιήσεις έντονων φαινομένων",
-                                                     "Διάφανη μπάρα στον ελεύθερο χώρο της γραμμής εργασιών ή στην επιφάνεια εργασίας",
-                                                     "Αυτόνομη εφαρμογή ή plugin του Opsis"
-                                                 ]
-                                      }
-                 },
-                 {
-                     "id":  "appearance",
-                     "name":  "Opsis Appearance",
-                     "repo":  "OpsisAppearance",
-                     "installerAsset":  "^OpsisAppearance-Setup\\.exe$",
-                     "checksumAsset":  "OpsisAppearance-Setup.exe.sha256",
-                     "uninstallDisplayName":  "Opsis Appearance",
-                     "paths":  [
-                                   "%ProgramFiles%\\Opsis Appearance\\OpsisAppearance.exe",
-                                   "%LocalAppData%\\Programs\\Opsis Appearance\\OpsisAppearance.exe",
-                                   "%AppData%\\Opsis\\plugins\\Opsis Appearance\\OpsisAppearancePlugin.dll"
-                               ],
-                     "tagline":  {
-                                     "en":  "Change the look of Windows itself",
-                                     "el":  "Αλλάξτε την εμφάνιση των ίδιων των Windows"
-                                 },
-                     "capabilities":  {
-                                          "en":  [
-                                                     "Automatic light/dark theme at sunrise/sunset, accent from your wallpaper",
-                                                     "Translucent and rounded taskbar, Mica/Acrylic for every window",
-                                                     "Theme Manager with import/export of full themes",
-                                                     "Wallpaper slideshow and Explorer/taskbar behaviour settings",
-                                                     "Restore point and backup vault before intrusive changes"
-                                                 ],
-                                          "el":  [
-                                                     "Αυτόματο light/dark με ανατολή/δύση, accent από το wallpaper",
-                                                     "Διάφανη και στρογγυλεμένη γραμμή εργασιών, Mica/Acrylic σε κάθε παράθυρο",
-                                                     "Theme Manager με εισαγωγή/εξαγωγή πλήρων θεμάτων",
-                                                     "Slideshow wallpaper και ρυθμίσεις συμπεριφοράς Εξερευνητή/taskbar",
-                                                     "Σημείο επαναφοράς και αντίγραφο ασφαλείας πριν από παρεμβατικές αλλαγές"
-                                                 ]
-                                      }
-                 },
-                 {
-                     "id":  "gearwin",
-                     "name":  "GearWin",
-                     "repo":  "GearWin",
-                     "installerAsset":  "^GearWin-Setup-.*\\.exe$",
-                     "checksumAsset":  null,
-                     "uninstallDisplayName":  "GearWin - Complete PC Care",
-                     "paths":  [
-                                   "%ProgramFiles%\\GearWin - Complete PC Care\\GearWin.exe",
-                                   "%LocalAppData%\\Programs\\GearWin\\GearWin.exe"
-                               ],
-                     "tagline":  {
-                                     "en":  "Complete PC care for Windows 11",
-                                     "el":  "Πλήρης φροντίδα του υπολογιστή για Windows 11"
-                                 },
-                     "capabilities":  {
-                                          "en":  [
-                                                     "Updates for apps, drivers and Windows in one place",
-                                                     "Cleanup, startup, performance modes and RAM release",
-                                                     "Health repair (SFC/DISM), registry cleaner, backups and restore points",
-                                                     "Security and privacy tools, Windows tweaks with safe undo",
-                                                     "Game library, per-game settings; 14 languages"
-                                                 ],
-                                          "el":  [
-                                                     "Ενημερώσεις εφαρμογών, οδηγών και Windows σε ένα σημείο",
-                                                     "Καθαρισμός, εκκίνηση, λειτουργίες απόδοσης και ελευθέρωση RAM",
-                                                     "Επισκευή υγείας (SFC/DISM), καθαριστής μητρώου, αντίγραφα και σημεία επαναφοράς",
-                                                     "Εργαλεία ασφάλειας και απορρήτου, tweaks των Windows με ασφαλή αναίρεση",
-                                                     "Βιβλιοθήκη παιχνιδιών, ρυθμίσεις ανά παιχνίδι· 14 γλώσσες"
-                                                 ]
-                                      }
-                 },
-                 {
-                     "id":  "mediaplayer",
-                     "name":  "Opsis Media Player Pro",
-                     "repo":  "OpsisMediaPlayerPro",
-                     "installerAsset":  "^OpsisMediaPlayerPro-Setup\\.exe$",
-                     "checksumAsset":  "OpsisMediaPlayerPro-Setup.exe.sha256",
-                     "uninstallDisplayName":  "Opsis Media Player Pro",
-                     "paths":  [
-                                   "%ProgramFiles%\\Opsis Media Player Pro\\OpsisMediaPlayerPro.exe",
-                                   "%LocalAppData%\\Programs\\Opsis Media Player Pro\\OpsisMediaPlayerPro.exe"
-                               ],
-                     "tagline":  {
-                                     "en":  "Fast video and audio player on the VLC engine",
-                                     "el":  "Γρήγορος player βίντεο και ήχου με τον κινητήρα του VLC"
-                                 },
-                     "capabilities":  {
-                                          "en":  [
-                                                     "Plays almost any format, streams, DVD folders and cameras",
-                                                     "Media Player Classic / VLC style controls and shortcuts",
-                                                     "Subtitle download and automatic sync",
-                                                     "Equalizer and audio effects, output-device and channel selection",
-                                                     "Themes with light/dark button, MP4/MP3 conversion"
-                                                 ],
-                                          "el":  [
-                                                     "Παίζει σχεδόν κάθε μορφή, streams, φακέλους DVD και κάμερες",
-                                                     "Χειριστήρια και συντομεύσεις σαν Media Player Classic / VLC",
-                                                     "Λήψη υποτίτλων και αυτόματος συγχρονισμός",
-                                                     "Equalizer και εφέ ήχου, επιλογή συσκευής εξόδου και καναλιών",
-                                                     "Θέματα με κουμπί σκούρου/φωτεινού, μετατροπή σε MP4/MP3"
-                                                 ]
-                                      }
-                 },
-                 {
-                     "id":  "kombos",
-                     "name":  "Kombos",
-                     "repo":  "Kombos",
-                     "installerAsset":  "^KombosSetup-.*\\.exe$",
-                     "checksumAsset":  null,
-                     "uninstallDisplayName":  "Kombos",
-                     "paths":  [
-                                   "%ProgramFiles%\\Kombos\\Kombos.exe",
-                                   "%LocalAppData%\\Programs\\Kombos\\Kombos.exe"
-                               ],
-                     "tagline":  {
-                                     "en":  "A local hub for AI tools, with Claude as the agent",
-                                     "el":  "Τοπικό κέντρο εργαλείων AI, με τον Claude ως πράκτορα"
-                                 },
-                     "capabilities":  {
-                                          "en":  [
-                                                     "One place for your AI tools, running locally on Windows",
-                                                     "Claude as the agent that ties the tools together",
-                                                     "Plugins (weather, office, dev, creative, business toolkits)",
-                                                     "Conversation viewer, accounts and analytics"
-                                                 ],
-                                          "el":  [
-                                                     "Ένα σημείο για τα εργαλεία AI σας, τοπικά στα Windows",
-                                                     "Ο Claude ως πράκτορας που συνδέει τα εργαλεία",
-                                                     "Plugins (καιρός, γραφείο, ανάπτυξη, δημιουργικά, επιχειρηματικά)",
-                                                     "Προβολή συζητήσεων, λογαριασμοί και analytics"
-                                                 ]
-                                      }
-                 },
-                 {
-                     "id":  "waveframe",
-                     "name":  "Waveframe",
-                     "repo":  "waveframe",
-                     "installerAsset":  "^Waveframe\\.Setup\\..*\\.exe$",
-                     "checksumAsset":  null,
-                     "uninstallDisplayName":  "Waveframe",
-                     "paths":  [
-                                   "%ProgramFiles%\\Waveframe\\Waveframe.exe",
-                                   "%LocalAppData%\\Programs\\waveframe\\Waveframe.exe"
-                               ],
-                     "tagline":  {
-                                     "en":  "Real-time audio enhancer and player",
-                                     "el":  "Βελτιωτής και player ήχου σε πραγματικό χρόνο"
-                                 },
-                     "capabilities":  {
-                                          "en":  [
-                                                     "Web Audio equalizer and effects in real time",
-                                                     "Loudness measurement (LUFS) and normalisation",
-                                                     "Sleep timer; export of equalizer settings to Equalizer APO",
-                                                     "Light on resources: Electron with a built-in self-test"
-                                                 ],
-                                          "el":  [
-                                                     "Equalizer και εφέ Web Audio σε πραγματικό χρόνο",
-                                                     "Μέτρηση έντασης (LUFS) και κανονικοποίηση",
-                                                     "Χρονόμετρο ύπνου· εξαγωγή ρυθμίσεων equalizer σε Equalizer APO",
-                                                     "Ελαφρύ: Electron με ενσωματωμένο αυτοέλεγχο"
-                                                 ]
-                                      }
-                 }
-             ]
+  "schema": 1,
+  "updated": "2026-11-12",
+  "owner": "giorstergiopoulos-design",
+  "apps": [
+    {
+      "id": "opsis",
+      "name": "Opsis",
+      "repo": "Opsis",
+      "installerAsset": "^OpsisSetup\\.exe$",
+      "checksumAsset": "OpsisSetup.exe.sha256",
+      "uninstallDisplayName": "Opsis - Desktop Customization",
+      "paths": [
+        "%ProgramFiles%\\Opsis - Desktop Customization\\Opsis.exe",
+        "%LocalAppData%\\Programs\\Opsis - Desktop Customization\\Opsis.exe"
+      ],
+      "tagline": {
+        "en": "Desktop customisation for Windows 11",
+        "el": "Εξατομίκευση επιφάνειας εργασίας για Windows 11"
+      },
+      "capabilities": {
+        "en": [
+          "Animated and video wallpapers behind your icons (works on Windows 11 24H2+)",
+          "Widgets: system monitor, clock, weather, network, disk",
+          "DeskStrip dock and DeskContainers (Fences-style groups)",
+          "10-band system equalizer through Equalizer APO",
+          "Plugins: News Crawler, Appearance and more"
+        ],
+        "el": [
+          "Κινούμενα wallpapers και βίντεο πίσω από τα εικονίδια (και στα Windows 11 24H2+)",
+          "Widgets: παρακολούθηση συστήματος, ρολόι, καιρός, δίκτυο, δίσκος",
+          "DeskStrip dock και DeskContainers (ομάδες σαν Fences)",
+          "Equalizer 10 ζωνών για όλο το σύστημα μέσω Equalizer APO",
+          "Plugins: News Crawler, Appearance και άλλα"
+        ]
+      }
+    },
+    {
+      "id": "newscrawler",
+      "name": "Opsis News Crawler",
+      "repo": "OpsisNewsCrawler",
+      "installerAsset": "^OpsisNewsCrawler-Setup\\.exe$",
+      "checksumAsset": "OpsisNewsCrawler-Setup.exe.sha256",
+      "uninstallDisplayName": "Opsis News Crawler",
+      "paths": [
+        "%ProgramFiles%\\Opsis News Crawler\\OpsisNewsCrawler.exe",
+        "%LocalAppData%\\Programs\\Opsis News Crawler\\OpsisNewsCrawler.exe",
+        "%AppData%\\Opsis\\plugins\\Opsis - Desktop Customization\\OpsisNewsCrawler.OpsisPlugin.dll"
+      ],
+      "tagline": {
+        "en": "News and markets ticker inside your taskbar",
+        "el": "Ειδήσεις και αγορές σε μπάρα μέσα στη γραμμή εργασιών"
+      },
+      "capabilities": {
+        "en": [
+          "Scrolling headlines from many sources and categories",
+          "Breaking-news mode with sound and live video link",
+          "Prices, portfolio and price alerts; weather and severe-weather warnings",
+          "Transparent bar in the free part of the taskbar or on the desktop",
+          "Standalone app or Opsis plugin"
+        ],
+        "el": [
+          "Κυλιόμενοι τίτλοι από πολλές πηγές και κατηγορίες",
+          "Λειτουργία έκτακτων ειδήσεων με ήχο και σύνδεσμο σε ζωντανό βίντεο",
+          "Τιμές, χαρτοφυλάκιο και ειδοποιήσεις ορίων· καιρός και προειδοποιήσεις έντονων φαινομένων",
+          "Διάφανη μπάρα στον ελεύθερο χώρο της γραμμής εργασιών ή στην επιφάνεια εργασίας",
+          "Αυτόνομη εφαρμογή ή plugin του Opsis"
+        ]
+      }
+    },
+    {
+      "id": "gearwin",
+      "name": "GearWin",
+      "repo": "GearWin",
+      "installerAsset": "^GearWin-Setup-.*\\.exe$",
+      "checksumAsset": null,
+      "uninstallDisplayName": "GearWin - Complete PC Care",
+      "paths": [
+        "%ProgramFiles%\\GearWin - Complete PC Care\\GearWin.exe",
+        "%LocalAppData%\\Programs\\GearWin\\GearWin.exe"
+      ],
+      "tagline": {
+        "en": "Complete PC care for Windows 11",
+        "el": "Πλήρης φροντίδα του υπολογιστή για Windows 11"
+      },
+      "capabilities": {
+        "en": [
+          "Updates for apps, drivers and Windows in one place",
+          "Cleanup, startup, performance modes and RAM release",
+          "Health repair (SFC/DISM), registry cleaner, backups and restore points",
+          "Security and privacy tools, Windows tweaks with safe undo",
+          "Game library, per-game settings; 14 languages"
+        ],
+        "el": [
+          "Ενημερώσεις εφαρμογών, οδηγών και Windows σε ένα σημείο",
+          "Καθαρισμός, εκκίνηση, λειτουργίες απόδοσης και ελευθέρωση RAM",
+          "Επισκευή υγείας (SFC/DISM), καθαριστής μητρώου, αντίγραφα και σημεία επαναφοράς",
+          "Εργαλεία ασφάλειας και απορρήτου, tweaks των Windows με ασφαλή αναίρεση",
+          "Βιβλιοθήκη παιχνιδιών, ρυθμίσεις ανά παιχνίδι· 14 γλώσσες"
+        ]
+      }
+    },
+    {
+      "id": "kombos",
+      "name": "Kombos",
+      "repo": "Kombos",
+      "installerAsset": "^KombosSetup-.*\\.exe$",
+      "checksumAsset": null,
+      "uninstallDisplayName": "Kombos",
+      "paths": [
+        "%ProgramFiles%\\Kombos\\Kombos.exe",
+        "%LocalAppData%\\Programs\\Kombos\\Kombos.exe"
+      ],
+      "tagline": {
+        "en": "A local hub for AI tools, with Claude as the agent",
+        "el": "Τοπικό κέντρο εργαλείων AI, με τον Claude ως πράκτορα"
+      },
+      "capabilities": {
+        "en": [
+          "One place for your AI tools, running locally on Windows",
+          "Claude as the agent that ties the tools together",
+          "Plugins (weather, office, dev, creative, business toolkits)",
+          "Conversation viewer, accounts and analytics"
+        ],
+        "el": [
+          "Ένα σημείο για τα εργαλεία AI σας, τοπικά στα Windows",
+          "Ο Claude ως πράκτορας που συνδέει τα εργαλεία",
+          "Plugins (καιρός, γραφείο, ανάπτυξη, δημιουργικά, επιχειρηματικά)",
+          "Προβολή συζητήσεων, λογαριασμοί και analytics"
+        ]
+      }
+    },
+    {
+      "id": "mediasuite",
+      "name": "Opsis Media Suite",
+      "repo": "OpsisMediaSuite",
+      "installerAsset": "^OpsisMediaSuite-Setup-.*\\.exe$",
+      "checksumAsset": null,
+      "uninstallDisplayName": "Opsis Media Suite",
+      "paths": [
+        "%ProgramFiles%\\Opsis Media Suite\\Opsis Media Suite.exe",
+        "%LocalAppData%\\Programs\\Opsis Media Suite\\Opsis Media Suite.exe"
+      ],
+      "tagline": {
+        "en": "Video and audio player, converter and photo tools",
+        "el": "Player βίντεο και ήχου, μετατροπέας και εργαλεία φωτογραφίας"
+      },
+      "capabilities": {
+        "en": [
+          "Video and audio player with equalizer and effects",
+          "Video converter and photo enhancement tools",
+          "Imports your settings and playlists from Media Player Pro"
+        ],
+        "el": [
+          "Player βίντεο και ήχου με ισοσταθμιστή και εφέ",
+          "Μετατροπέας βίντεο και εργαλεία βελτίωσης φωτογραφιών",
+          "Εισάγει τις ρυθμίσεις και τις playlists σου από το Media Player Pro"
+        ]
+      }
+    }
+  ],
+  "retired": [
+    {
+      "id": "mediaplayer",
+      "name": "Opsis Media Player Pro",
+      "replacedBy": "mediasuite",
+      "note": {
+        "en": "Moved to Opsis Media Suite",
+        "el": "Μεταφέρθηκε στο Opsis Media Suite"
+      }
+    },
+    {
+      "id": "appearance",
+      "name": "Opsis Appearance",
+      "replacedBy": "opsis",
+      "note": {
+        "en": "Merged into Opsis Personalization",
+        "el": "Ενσωματώθηκε στην Εξατομίκευση του Opsis"
+      }
+    },
+    {
+      "id": "waveframe",
+      "name": "Waveframe",
+      "replacedBy": "mediasuite",
+      "note": {
+        "en": "Renamed to Opsis Media Suite",
+        "el": "Μετονομάστηκε σε Opsis Media Suite"
+      }
+    }
+  ]
 }
