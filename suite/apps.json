@@ -148,43 +148,12 @@
       "capabilities": {
         "en": [
           "Video and audio player with equalizer and effects",
-          "Video converter and photo enhancement tools",
-          "Imports your settings and playlists from Media Player Pro"
+          "Video converter and photo enhancement tools"
         ],
         "el": [
           "Player βίντεο και ήχου με ισοσταθμιστή και εφέ",
-          "Μετατροπέας βίντεο και εργαλεία βελτίωσης φωτογραφιών",
-          "Εισάγει τις ρυθμίσεις και τις playlists σου από το Media Player Pro"
+          "Μετατροπέας βίντεο και εργαλεία βελτίωσης φωτογραφιών"
         ]
-      }
-    }
-  ],
-  "retired": [
-    {
-      "id": "mediaplayer",
-      "name": "Opsis Media Player Pro",
-      "replacedBy": "mediasuite",
-      "note": {
-        "en": "Moved to Opsis Media Suite",
-        "el": "Μεταφέρθηκε στο Opsis Media Suite"
-      }
-    },
-    {
-      "id": "appearance",
-      "name": "Opsis Appearance",
-      "replacedBy": "opsis",
-      "note": {
-        "en": "Merged into Opsis Personalization",
-        "el": "Ενσωματώθηκε στην Εξατομίκευση του Opsis"
-      }
-    },
-    {
-      "id": "waveframe",
-      "name": "Waveframe",
-      "replacedBy": "mediasuite",
-      "note": {
-        "en": "Renamed to Opsis Media Suite",
-        "el": "Μετονομάστηκε σε Opsis Media Suite"
       }
     }
   ]
